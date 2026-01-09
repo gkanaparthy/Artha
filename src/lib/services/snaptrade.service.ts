@@ -190,11 +190,15 @@ export class SnapTradeService {
             await prisma.trade.upsert({
                 where: { snapTradeTradeId: trade.id },
                 update: {
-                    // Update fields if changed (usually they are immutable)
+                    universalSymbolId: trade.option_symbol ? trade.option_symbol.id : trade.symbol?.id,
+                    optionType: trade.option_symbol?.option_type,
+                    strikePrice: trade.option_symbol?.strike_price,
+                    expiryDate: trade.option_symbol?.expiration_date ? new Date(trade.option_symbol.expiration_date) : null,
                 },
                 create: {
                     accountId: account.id,
                     symbol: trade.symbol?.symbol || trade.symbol?.raw_symbol || 'UNKNOWN',
+                    universalSymbolId: trade.option_symbol ? trade.option_symbol.id : trade.symbol?.id,
                     quantity: trade.units || 0, // Caution: sign matters? SnapTrade usually positive units + action
                     price: trade.price || 0,
                     action: action,
@@ -203,7 +207,11 @@ export class SnapTradeService {
                     currency: trade.currency?.code || 'USD', // currency is an object with 'code' property
                     type: trade.option_symbol ? 'OPTION' : 'STOCK', // Heuristic
                     snapTradeTradeId: trade.id,
-                    // Extract option details if available from option_symbol
+
+                    // Detailed Option Data
+                    optionType: trade.option_symbol?.option_type,
+                    strikePrice: trade.option_symbol?.strike_price,
+                    expiryDate: trade.option_symbol?.expiration_date ? new Date(trade.option_symbol.expiration_date) : null,
                 },
             });
 

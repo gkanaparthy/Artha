@@ -36,7 +36,28 @@ interface FilterOptions {
     symbol?: string;
 }
 
-function calculateMetricsFromTrades(trades: {
+function getCanonicalKey(trade: {
+    symbol: string;
+    universalSymbolId?: string | null;
+    type?: string;
+    optionType?: string | null;
+    strikePrice?: number | null;
+    expiryDate?: Date | null;
+}): string {
+    // 1. Prefer ID if available (Stock or Option)
+    if (trade.universalSymbolId) return trade.universalSymbolId;
+
+    // 2. If Option but no ID (fallback), try to construct unique key or use symbol
+    if (trade.type === 'OPTION') {
+        // If SnapTrade gives a distinct symbol for option (e.g. AAPL230120C...), use it.
+        return trade.symbol;
+    }
+
+    // 3. Stock fallback
+    return trade.symbol;
+}
+
+interface TradeInput {
     id: string;
     symbol: string;
     action: string;
@@ -45,132 +66,181 @@ function calculateMetricsFromTrades(trades: {
     timestamp: Date;
     fees: number;
     account?: { brokerName: string | null };
-}[], filters?: FilterOptions) {
-    // Group trades by symbol
-    const tradesBySymbol = new Map<string, typeof trades>();
+    type?: string;
+    universalSymbolId?: string | null;
+    optionType?: string | null;
+    strikePrice?: number | null;
+    expiryDate?: Date | null;
+}
+
+interface Lot {
+    tradeId: string;
+    date: Date;
+    price: number;
+    quantity: number; // Absolute quantity remaining
+    broker: string;
+    originalQuantity: number;
+}
+
+function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOptions) {
+    // 1. Group by Canonical Key
+    const tradesByKey = new Map<string, TradeInput[]>();
+    // We also need a map to lookup Symbol/Name details from the Key later for display
+    const keyDetails = new Map<string, { symbol: string, type: string }>();
+
     for (const trade of trades) {
-        const symbolTrades = tradesBySymbol.get(trade.symbol) || [];
-        symbolTrades.push(trade);
-        tradesBySymbol.set(trade.symbol, symbolTrades);
+        const key = getCanonicalKey(trade);
+        if (!tradesByKey.has(key)) tradesByKey.set(key, []);
+        tradesByKey.get(key)!.push(trade);
+
+        if (!keyDetails.has(key)) {
+            keyDetails.set(key, {
+                symbol: trade.symbol,
+                type: trade.type || 'STOCK'
+            });
+        }
     }
 
     const closedTrades: ClosedTrade[] = [];
     const allOpenPositions: OpenPosition[] = [];
     let unrealizedCost = 0;
 
-    // Process each symbol using FIFO matching
-    for (const [symbol, symbolTrades] of tradesBySymbol) {
-        // Sort by timestamp, then by action (BUY before SELL) to ensure intraday handles open -> close correctly
-        symbolTrades.sort((a, b) => {
-            const timeDiff = a.timestamp.getTime() - b.timestamp.getTime();
-            if (timeDiff !== 0) return timeDiff;
-            // If same time, process BUY before SELL
-            if (a.action === 'BUY' && b.action !== 'BUY') return -1;
-            if (a.action !== 'BUY' && b.action === 'BUY') return 1;
-            return 0;
-        });
+    // 2. Process each Instrument Key
+    for (const [key, instrumentTrades] of tradesByKey) {
+        const longLots: Lot[] = [];
+        const shortLots: Lot[] = [];
 
-        // Open Positions can now be Positive (Long) or Negative (Short)
-        const openPositions: (Position & { broker: string })[] = [];
+        for (const trade of instrumentTrades) {
 
-        for (const trade of symbolTrades) {
-            // Normalize quantity: BUY is positive, SELL is negative
-            // SnapTrade usually gives positive quantity + action, but let's be safe
-            let quantity = Math.abs(trade.quantity);
-            if (trade.action === 'SELL') quantity = -quantity;
+            // Normalize action and quantity
+            const action = trade.action.toUpperCase();
+            const quantity = Math.abs(trade.quantity); // Always positive for calculations here
+            const price = trade.price;
+            const broker = trade.account?.brokerName || 'Unknown';
+            const date = trade.timestamp;
 
-            // Skip non-trade actions (like SPLIT for now)
-            if (trade.action !== 'BUY' && trade.action !== 'SELL') continue;
+            if (quantity === 0) continue;
 
-            const tradePrice = trade.price;
-            let remainingQty = quantity; // This can be positive or negative
+            const isBuy = action === 'BUY' || action === 'BUY_TO_OPEN' || action === 'ASSIGNMENT';
+            const isSell = action === 'SELL' || action === 'SELL_TO_OPEN' || action === 'EXERCISES';
 
-            // Match against opposite positions
-            // If buying (positive), look for shorts (negative)
-            // If selling (negative), look for longs (positive)
-            while (
-                openPositions.length > 0 &&
-                Math.abs(remainingQty) > 0.00000001 &&
-                (Math.sign(remainingQty) !== Math.sign(openPositions[0].quantity))
-            ) {
-                const oldestPosition = openPositions[0];
+            if (!isBuy && !isSell) continue;
 
-                // We match the smaller magnitude
-                const matchQty = Math.min(Math.abs(remainingQty), Math.abs(oldestPosition.quantity));
+            let remainingQty = quantity;
+            const totalFee = Math.abs(trade.fees);
+            const feePerUnit = totalFee / quantity;
 
-                // Prorate fees
-                const totalTradeFee = Math.abs(trade.fees);
-                const startTotalQty = Math.abs(quantity);
-                const feePerShare = startTotalQty > 0 ? totalTradeFee / startTotalQty : 0;
-                const matchedFee = feePerShare * matchQty;
+            if (isBuy) {
+                // Trying to Buy. 
+                // Check if we have Short Lots to Cover (Close)
+                while (remainingQty > 0.000001 && shortLots.length > 0) {
+                    const matchLot = shortLots[0]; // FIFO
+                    const matchQty = Math.min(remainingQty, matchLot.quantity);
 
-                let pnl = 0;
+                    // Matched Close
+                    const pnl = (matchLot.price - price) * matchQty - (feePerUnit * matchQty);
 
-                if (oldestPosition.quantity > 0) {
-                    // Closing Long (Selling)
-                    // PnL = (SellPrice - BuyPrice) * Qty - Fees
-                    pnl = (tradePrice - oldestPosition.price) * matchQty - matchedFee;
-                } else {
-                    // Closing Short (Buying)
-                    // Short Entry Price is oldestPosition.price.
-                    // Cover Price is tradePrice.
-                    // PnL = (EntryPrice - CoverPrice) * Qty - Fees
-                    pnl = (oldestPosition.price - tradePrice) * matchQty - matchedFee;
-                }
+                    closedTrades.push({
+                        symbol: keyDetails.get(key)?.symbol || trade.symbol,
+                        pnl: pnl,
+                        entryPrice: matchLot.price,
+                        exitPrice: price,
+                        quantity: matchQty,
+                        closedAt: date,
+                        openedAt: matchLot.date,
+                        broker: matchLot.broker
+                    });
 
-                closedTrades.push({
-                    symbol,
-                    pnl,
-                    entryPrice: oldestPosition.price,
-                    exitPrice: tradePrice,
-                    quantity: matchQty,
-                    closedAt: trade.timestamp,
-                    openedAt: oldestPosition.timestamp,
-                    broker: oldestPosition.broker // Attribution to opening broker
-                });
-
-                // Update remainders
-                if (remainingQty > 0) {
+                    matchLot.quantity -= matchQty;
                     remainingQty -= matchQty;
-                    oldestPosition.quantity += matchQty; // -10 + 5 = -5
-                } else {
-                    remainingQty += matchQty; // -10 + 5 = -5 (magnitude reduces)
-                    oldestPosition.quantity -= matchQty; // 10 - 5 = 5
+
+                    if (matchLot.quantity < 0.000001) {
+                        shortLots.shift();
+                    }
                 }
 
-                // Check if oldest position is closed
-                if (Math.abs(oldestPosition.quantity) <= 0.00000001) {
-                    openPositions.shift();
+                // Remaining? Open Long Lot
+                if (remainingQty > 0.000001) {
+                    longLots.push({
+                        tradeId: trade.id,
+                        date: date,
+                        price: price,
+                        quantity: remainingQty,
+                        originalQuantity: remainingQty,
+                        broker: broker
+                    });
                 }
-            }
+            } else {
+                // Selling.
+                // Check if we have Long Lots to Close
+                while (remainingQty > 0.000001 && longLots.length > 0) {
+                    const matchLot = longLots[0]; // FIFO
+                    const matchQty = Math.min(remainingQty, matchLot.quantity);
 
-            // If any quantity remains, add it as a new open position
-            if (Math.abs(remainingQty) > 0.00000001) {
-                openPositions.push({
-                    quantity: remainingQty,
-                    price: tradePrice,
-                    timestamp: trade.timestamp,
-                    broker: trade.account?.brokerName || 'Unknown',
-                    tradeId: trade.id
-                });
+                    // Matched Close
+                    const pnl = (price - matchLot.price) * matchQty - (feePerUnit * matchQty);
+
+                    closedTrades.push({
+                        symbol: keyDetails.get(key)?.symbol || trade.symbol,
+                        pnl: pnl,
+                        entryPrice: matchLot.price,
+                        exitPrice: price,
+                        quantity: matchQty,
+                        closedAt: date,
+                        openedAt: matchLot.date,
+                        broker: matchLot.broker
+                    });
+
+                    matchLot.quantity -= matchQty;
+                    remainingQty -= matchQty;
+
+                    if (matchLot.quantity < 0.000001) {
+                        longLots.shift();
+                    }
+                }
+
+                // Remaining? Open Short Lot
+                if (remainingQty > 0.000001) {
+                    shortLots.push({
+                        tradeId: trade.id,
+                        date: date,
+                        price: price,
+                        quantity: remainingQty,
+                        originalQuantity: remainingQty,
+                        broker: broker
+                    });
+                }
             }
         }
 
-        // Track unrealized cost of remaining open positions
-        for (const pos of openPositions) {
-            if (Math.abs(pos.quantity) > 0.00000001) {
-                unrealizedCost += pos.price * Math.abs(pos.quantity);
-                allOpenPositions.push({
-                    symbol,
-                    quantity: pos.quantity, // Negative for shorts
-                    entryPrice: pos.price,
-                    openedAt: pos.timestamp,
-                    broker: pos.broker,
-                    currentValue: pos.price * pos.quantity, // Placeholder current value
-                    tradeId: pos.tradeId,
-                });
-            }
+        // Collect Open Positions from Lots
+        for (const lot of longLots) {
+            allOpenPositions.push({
+                symbol: keyDetails.get(key)?.symbol || key,
+                quantity: lot.quantity,
+                entryPrice: lot.price,
+                openedAt: lot.date,
+                broker: lot.broker,
+                currentValue: lot.price * lot.quantity,
+                tradeId: lot.tradeId
+            });
         }
+        for (const lot of shortLots) {
+            allOpenPositions.push({
+                symbol: keyDetails.get(key)?.symbol || key,
+                quantity: -lot.quantity, // Negative for Short info
+                entryPrice: lot.price,
+                openedAt: lot.date,
+                broker: lot.broker,
+                currentValue: lot.price * -lot.quantity,
+                tradeId: lot.tradeId
+            });
+        }
+    }
+
+    // Calculate total unrealized cost
+    for (const pos of allOpenPositions) {
+        unrealizedCost += Math.abs(pos.quantity) * pos.entryPrice;
     }
 
     // Apply filters to closed trades and open positions
@@ -320,16 +390,17 @@ export async function GET(req: NextRequest) {
                 account: {
                     userId: session.user.id
                 },
-                action: { in: ['BUY', 'SELL'] }
+                action: { in: ['BUY', 'SELL', 'BUY_TO_OPEN', 'BUY_TO_CLOSE', 'SELL_TO_OPEN', 'SELL_TO_CLOSE', 'ASSIGNMENT', 'EXERCISES'] }
             },
             include: {
                 account: {
                     select: { brokerName: true }
                 }
             },
-            orderBy: {
-                timestamp: 'asc'
-            }
+            orderBy: [
+                { timestamp: 'asc' },
+                { id: 'asc' }
+            ]
         });
 
         const filters: FilterOptions = {};
