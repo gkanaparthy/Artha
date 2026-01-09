@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import {
     Table,
     TableBody,
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Clock, TrendingUp, TrendingDown, Trash2 } from "lucide-react";
+import { Loader2, Clock, TrendingUp, TrendingDown, Trash2, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useFilters } from "@/contexts/filter-context";
@@ -71,12 +71,17 @@ interface PositionsTableProps {
     onMetricsUpdate?: (metrics: Metrics) => void;
 }
 
+type SortField = "symbol" | "status" | "entryDate" | "exitDate" | "quantity" | "entryPrice" | "exitPrice" | "pnl" | "return" | "broker";
+type SortDirection = "asc" | "desc";
+
 export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
     const { filters, setBrokers } = useFilters();
     const [allPositions, setAllPositions] = useState<DisplayPosition[]>([]);
     const [filteredPositions, setFilteredPositions] = useState<DisplayPosition[]>([]);
     const [loading, setLoading] = useState(true);
     const [rawMetrics, setRawMetrics] = useState<Metrics | null>(null);
+    const [sortField, setSortField] = useState<SortField>("entryDate");
+    const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
     const applyFilters = useCallback((positions: DisplayPosition[], metrics: Metrics | null) => {
         let filtered = positions;
@@ -118,6 +123,82 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
             });
         }
     }, [filters.status, filters.broker, onMetricsUpdate]);
+
+    const handleSort = (field: SortField) => {
+        if (sortField === field) {
+            setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+        } else {
+            setSortField(field);
+            setSortDirection("desc");
+        }
+    };
+
+    const getSortIcon = (field: SortField) => {
+        if (sortField !== field) return <ArrowUpDown className="h-4 w-4 text-muted-foreground/30" />;
+        return sortDirection === "asc" ?
+            <TrendingUp className="h-4 w-4 text-primary" /> :
+            <TrendingDown className="h-4 w-4 text-primary" />;
+    };
+
+    const sortedPositions = useMemo(() => {
+        const sorted = [...filteredPositions];
+        sorted.sort((a, b) => {
+            let aVal: any;
+            let bVal: any;
+
+            switch (sortField) {
+                case "symbol":
+                    aVal = a.symbol;
+                    bVal = b.symbol;
+                    break;
+                case "status":
+                    aVal = a.status;
+                    bVal = b.status;
+                    break;
+                case "entryDate":
+                    aVal = new Date(a.openedAt).getTime();
+                    bVal = new Date(b.openedAt).getTime();
+                    break;
+                case "exitDate":
+                    aVal = a.closedAt ? new Date(a.closedAt).getTime() : 0;
+                    bVal = b.closedAt ? new Date(b.closedAt).getTime() : 0;
+                    break;
+                case "quantity":
+                    aVal = a.quantity;
+                    bVal = b.quantity;
+                    break;
+                case "entryPrice":
+                    aVal = a.entryPrice;
+                    bVal = b.entryPrice;
+                    break;
+                case "exitPrice":
+                    aVal = a.exitPrice ?? 0;
+                    bVal = b.exitPrice ?? 0;
+                    break;
+                case "pnl":
+                    aVal = a.pnl ?? 0;
+                    bVal = b.pnl ?? 0;
+                    break;
+                case "return":
+                    aVal = a.exitPrice && a.entryPrice ? ((a.exitPrice - a.entryPrice) / a.entryPrice) : 0;
+                    bVal = b.exitPrice && b.entryPrice ? ((b.exitPrice - b.entryPrice) / b.entryPrice) : 0;
+                    break;
+                case "broker":
+                    aVal = a.broker;
+                    bVal = b.broker;
+                    break;
+                default:
+                    return 0;
+            }
+
+            if (sortDirection === "asc") {
+                return aVal > bVal ? 1 : -1;
+            } else {
+                return aVal < bVal ? 1 : -1;
+            }
+        });
+        return sorted;
+    }, [filteredPositions, sortField, sortDirection]);
 
     const fetchPositions = useCallback(async () => {
         try {
@@ -240,16 +321,36 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
-                            <TableHead>Symbol</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Entry Date</TableHead>
-                            <TableHead>Exit Date</TableHead>
-                            <TableHead className="text-right">Qty</TableHead>
-                            <TableHead className="text-right">Entry</TableHead>
-                            <TableHead className="text-right">Exit</TableHead>
-                            <TableHead className="text-right">P&L</TableHead>
-                            <TableHead className="text-right">Return</TableHead>
-                            <TableHead>Broker</TableHead>
+                            <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("symbol")}>
+                                <div className="flex items-center gap-2">Symbol {getSortIcon("symbol")}</div>
+                            </TableHead>
+                            <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("status")}>
+                                <div className="flex items-center gap-2">Status {getSortIcon("status")}</div>
+                            </TableHead>
+                            <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("entryDate")}>
+                                <div className="flex items-center gap-2">Entry Date {getSortIcon("entryDate")}</div>
+                            </TableHead>
+                            <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("exitDate")}>
+                                <div className="flex items-center gap-2">Exit Date {getSortIcon("exitDate")}</div>
+                            </TableHead>
+                            <TableHead className="text-right cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("quantity")}>
+                                <div className="flex items-center justify-end gap-2">Qty {getSortIcon("quantity")}</div>
+                            </TableHead>
+                            <TableHead className="text-right cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("entryPrice")}>
+                                <div className="flex items-center justify-end gap-2">Entry {getSortIcon("entryPrice")}</div>
+                            </TableHead>
+                            <TableHead className="text-right cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("exitPrice")}>
+                                <div className="flex items-center justify-end gap-2">Exit {getSortIcon("exitPrice")}</div>
+                            </TableHead>
+                            <TableHead className="text-right cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("pnl")}>
+                                <div className="flex items-center justify-end gap-2">P&L {getSortIcon("pnl")}</div>
+                            </TableHead>
+                            <TableHead className="text-right cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("return")}>
+                                <div className="flex items-center justify-end gap-2">Return {getSortIcon("return")}</div>
+                            </TableHead>
+                            <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("broker")}>
+                                <div className="flex items-center gap-2">Broker {getSortIcon("broker")}</div>
+                            </TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
@@ -262,7 +363,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                                     </div>
                                 </TableCell>
                             </TableRow>
-                        ) : filteredPositions.length === 0 ? (
+                        ) : sortedPositions.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={11} className="text-center h-24 text-muted-foreground">
                                     {hasActiveFilters
@@ -271,7 +372,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            filteredPositions.map((position, idx) => {
+                            sortedPositions.map((position, idx) => {
                                 const returnPct = calculateReturn(position.entryPrice, position.exitPrice);
                                 const isOpen = position.status === "open";
                                 const isProfit = !isOpen && (position.pnl ?? 0) >= 0;
@@ -380,7 +481,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
             {filteredPositions.length > 0 && (
                 <div className="flex justify-between items-center text-sm text-muted-foreground px-2">
                     <span>
-                        Showing {filteredPositions.length} of {allPositions.length} position{allPositions.length !== 1 ? "s" : ""}
+                        Showing {sortedPositions.length} of {allPositions.length} position{allPositions.length !== 1 ? "s" : ""}
                         {hasActiveFilters && " (filtered)"}
                         {" • "}
                         <span className="text-blue-500">{openCount} open</span>
