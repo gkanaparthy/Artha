@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -58,7 +58,7 @@ export default function JournalPage() {
   const [sortField, setSortField] = useState<SortField>("timestamp");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
-  const fetchTrades = async () => {
+  const fetchTrades = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch(`/api/trades`);
@@ -75,11 +75,11 @@ export default function JournalPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setBrokers]);
 
   useEffect(() => {
     fetchTrades();
-  }, []);
+  }, [fetchTrades]);
 
   const handleDelete = async (tradeId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -101,11 +101,11 @@ export default function JournalPage() {
   const filteredAndSortedTrades = useMemo(() => {
     let result = [...trades];
 
-    // Filter by symbol
+    // Filter by symbol (exact match, case-insensitive)
     if (filters.symbol) {
       const symbols = filters.symbol.split(',').map((s) => s.trim().toLowerCase()).filter((s) => s.length > 0);
       if (symbols.length > 0) {
-        result = result.filter((t) => symbols.some(s => t.symbol.toLowerCase().includes(s)));
+        result = result.filter((t) => symbols.includes(t.symbol.toLowerCase()));
       }
     }
 

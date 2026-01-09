@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useFilters } from "@/contexts/filter-context";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,8 +11,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, Calendar, X, Clock, TrendingUp, TrendingDown, Filter } from "lucide-react";
+import { Search, Calendar as CalendarIcon, X, Clock, TrendingUp, TrendingDown, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface GlobalFilterBarProps {
     showActionFilter?: boolean; // enable optional Action filter for Journal
@@ -21,6 +25,8 @@ interface GlobalFilterBarProps {
 
 export function GlobalFilterBar({ showActionFilter = false, className, onApply }: GlobalFilterBarProps) {
     const { filters, setFilters, resetFilters, brokers } = useFilters();
+    const [startDateOpen, setStartDateOpen] = useState(false);
+    const [endDateOpen, setEndDateOpen] = useState(false);
 
     const handleClearFilters = () => {
         resetFilters();
@@ -55,20 +61,80 @@ export function GlobalFilterBar({ showActionFilter = false, className, onApply }
 
             {/* Date Range */}
             <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="date"
-                    value={filters.startDate}
-                    onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                    className="h-9 w-[130px]"
-                />
-                <span className="text-muted-foreground">to</span>
-                <Input
-                    type="date"
-                    value={filters.endDate}
-                    onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                    className="h-9 w-[130px]"
-                />
+                <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
+                    <PopoverTrigger asChild>
+                        <Button
+                            variant={"outline"}
+                            className={cn(
+                                "w-[140px] h-9 justify-start text-left font-normal",
+                                !filters.startDate && "text-muted-foreground"
+                            )}
+                        >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {filters.startDate ? (
+                                format(new Date(new Date(filters.startDate).getTime() + new Date(filters.startDate).getTimezoneOffset() * 60000), "MMM dd, yyyy")
+                            ) : (
+                                <span>Start Date</span>
+                            )}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                            mode="single"
+                            selected={filters.startDate ? new Date(new Date(filters.startDate).getTime() + new Date(filters.startDate).getTimezoneOffset() * 60000) : undefined}
+                            onSelect={(date) => {
+                                if (date) {
+                                    // Format as YYYY-MM-DD local
+                                    const offset = date.getTimezoneOffset();
+                                    const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+                                    setFilters(prev => ({ ...prev, startDate: localDate.toISOString().split('T')[0] }));
+                                } else {
+                                    setFilters(prev => ({ ...prev, startDate: "" }));
+                                }
+                                setStartDateOpen(false);
+                            }}
+                            initialFocus
+                        />
+                    </PopoverContent>
+                </Popover>
+
+                <span className="text-muted-foreground">-</span>
+
+                <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
+                    <PopoverTrigger asChild>
+                        <Button
+                            variant={"outline"}
+                            className={cn(
+                                "w-[140px] h-9 justify-start text-left font-normal",
+                                !filters.endDate && "text-muted-foreground"
+                            )}
+                        >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {filters.endDate ? (
+                                format(new Date(new Date(filters.endDate).getTime() + new Date(filters.endDate).getTimezoneOffset() * 60000), "MMM dd, yyyy")
+                            ) : (
+                                <span>End Date</span>
+                            )}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                            mode="single"
+                            selected={filters.endDate ? new Date(new Date(filters.endDate).getTime() + new Date(filters.endDate).getTimezoneOffset() * 60000) : undefined}
+                            onSelect={(date) => {
+                                if (date) {
+                                    const offset = date.getTimezoneOffset();
+                                    const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+                                    setFilters(prev => ({ ...prev, endDate: localDate.toISOString().split('T')[0] }));
+                                } else {
+                                    setFilters(prev => ({ ...prev, endDate: "" }));
+                                }
+                                setEndDateOpen(false);
+                            }}
+                            initialFocus
+                        />
+                    </PopoverContent>
+                </Popover>
             </div>
 
             {/* Status Filter */}

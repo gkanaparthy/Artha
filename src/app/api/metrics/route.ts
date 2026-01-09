@@ -343,7 +343,7 @@ const symbolData = Array.from(symbolPerformance.entries())
         symbol,
         pnl: Math.round(data.pnl * 100) / 100,
         trades: data.trades,
-        winRate: Math.round((data.wins / data.trades) * 100),
+        winRate: data.trades > 0 ? Math.round((data.wins / data.trades) * 100) : 0,
     }))
     .sort((a, b) => b.pnl - a.pnl);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, TrendingUp, TrendingDown, Target, BarChart3, Calendar, Activity, Zap, Trophy, Flame, Clock, PieChart as PieChartIcon, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
@@ -160,9 +160,11 @@ export default function ReportsPage() {
   const { filters, setBrokers } = useFilters();
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const brokersInitialized = useRef(false);
 
-  const fetchMetrics = async () => {
+  const fetchMetrics = useCallback(async () => {
     try {
+      setLoading(true);
       const params = new URLSearchParams();
       if (filters.startDate) params.append("startDate", filters.startDate);
       if (filters.endDate) params.append("endDate", filters.endDate);
@@ -173,19 +175,16 @@ export default function ReportsPage() {
       const data: Metrics = await res.json();
       setMetrics(data);
 
-      // Populate brokers from data
+      // Populate brokers from data only on initial load or when viewing all brokers
+      // This prevents the broker list from shrinking when a specific broker is filtered
       const allBrokers = new Set<string>();
       data.closedTrades?.forEach(t => allBrokers.add(t.broker));
       data.openPositions?.forEach(p => allBrokers.add(p.broker));
-      // Note: We append to existing brokers or replace? 
-      // Context setBrokers replaces. 
-      // If we are filtered by broker X, the response only has broker X?
-      // Yes. So if we filter, the dropdown might shrink to just X?
-      // That's bad UX. "All Brokers" -> Select "IBKR" -> Apply -> Dropdown only has "IBKR". Can't switch back.
-      // Fix: Only update brokers if filter.broker is 'all' OR if brokers list is empty.
+      const brokerList = Array.from(allBrokers).filter(Boolean);
 
-      if (filters.broker === 'all') {
-        setBrokers(Array.from(allBrokers).filter(Boolean));
+      if (!brokersInitialized.current || (filters.broker === 'all' && brokerList.length > 0)) {
+        setBrokers(brokerList);
+        brokersInitialized.current = true;
       }
 
     } catch (e) {
@@ -193,11 +192,11 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters.startDate, filters.endDate, filters.symbol, filters.broker, setBrokers]);
 
   useEffect(() => {
     fetchMetrics();
-  }, []);
+  }, [fetchMetrics]);
 
   if (loading) {
     return (

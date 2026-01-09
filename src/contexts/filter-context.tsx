@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef } from "react";
 
 export type FilterStatus = "all" | "open" | "winners" | "losers";
 export type FilterAction = "ALL" | "BUY" | "SELL";
@@ -33,30 +33,57 @@ const defaultFilters: FilterState = {
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
-export function FilterProvider({ children }: { children: ReactNode }) {
-    const [filters, setFilters] = useState<FilterState>(defaultFilters);
-    const [brokers, setBrokers] = useState<string[]>([]);
+// Helper to safely load filters from localStorage (only called once via lazy init)
+function loadFiltersFromStorage(): FilterState {
+    if (typeof window === 'undefined') return defaultFilters;
 
-    // Optional: Persist to localStorage to keep defaults across reload
-    useEffect(() => {
+    try {
         const saved = localStorage.getItem("dashboard_filters");
         if (saved) {
-            try {
-                setFilters(JSON.parse(saved));
-            } catch (e) {
-                console.error("Failed to parse saved filters", e);
+            const parsed = JSON.parse(saved);
+            if (parsed && typeof parsed === 'object') {
+                return {
+                    symbol: typeof parsed.symbol === 'string' ? parsed.symbol : '',
+                    startDate: typeof parsed.startDate === 'string' ? parsed.startDate : '',
+                    endDate: typeof parsed.endDate === 'string' ? parsed.endDate : '',
+                    status: ['all', 'open', 'winners', 'losers'].includes(parsed.status) ? parsed.status : 'all',
+                    action: ['ALL', 'BUY', 'SELL'].includes(parsed.action) ? parsed.action : 'ALL',
+                    broker: typeof parsed.broker === 'string' ? parsed.broker : 'all',
+                };
             }
         }
-    }, []);
+    } catch (e) {
+        console.error("Failed to parse saved filters", e);
+    }
+    return defaultFilters;
+}
 
+export function FilterProvider({ children }: { children: ReactNode }) {
+    // Use lazy initialization - the function is only called once on mount
+    // This avoids hydration mismatch because useState with a function initializer
+    // runs after hydration on the client
+    const [filters, setFilters] = useState<FilterState>(loadFiltersFromStorage);
+    const [brokers, setBrokers] = useState<string[]>([]);
+    // Use ref to track if we've mounted (avoids saving on initial render)
+    const isMounted = useRef(false);
+
+    // Persist to localStorage when filters change (skip initial render)
     useEffect(() => {
-        localStorage.setItem("dashboard_filters", JSON.stringify(filters));
+        if (isMounted.current) {
+            localStorage.setItem("dashboard_filters", JSON.stringify(filters));
+        } else {
+            isMounted.current = true;
+        }
     }, [filters]);
 
-    const resetFilters = () => setFilters(defaultFilters);
+    const resetFilters = useCallback(() => setFilters(defaultFilters), []);
+
+    const setBrokersStable = useCallback((newBrokers: string[]) => {
+        setBrokers(newBrokers);
+    }, []);
 
     return (
-        <FilterContext.Provider value={{ filters, setFilters, resetFilters, brokers, setBrokers }}>
+        <FilterContext.Provider value={{ filters, setFilters, resetFilters, brokers, setBrokers: setBrokersStable }}>
             {children}
         </FilterContext.Provider>
     );
