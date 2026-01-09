@@ -1,0 +1,152 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { BarChart3, BookOpen, Home, Settings, Wallet, LogOut, User } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { useSession, signOut } from "next-auth/react";
+import Image from "next/image";
+
+const sidebarItems = [
+    { icon: Home, label: "Dashboard", href: "/" },
+    { icon: BookOpen, label: "Journal", href: "/journal" },
+    { icon: BarChart3, label: "Reports", href: "/reports" },
+    { icon: Settings, label: "Settings", href: "/settings" },
+];
+
+interface Account {
+    id: string;
+    brokerName: string;
+}
+
+export function AppSidebar() {
+    const pathname = usePathname();
+    const { data: session } = useSession();
+    const [accounts, setAccounts] = useState<Account[]>([]);
+
+    useEffect(() => {
+        const fetchAccounts = async () => {
+            try {
+                if (!session?.user?.id) return;
+
+                const res = await fetch(`/api/accounts`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setAccounts(data.accounts || []);
+                }
+            } catch (e) {
+                console.error("Failed to fetch accounts:", e);
+            }
+        };
+        fetchAccounts();
+    }, [session?.user?.id]);
+
+    const handleSignOut = () => {
+        signOut({ callbackUrl: "/login" });
+    };
+
+    return (
+        <div className="w-64 border-r bg-card h-screen flex flex-col hidden md:flex">
+            <div className="p-6 flex items-center gap-3">
+                <Image
+                    src="/logo.svg"
+                    alt="Artha Logo"
+                    width={40}
+                    height={40}
+                    className="rounded-lg"
+                />
+                <div>
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-amber-600 to-amber-800 dark:from-amber-400 dark:to-amber-600 bg-clip-text text-transparent">Artha</h1>
+                    <p className="text-xs text-muted-foreground">Trading Journal</p>
+                </div>
+            </div>
+            <nav className="flex-1 px-4 space-y-2">
+                {sidebarItems.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                        <Link key={item.href} href={item.href}>
+                            <Button
+                                variant={isActive ? "secondary" : "ghost"}
+                                className={cn("w-full justify-start", isActive && "bg-secondary")}
+                            >
+                                <item.icon className="mr-2 h-4 w-4" />
+                                {item.label}
+                            </Button>
+                        </Link>
+                    );
+                })}
+            </nav>
+
+            {/* Connected Brokers Section */}
+            <div className="px-4 py-3 border-t">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                    <Wallet className="h-3 w-3" />
+                    <span>Connected Brokers</span>
+                </div>
+                {accounts.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic pl-5">
+                        No brokers connected
+                    </p>
+                ) : (
+                    <div className="space-y-1 pl-5">
+                        {accounts.map((account) => (
+                            <div
+                                key={account.id}
+                                className="flex items-center gap-2 text-sm"
+                            >
+                                <span className="w-2 h-2 rounded-full bg-green-500" />
+                                <span>{account.brokerName}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* User Section */}
+            {session?.user && (
+                <div className="px-4 py-3 border-t">
+                    <div className="flex items-center gap-3 mb-3">
+                        {session.user.image ? (
+                            <Image
+                                src={session.user.image}
+                                alt={session.user.name || "User"}
+                                width={36}
+                                height={36}
+                                className="rounded-full"
+                            />
+                        ) : (
+                            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                                <User className="h-5 w-5 text-primary" />
+                            </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                                {session.user.name || "User"}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                                {session.user.email}
+                            </p>
+                        </div>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start text-muted-foreground hover:text-foreground"
+                        onClick={handleSignOut}
+                    >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Sign Out
+                    </Button>
+                </div>
+            )}
+
+            <div className="p-4 border-t">
+                <div className="text-xs text-muted-foreground text-center">
+                    v0.1.0 (MVP)
+                </div>
+            </div>
+        </div>
+    );
+}

@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// NextAuth.js Models
+model User {
+  id                  String    @id @default(cuid())
+  name                String?
+  email               String?   @unique
+  emailVerified       DateTime?
+  image               String?
+
+  // SnapTrade Integration
+  snapTradeUserId     String?   @unique
+  snapTradeUserSecret String?
+
+  // Relationships
+  accounts            Account[]
+  sessions            Session[]
+  brokerAccounts      BrokerAccount[]
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+// NextAuth Account (for OAuth providers)
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("auth_accounts")
+}
+
+// NextAuth Session
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// NextAuth Verification Token
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// Brokerage Account (connected via SnapTrade)
+model BrokerAccount {
+  id                 String   @id @default(cuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  brokerName         String?
+  snapTradeAccountId String   @unique
+
+  trades             Trade[]
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  meta               String?
+
+  @@map("broker_accounts")
+}
+
+model Trade {
+  id          String   @id @default(cuid())
+  accountId   String
+  account     BrokerAccount @relation(fields: [accountId], references: [id])
+
+  // Core Trade Data
+  symbol      String
+  universalSymbolId String?
+  quantity    Float
+  price       Float
+  action      String
+  timestamp   DateTime
+
+  // Costs
+  fees        Float    @default(0)
+  currency    String   @default("USD")
+
+  // Classification
+  type        String
+
+  // Option specific (nullable)
+  optionType  String?
+  strikePrice Float?
+  expiryDate  DateTime?
+
+  tags        Tag[]
+
+  // External Reference
+  snapTradeTradeId String? @unique
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("trades")
+}
+
+model Tag {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  color  String  @default("#000000")
+  trades Trade[]
+
+  @@map("tags")
+}
