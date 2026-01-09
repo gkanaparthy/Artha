@@ -12,15 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Loader2,
-  ArrowUpDown,
-  Sparkles,
-  TrendingUp,
-  TrendingDown,
-  Trash2,
-  BookOpen,
-} from "lucide-react";
+import { Loader2, Sparkles, Trash2, BookOpen } from "lucide-react";
 import { format } from "date-fns";
 import { TradeDetailSheet } from "@/components/trade-detail-sheet";
 import { motion } from "framer-motion";
@@ -28,24 +20,23 @@ import { PageTransition, AnimatedCard } from "@/components/motion";
 import { cn } from "@/lib/utils";
 import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
-
-interface Trade {
-  id: string;
-  symbol: string;
-  action: string;
-  quantity: number;
-  price: number;
-  timestamp: string;
-  type: string;
-  fees: number;
-  account: {
-    brokerName: string;
-  };
-  tags: { id: string; name: string; color: string }[];
-}
+import { useSort } from "@/hooks/use-sort";
+import type { Trade } from "@/types/trading";
 
 type SortField = "timestamp" | "symbol" | "action" | "quantity" | "price" | "value";
-type SortDirection = "asc" | "desc";
+
+// Get sort value for a trade based on field
+const getTradeSortValue = (t: Trade, field: SortField): string | number => {
+  switch (field) {
+    case "timestamp": return new Date(t.timestamp).getTime();
+    case "symbol": return t.symbol;
+    case "action": return t.action;
+    case "quantity": return t.quantity;
+    case "price": return t.price;
+    case "value": return t.price * t.quantity;
+    default: return 0;
+  }
+};
 
 export default function JournalPage() {
   const { filters, setBrokers } = useFilters();
@@ -53,10 +44,6 @@ export default function JournalPage() {
   const [loading, setLoading] = useState(true);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-
-  // Sorting
-  const [sortField, setSortField] = useState<SortField>("timestamp");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const fetchTrades = useCallback(async () => {
     try {
@@ -98,7 +85,8 @@ export default function JournalPage() {
     }
   };
 
-  const filteredAndSortedTrades = useMemo(() => {
+  // Apply filters
+  const filteredTrades = useMemo(() => {
     let result = [...trades];
 
     // Filter by symbol (exact match, case-insensitive)
@@ -111,8 +99,6 @@ export default function JournalPage() {
 
     // Filter by action
     if (filters.action && filters.action !== "ALL") {
-      // SnapTrade often uses "BUY", "SELL", "BUY_TO_OPEN" etc.
-      // We map specific actions to rough Categories "BUY" or "SELL".
       result = result.filter((t) => {
         const a = t.action.toUpperCase();
         if (filters.action === "BUY") return a.includes("BUY") || a === "ASSIGNMENT";
@@ -137,67 +123,16 @@ export default function JournalPage() {
       result = result.filter((t) => new Date(t.timestamp) <= toDate);
     }
 
-    // Status filter is ignored for Raw Trades
-
-    // Sort
-    result.sort((a, b) => {
-      let aVal: number | string;
-      let bVal: number | string;
-
-      switch (sortField) {
-        case "timestamp":
-          aVal = new Date(a.timestamp).getTime();
-          bVal = new Date(b.timestamp).getTime();
-          break;
-        case "symbol":
-          aVal = a.symbol;
-          bVal = b.symbol;
-          break;
-        case "action":
-          aVal = a.action;
-          bVal = b.action;
-          break;
-        case "quantity":
-          aVal = a.quantity;
-          bVal = b.quantity;
-          break;
-        case "price":
-          aVal = a.price;
-          bVal = b.price;
-          break;
-        case "value":
-          aVal = a.price * a.quantity;
-          bVal = b.price * b.quantity;
-          break;
-        default:
-          return 0;
-      }
-
-      if (sortDirection === "asc") {
-        return aVal > bVal ? 1 : -1;
-      } else {
-        return aVal < bVal ? 1 : -1;
-      }
-    });
-
     return result;
-  }, [trades, filters, sortField, sortDirection]);
+  }, [trades, filters]);
 
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("desc");
-    }
-  };
-
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return <ArrowUpDown className="h-4 w-4 text-muted-foreground/30" />;
-    return sortDirection === "asc" ?
-      <TrendingUp className="h-4 w-4 text-primary" /> :
-      <TrendingDown className="h-4 w-4 text-primary" />;
-  };
+  // Apply sorting using the shared hook
+  const { sortedData: sortedTrades, handleSort, getSortIcon } = useSort<Trade, SortField>({
+    data: filteredTrades,
+    defaultField: "timestamp",
+    defaultDirection: "desc",
+    getValueForField: getTradeSortValue,
+  });
 
   return (
     <PageTransition>
@@ -272,14 +207,14 @@ export default function JournalPage() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ) : filteredAndSortedTrades.length === 0 ? (
+                    ) : sortedTrades.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                           No trades found matching your criteria.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredAndSortedTrades.map((trade, i) => (
+                      sortedTrades.map((trade, i) => (
                         <motion.tr
                           key={trade.id}
                           className="table-row-hover cursor-pointer"

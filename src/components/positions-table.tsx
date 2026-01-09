@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
     Table,
     TableBody,
@@ -11,68 +11,36 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Clock, TrendingUp, TrendingDown, Trash2, ArrowUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Loader2, Clock, TrendingUp, TrendingDown, Trash2 } from "lucide-react";
+import { cn, formatCurrency, formatDate, calculateReturn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
-
-interface ClosedPosition {
-    symbol: string;
-    pnl: number;
-    entryPrice: number;
-    exitPrice: number;
-    quantity: number;
-    closedAt: string;
-    openedAt: string;
-    broker: string;
-}
-
-interface OpenPosition {
-    symbol: string;
-    quantity: number;
-    entryPrice: number;
-    openedAt: string;
-    broker: string;
-    currentValue: number;
-    tradeId: string;
-}
-
-// Union type for display
-interface DisplayPosition {
-    symbol: string;
-    quantity: number;
-    entryPrice: number;
-    exitPrice: number | null;
-    pnl: number | null;
-    openedAt: string;
-    closedAt: string | null;
-    broker: string;
-    status: "open" | "closed";
-    tradeId?: string;
-}
-
-interface Metrics {
-    netPnL: number;
-    winRate: number;
-    totalTrades: number;
-    avgWin: number;
-    avgLoss: number;
-    profitFactor: number | null;
-    winningTrades: number;
-    losingTrades: number;
-    mtdPnL: number;
-    ytdPnL: number;
-    closedTrades: ClosedPosition[];
-    openPositions?: OpenPosition[];
-}
+import { useSort } from "@/hooks/use-sort";
+import type { DisplayPosition, Metrics } from "@/types/trading";
 
 interface PositionsTableProps {
     onMetricsUpdate?: (metrics: Metrics) => void;
 }
 
 type SortField = "symbol" | "status" | "entryDate" | "exitDate" | "quantity" | "entryPrice" | "exitPrice" | "pnl" | "return" | "broker";
-type SortDirection = "asc" | "desc";
+
+// Get sort value for a position based on field
+const getSortValue = (p: DisplayPosition, field: SortField): string | number => {
+    switch (field) {
+        case "symbol": return p.symbol;
+        case "status": return p.status;
+        case "entryDate": return new Date(p.openedAt).getTime();
+        case "exitDate": return p.closedAt ? new Date(p.closedAt).getTime() : 0;
+        case "quantity": return p.quantity;
+        case "entryPrice": return p.entryPrice;
+        case "exitPrice": return p.exitPrice ?? 0;
+        case "pnl": return p.pnl ?? 0;
+        case "return": return p.exitPrice && p.entryPrice ? (p.exitPrice - p.entryPrice) / p.entryPrice : 0;
+        case "broker": return p.broker;
+        default: return 0;
+    }
+};
 
 export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
     const { filters, setBrokers } = useFilters();
@@ -80,8 +48,13 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
     const [filteredPositions, setFilteredPositions] = useState<DisplayPosition[]>([]);
     const [loading, setLoading] = useState(true);
     const [rawMetrics, setRawMetrics] = useState<Metrics | null>(null);
-    const [sortField, setSortField] = useState<SortField>("entryDate");
-    const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+    const { sortedData: sortedPositions, handleSort, getSortIcon } = useSort<DisplayPosition, SortField>({
+        data: filteredPositions,
+        defaultField: "entryDate",
+        defaultDirection: "desc",
+        getValueForField: getSortValue,
+    });
 
     const applyFilters = useCallback((positions: DisplayPosition[], metrics: Metrics | null) => {
         let filtered = positions;
@@ -123,82 +96,6 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
             });
         }
     }, [filters.status, filters.broker, onMetricsUpdate]);
-
-    const handleSort = (field: SortField) => {
-        if (sortField === field) {
-            setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-        } else {
-            setSortField(field);
-            setSortDirection("desc");
-        }
-    };
-
-    const getSortIcon = (field: SortField) => {
-        if (sortField !== field) return <ArrowUpDown className="h-4 w-4 text-muted-foreground/30" />;
-        return sortDirection === "asc" ?
-            <TrendingUp className="h-4 w-4 text-primary" /> :
-            <TrendingDown className="h-4 w-4 text-primary" />;
-    };
-
-    const sortedPositions = useMemo(() => {
-        const sorted = [...filteredPositions];
-        sorted.sort((a, b) => {
-            let aVal: any;
-            let bVal: any;
-
-            switch (sortField) {
-                case "symbol":
-                    aVal = a.symbol;
-                    bVal = b.symbol;
-                    break;
-                case "status":
-                    aVal = a.status;
-                    bVal = b.status;
-                    break;
-                case "entryDate":
-                    aVal = new Date(a.openedAt).getTime();
-                    bVal = new Date(b.openedAt).getTime();
-                    break;
-                case "exitDate":
-                    aVal = a.closedAt ? new Date(a.closedAt).getTime() : 0;
-                    bVal = b.closedAt ? new Date(b.closedAt).getTime() : 0;
-                    break;
-                case "quantity":
-                    aVal = a.quantity;
-                    bVal = b.quantity;
-                    break;
-                case "entryPrice":
-                    aVal = a.entryPrice;
-                    bVal = b.entryPrice;
-                    break;
-                case "exitPrice":
-                    aVal = a.exitPrice ?? 0;
-                    bVal = b.exitPrice ?? 0;
-                    break;
-                case "pnl":
-                    aVal = a.pnl ?? 0;
-                    bVal = b.pnl ?? 0;
-                    break;
-                case "return":
-                    aVal = a.exitPrice && a.entryPrice ? ((a.exitPrice - a.entryPrice) / a.entryPrice) : 0;
-                    bVal = b.exitPrice && b.entryPrice ? ((b.exitPrice - b.entryPrice) / b.entryPrice) : 0;
-                    break;
-                case "broker":
-                    aVal = a.broker;
-                    bVal = b.broker;
-                    break;
-                default:
-                    return 0;
-            }
-
-            if (sortDirection === "asc") {
-                return aVal > bVal ? 1 : -1;
-            } else {
-                return aVal < bVal ? 1 : -1;
-            }
-        });
-        return sorted;
-    }, [filteredPositions, sortField, sortDirection]);
 
     const fetchPositions = useCallback(async () => {
         try {
@@ -259,7 +156,8 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
     // Initial load
     useEffect(() => {
         fetchPositions();
-    }, []); // Run once on mount (using current context state)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Run once on mount
 
     // Re-apply client-side filters when they change (Instant)
     useEffect(() => {
@@ -287,26 +185,6 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
 
     const hasActiveFilters = filters.symbol || filters.startDate || filters.endDate ||
         filters.status !== "all" || filters.broker !== "all";
-
-    const formatCurrency = (value: number) => {
-        return Math.abs(value).toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        });
-    };
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-        });
-    };
-
-    const calculateReturn = (entry: number, exit: number | null) => {
-        if (entry === 0 || exit === null) return null;
-        return ((exit - entry) / entry) * 100;
-    };
 
     const openCount = allPositions.filter(p => p.status === "open").length;
     const closedCount = allPositions.filter(p => p.status === "closed").length;
@@ -376,7 +254,6 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                                 const returnPct = calculateReturn(position.entryPrice, position.exitPrice);
                                 const isOpen = position.status === "open";
                                 const isProfit = !isOpen && (position.pnl ?? 0) >= 0;
-                                const isLoss = !isOpen && (position.pnl ?? 0) < 0;
 
                                 return (
                                     <motion.tr

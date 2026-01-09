@@ -1,0 +1,68 @@
+// Shared trading types used across the application
+
+export interface ClosedPosition {
+  symbol: string;
+  pnl: number;
+  entryPrice: number;
+  exitPrice: number;
+  quantity: number;
+  closedAt: string;
+  openedAt: string;
+  broker: string;
+}
+
+export interface OpenPosition {
+  symbol: string;
+  quantity: number;
+  entryPrice: number;
+  openedAt: string;
+  broker: string;
+  currentValue: number;
+  tradeId: string;
+}
+
+export interface DisplayPosition {
+  symbol: string;
+  quantity: number;
+  entryPrice: number;
+  exitPrice: number | null;
+  pnl: number | null;
+  openedAt: string;
+  closedAt: string | null;
+  broker: string;
+  status: "open" | "closed";
+  tradeId?: string;
+}
+
+export interface Trade {
+  id: string;
+  symbol: string;
+  action: string;
+  quantity: number;
+  price: number;
+  timestamp: string;
+  type: string;
+  fees: number;
+  account: {
+    brokerName: string;
+  };
+  tags: { id: string; name: string; color: string }[];
+}
+
+export interface Metrics {
+  netPnL: number;
+  winRate: number;
+  totalTrades: number;
+  avgWin: number;
+  avgLoss: number;
+  profitFactor: number | null;
+  winningTrades: number;
+  losingTrades: number;
+  mtdPnL: number;
+  ytdPnL: number;
+  closedTrades: ClosedPosition[];
+  openPositions?: OpenPosition[];
+  cumulativePnL?: { date: string; pnl: number; cumulative: number; symbol: string }[];
+  monthlyData?: { month: string; pnl: number }[];
+  symbolData?: { symbol: string; pnl: number; trades: number; winRate: number }[];
+}
