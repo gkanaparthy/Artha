@@ -173,19 +173,26 @@ function calculateMetricsFromTrades(trades: {
         }
     }
 
-    // Apply filters to closed trades
+    // Apply filters to closed trades and open positions
     let filteredTrades = closedTrades;
+    let filteredOpenPositions = allOpenPositions;
+
     if (filters) {
         if (filters.startDate) {
             // For a Trading Journal, we often care about when the trade was Initiated (Entry)
             filteredTrades = filteredTrades.filter(t => t.openedAt >= filters.startDate!);
+            filteredOpenPositions = filteredOpenPositions.filter(p => p.openedAt >= filters.startDate!);
         }
         if (filters.endDate) {
             filteredTrades = filteredTrades.filter(t => t.openedAt <= filters.endDate!);
+            filteredOpenPositions = filteredOpenPositions.filter(p => p.openedAt <= filters.endDate!);
         }
         if (filters.symbol) {
-            const symbolLower = filters.symbol.toLowerCase();
-            filteredTrades = filteredTrades.filter(t => t.symbol.toLowerCase().includes(symbolLower));
+            const symbols = filters.symbol.split(',').map(s => s.trim().toLowerCase()).filter(s => s.length > 0);
+            if (symbols.length > 0) {
+                filteredTrades = filteredTrades.filter(t => symbols.includes(t.symbol.toLowerCase()));
+                filteredOpenPositions = filteredOpenPositions.filter(p => symbols.includes(p.symbol.toLowerCase()));
+            }
         }
     }
 
@@ -283,7 +290,7 @@ function calculateMetricsFromTrades(trades: {
             openedAt: t.openedAt.toISOString(),
             pnl: Math.round(t.pnl * 100) / 100,
         })),
-        openPositions: allOpenPositions.map(p => ({
+        openPositions: filteredOpenPositions.map(p => ({
             ...p,
             openedAt: p.openedAt.toISOString(),
             entryPrice: Math.round(p.entryPrice * 100) / 100,

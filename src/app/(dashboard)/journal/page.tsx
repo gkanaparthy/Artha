@@ -104,9 +104,10 @@ export default function JournalPage() {
 
     // Filter by symbol
     if (searchSymbol) {
-      result = result.filter((t) =>
-        t.symbol.toLowerCase().includes(searchSymbol.toLowerCase())
-      );
+      const symbols = searchSymbol.split(',').map((s) => s.trim().toLowerCase()).filter((s) => s.length > 0);
+      if (symbols.length > 0) {
+        result = result.filter((t) => symbols.includes(t.symbol.toLowerCase()));
+      }
     }
 
     // Filter by action
