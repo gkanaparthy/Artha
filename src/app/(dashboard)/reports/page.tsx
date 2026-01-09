@@ -2,12 +2,14 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, TrendingUp, TrendingDown, Target, BarChart3, Calendar, Activity, Zap, Trophy, Flame, Clock, PieChart as PieChartIcon, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, TrendingUp, TrendingDown, Target, BarChart3, Calendar, Activity, Zap, Trophy, Flame, Clock, PieChart as PieChartIcon, Sparkles, LayoutGrid } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
 import { cn } from "@/lib/utils";
 import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
+import { CalendarView } from "@/components/calendar-view";
 import {
   LineChart,
   Line,
@@ -156,10 +158,13 @@ function SummaryCard({
   );
 }
 
+type ViewType = "charts" | "calendar";
+
 export default function ReportsPage() {
   const { filters, setBrokers } = useFilters();
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewType, setViewType] = useState<ViewType>("charts");
   const brokersInitialized = useRef(false);
 
   const fetchMetrics = useCallback(async () => {
@@ -254,8 +259,10 @@ export default function ReportsPage() {
       pnl: Math.round(data.pnl * 100) / 100,
       trades: data.trades,
     }))
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(-30); // Last 30 days
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // Last 30 days for charts
+  const recentDailyData = dailyData.slice(-30);
 
   // Calculate win/loss streaks
   let currentStreak = 0;
@@ -356,6 +363,27 @@ export default function ReportsPage() {
             </h1>
             <p className="text-muted-foreground">In-depth analysis of your trading performance</p>
           </div>
+          {/* View Toggle */}
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 border">
+            <Button
+              variant={viewType === "charts" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewType("charts")}
+              className="gap-2"
+            >
+              <LayoutGrid className="h-4 w-4" />
+              Charts
+            </Button>
+            <Button
+              variant={viewType === "calendar" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewType("calendar")}
+              className="gap-2"
+            >
+              <Calendar className="h-4 w-4" />
+              Calendar
+            </Button>
+          </div>
         </motion.div>
 
         {/* Global Filter Bar */}
@@ -363,6 +391,20 @@ export default function ReportsPage() {
           <GlobalFilterBar onApply={fetchMetrics} />
         </AnimatedCard>
 
+        {/* Calendar View */}
+        {viewType === "calendar" && (
+          <AnimatedCard delay={0.1}>
+            <Card className="card-hover">
+              <CardContent className="pt-6">
+                <CalendarView data={dailyData} />
+              </CardContent>
+            </Card>
+          </AnimatedCard>
+        )}
+
+        {/* Charts View */}
+        {viewType === "charts" && (
+          <>
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <SummaryCard
@@ -934,6 +976,8 @@ export default function ReportsPage() {
             </CardContent>
           </Card>
         </AnimatedCard>
+          </>
+        )}
       </div>
     </PageTransition>
   );
