@@ -71,7 +71,7 @@ export class SnapTradeService {
             immediateRedirect: true,
         });
 
-        return result.data.redirectURI;
+        return (result.data as any).redirectURI;
     }
 
     /**
@@ -190,28 +190,28 @@ export class SnapTradeService {
             await prisma.trade.upsert({
                 where: { snapTradeTradeId: trade.id },
                 update: {
-                    universalSymbolId: trade.option_symbol ? trade.option_symbol.id : trade.symbol?.id,
-                    optionType: trade.option_symbol?.option_type,
-                    strikePrice: trade.option_symbol?.strike_price,
-                    expiryDate: trade.option_symbol?.expiration_date ? new Date(trade.option_symbol.expiration_date) : null,
+                    universalSymbolId: trade.optionSymbol ? trade.optionSymbol.id : trade.symbol?.id,
+                    optionType: trade.optionSymbol?.optionType,
+                    strikePrice: trade.optionSymbol?.strikePrice,
+                    expiryDate: trade.optionSymbol?.expirationDate ? new Date(trade.optionSymbol.expirationDate) : null,
                 },
                 create: {
                     accountId: account.id,
-                    symbol: trade.symbol?.symbol || trade.symbol?.raw_symbol || 'UNKNOWN',
-                    universalSymbolId: trade.option_symbol ? trade.option_symbol.id : trade.symbol?.id,
+                    symbol: trade.symbol?.symbol || trade.symbol?.rawSymbol || 'UNKNOWN',
+                    universalSymbolId: trade.optionSymbol ? trade.optionSymbol.id : trade.symbol?.id,
                     quantity: trade.units || 0, // Caution: sign matters? SnapTrade usually positive units + action
                     price: trade.price || 0,
                     action: action,
-                    timestamp: new Date(trade.trade_date || new Date()), // trade_date or settlement_date?
+                    timestamp: new Date(trade.tradeDate || trade.settlementDate || new Date()), // Use tradeDate or settlementDate
                     fees: trade.fee || 0, // SDK uses 'fee' (singular)
                     currency: trade.currency?.code || 'USD', // currency is an object with 'code' property
-                    type: trade.option_symbol ? 'OPTION' : 'STOCK', // Heuristic
+                    type: trade.optionSymbol ? 'OPTION' : 'STOCK', // Heuristic
                     snapTradeTradeId: trade.id,
 
                     // Detailed Option Data
-                    optionType: trade.option_symbol?.option_type,
-                    strikePrice: trade.option_symbol?.strike_price,
-                    expiryDate: trade.option_symbol?.expiration_date ? new Date(trade.option_symbol.expiration_date) : null,
+                    optionType: trade.optionSymbol?.optionType,
+                    strikePrice: trade.optionSymbol?.strikePrice,
+                    expiryDate: trade.optionSymbol?.expirationDate ? new Date(trade.optionSymbol.expirationDate) : null,
                 },
             });
 

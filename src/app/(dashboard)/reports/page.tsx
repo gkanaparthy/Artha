@@ -470,7 +470,7 @@ export default function ReportsPage() {
                         <CustomTooltip
                           active={active}
                           payload={payload?.map(p => ({ value: p.value as number, name: p.name as string, color: metrics.netPnL >= 0 ? "oklch(0.7 0.2 145)" : "oklch(0.65 0.2 25)" }))}
-                          label={label}
+                          label={String(label ?? "")}
                           formatter={(value) => [formatCurrency(value), "Cumulative P&L"]}
                           labelFormatter={(l) => new Date(l).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                         />
@@ -534,7 +534,7 @@ export default function ReportsPage() {
                               name: "P&L",
                               color: (p.value as number) >= 0 ? "oklch(0.7 0.2 145)" : "oklch(0.65 0.2 25)"
                             }))}
-                            label={label}
+                            label={String(label ?? "")}
                             formatter={(value) => [formatCurrency(value), "P&L"]}
                             labelFormatter={formatMonth}
                           />
@@ -583,7 +583,7 @@ export default function ReportsPage() {
                         outerRadius={100}
                         paddingAngle={5}
                         dataKey="value"
-                        label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                        label={({ name, value, percent }) => `${name}: ${value} (${((percent ?? 0) * 100).toFixed(0)}%)`}
                         labelLine={{ stroke: "currentColor", strokeWidth: 1 }}
                       >
                         {winLossData.map((entry, index) => (
@@ -655,7 +655,7 @@ export default function ReportsPage() {
                             name: "P&L",
                             color: (p.value as number) >= 0 ? "oklch(0.7 0.2 145)" : "oklch(0.65 0.2 25)"
                           }))}
-                          label={label}
+                          label={String(label ?? "")}
                           formatter={(value) => [formatCurrency(value), "P&L"]}
                         />
                       )}
@@ -763,7 +763,7 @@ export default function ReportsPage() {
                             name: "Drawdown",
                             color: "oklch(0.65 0.2 25)"
                           }))}
-                          label={label}
+                          label={String(label ?? "")}
                           formatter={(value) => [`${value.toFixed(2)}%`, "Drawdown"]}
                           labelFormatter={(l) => new Date(l).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                         />
@@ -821,7 +821,7 @@ export default function ReportsPage() {
                               name: "P&L",
                               color: (p.value as number) >= 0 ? "oklch(0.7 0.2 145)" : "oklch(0.65 0.2 25)"
                             }))}
-                            label={label}
+                            label={String(label ?? "")}
                             formatter={(value) => [formatCurrency(value), "P&L"]}
                           />
                         )}
