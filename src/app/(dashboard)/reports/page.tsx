@@ -6,6 +6,8 @@ import { Loader2, TrendingUp, TrendingDown, Target, BarChart3, Calendar, Activit
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
 import { cn } from "@/lib/utils";
+import { useFilters } from "@/contexts/filter-context";
+import { GlobalFilterBar } from "@/components/global-filter-bar";
 import {
   LineChart,
   Line,
@@ -59,6 +61,16 @@ interface ClosedTrade {
   broker: string;
 }
 
+interface OpenPosition {
+  symbol: string;
+  quantity: number;
+  entryPrice: number;
+  openedAt: string;
+  broker: string;
+  currentValue: number;
+  tradeId: string;
+}
+
 interface Metrics {
   netPnL: number;
   winRate: number;
@@ -74,6 +86,7 @@ interface Metrics {
   monthlyData: MonthlyData[];
   symbolData: SymbolData[];
   closedTrades?: ClosedTrade[];
+  openPositions?: OpenPosition[];
 }
 
 // Custom tooltip component with proper dark/light theme support
@@ -144,14 +157,37 @@ function SummaryCard({
 }
 
 export default function ReportsPage() {
+  const { filters, setBrokers } = useFilters();
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchMetrics = async () => {
     try {
-      const res = await fetch(`/api/metrics`);
-      const data = await res.json();
+      const params = new URLSearchParams();
+      if (filters.startDate) params.append("startDate", filters.startDate);
+      if (filters.endDate) params.append("endDate", filters.endDate);
+      if (filters.symbol) params.append("symbol", filters.symbol);
+      if (filters.broker && filters.broker !== 'all') params.append("broker", filters.broker);
+
+      const res = await fetch(`/api/metrics?${params.toString()}`);
+      const data: Metrics = await res.json();
       setMetrics(data);
+
+      // Populate brokers from data
+      const allBrokers = new Set<string>();
+      data.closedTrades?.forEach(t => allBrokers.add(t.broker));
+      data.openPositions?.forEach(p => allBrokers.add(p.broker));
+      // Note: We append to existing brokers or replace? 
+      // Context setBrokers replaces. 
+      // If we are filtered by broker X, the response only has broker X?
+      // Yes. So if we filter, the dropdown might shrink to just X?
+      // That's bad UX. "All Brokers" -> Select "IBKR" -> Apply -> Dropdown only has "IBKR". Can't switch back.
+      // Fix: Only update brokers if filter.broker is 'all' OR if brokers list is empty.
+
+      if (filters.broker === 'all') {
+        setBrokers(Array.from(allBrokers).filter(Boolean));
+      }
+
     } catch (e) {
       console.error(e);
     } finally {
@@ -322,6 +358,11 @@ export default function ReportsPage() {
             <p className="text-muted-foreground">In-depth analysis of your trading performance</p>
           </div>
         </motion.div>
+
+        {/* Global Filter Bar */}
+        <AnimatedCard delay={0.05}>
+          <GlobalFilterBar onApply={fetchMetrics} />
+        </AnimatedCard>
 
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

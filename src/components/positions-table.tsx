@@ -9,19 +9,13 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Loader2, Search, X, Calendar, TrendingUp, TrendingDown, Clock, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, Clock, TrendingUp, TrendingDown, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { useFilters } from "@/contexts/filter-context";
+import { GlobalFilterBar } from "@/components/global-filter-bar";
 
 interface ClosedPosition {
     symbol: string;
@@ -73,31 +67,57 @@ interface Metrics {
     openPositions?: OpenPosition[];
 }
 
-interface Filters {
-    symbol: string;
-    startDate: string;
-    endDate: string;
-    result: "all" | "winners" | "losers" | "open";
-    broker: string;
-}
-
 interface PositionsTableProps {
     onMetricsUpdate?: (metrics: Metrics) => void;
 }
 
 export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
+    const { filters, setBrokers } = useFilters();
     const [allPositions, setAllPositions] = useState<DisplayPosition[]>([]);
     const [filteredPositions, setFilteredPositions] = useState<DisplayPosition[]>([]);
     const [loading, setLoading] = useState(true);
-    const [brokers, setBrokers] = useState<string[]>([]);
-    const [filters, setFilters] = useState<Filters>({
-        symbol: "",
-        startDate: "",
-        endDate: "",
-        result: "all",
-        broker: "all",
-    });
     const [rawMetrics, setRawMetrics] = useState<Metrics | null>(null);
+
+    const applyFilters = useCallback((positions: DisplayPosition[], metrics: Metrics | null) => {
+        let filtered = positions;
+
+        // Status Filter
+        if (filters.status === "winners") {
+            filtered = filtered.filter(p => p.status === "closed" && (p.pnl ?? 0) > 0);
+        } else if (filters.status === "losers") {
+            filtered = filtered.filter(p => p.status === "closed" && (p.pnl ?? 0) < 0);
+        } else if (filters.status === "open") {
+            filtered = filtered.filter(p => p.status === "open");
+        }
+
+        // Broker Filter
+        if (filters.broker && filters.broker !== "all") {
+            filtered = filtered.filter(p => p.broker === filters.broker);
+        }
+
+        setFilteredPositions(filtered);
+
+        // Update parent metrics based on filtered closed positions only
+        if (onMetricsUpdate && metrics) {
+            const closedFiltered = filtered.filter(p => p.status === "closed");
+            const winningTrades = closedFiltered.filter(t => (t.pnl ?? 0) > 0);
+            const losingTrades = closedFiltered.filter(t => (t.pnl ?? 0) < 0);
+            const totalWins = winningTrades.reduce((sum, t) => sum + (t.pnl ?? 0), 0);
+            const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + (t.pnl ?? 0), 0));
+
+            onMetricsUpdate({
+                ...metrics,
+                netPnL: Math.round(closedFiltered.reduce((sum, t) => sum + (t.pnl ?? 0), 0) * 100) / 100,
+                totalTrades: closedFiltered.length,
+                winningTrades: winningTrades.length,
+                losingTrades: losingTrades.length,
+                winRate: closedFiltered.length > 0 ? Math.round((winningTrades.length / closedFiltered.length) * 1000) / 10 : 0,
+                avgWin: winningTrades.length > 0 ? Math.round((totalWins / winningTrades.length) * 100) / 100 : 0,
+                avgLoss: losingTrades.length > 0 ? Math.round((totalLosses / losingTrades.length) * 100) / 100 : 0,
+                profitFactor: totalLosses > 0 ? Math.round((totalWins / totalLosses) * 100) / 100 : totalWins > 0 ? null : 0,
+            });
+        }
+    }, [filters.status, filters.broker, onMetricsUpdate]);
 
     const fetchPositions = useCallback(async () => {
         try {
@@ -142,7 +162,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
             const combined = [...openDisplayPositions, ...closedDisplayPositions];
             setAllPositions(combined);
 
-            // Get unique brokers
+            // Get unique brokers and update global context
             const uniqueBrokers = [...new Set(combined.map(p => p.broker))].filter(Boolean);
             setBrokers(uniqueBrokers);
 
@@ -153,81 +173,27 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
         } finally {
             setLoading(false);
         }
-    }, [filters.symbol, filters.startDate, filters.endDate]);
-
-    const applyFilters = useCallback((positions: DisplayPosition[], metrics: Metrics | null) => {
-        let filtered = positions;
-
-        if (filters.result === "winners") {
-            filtered = filtered.filter(p => p.status === "closed" && (p.pnl ?? 0) > 0);
-        } else if (filters.result === "losers") {
-            filtered = filtered.filter(p => p.status === "closed" && (p.pnl ?? 0) < 0);
-        } else if (filters.result === "open") {
-            filtered = filtered.filter(p => p.status === "open");
-        }
-
-        if (filters.broker && filters.broker !== "all") {
-            filtered = filtered.filter(p => p.broker === filters.broker);
-        }
-
-        setFilteredPositions(filtered);
-
-        // Update parent metrics based on filtered closed positions only
-        if (onMetricsUpdate && metrics) {
-            const closedFiltered = filtered.filter(p => p.status === "closed");
-            const winningTrades = closedFiltered.filter(t => (t.pnl ?? 0) > 0);
-            const losingTrades = closedFiltered.filter(t => (t.pnl ?? 0) < 0);
-            const totalWins = winningTrades.reduce((sum, t) => sum + (t.pnl ?? 0), 0);
-            const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + (t.pnl ?? 0), 0));
-
-            onMetricsUpdate({
-                ...metrics,
-                netPnL: Math.round(closedFiltered.reduce((sum, t) => sum + (t.pnl ?? 0), 0) * 100) / 100,
-                totalTrades: closedFiltered.length,
-                winningTrades: winningTrades.length,
-                losingTrades: losingTrades.length,
-                winRate: closedFiltered.length > 0 ? Math.round((winningTrades.length / closedFiltered.length) * 1000) / 10 : 0,
-                avgWin: winningTrades.length > 0 ? Math.round((totalWins / winningTrades.length) * 100) / 100 : 0,
-                avgLoss: losingTrades.length > 0 ? Math.round((totalLosses / losingTrades.length) * 100) / 100 : 0,
-                profitFactor: totalLosses > 0 ? Math.round((totalWins / totalLosses) * 100) / 100 : totalWins > 0 ? null : 0,
-            });
-        }
-    }, [filters.result, filters.broker, onMetricsUpdate]);
+    }, [filters.symbol, filters.startDate, filters.endDate, setBrokers, applyFilters]); // Dependencies for fetch function creation
 
     // Initial load
     useEffect(() => {
         fetchPositions();
-    }, []);
+    }, []); // Run once on mount (using current context state)
 
-    // Re-apply client-side filters when they change
+    // Re-apply client-side filters when they change (Instant)
     useEffect(() => {
         if (allPositions.length > 0 || rawMetrics) {
             applyFilters(allPositions, rawMetrics);
         }
-    }, [filters.result, filters.broker, allPositions, rawMetrics, applyFilters]);
+    }, [filters.status, filters.broker, allPositions, rawMetrics, applyFilters]);
 
-    const handleApplyFilters = () => {
-        fetchPositions();
-    };
-
-    const handleClearFilters = () => {
-        setFilters({
-            symbol: "",
-            startDate: "",
-            endDate: "",
-            result: "all",
-            broker: "all",
-        });
-        setTimeout(() => fetchPositions(), 0);
-    };
-
+    // Handle Delete
     const handleDelete = async (tradeId: string) => {
         if (!confirm("Are you sure you want to delete this position? This will delete the underlying trade.")) return;
 
         try {
             const res = await fetch(`/api/trades?id=${tradeId}`, { method: "DELETE" });
             if (res.ok) {
-                // Refresh positions
                 fetchPositions();
             } else {
                 alert("Failed to delete position");
@@ -239,7 +205,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
     };
 
     const hasActiveFilters = filters.symbol || filters.startDate || filters.endDate ||
-        filters.result !== "all" || filters.broker !== "all";
+        filters.status !== "all" || filters.broker !== "all";
 
     const formatCurrency = (value: number) => {
         return Math.abs(value).toLocaleString("en-US", {
@@ -264,104 +230,10 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
     const openCount = allPositions.filter(p => p.status === "open").length;
     const closedCount = allPositions.filter(p => p.status === "closed").length;
 
-    if (loading && allPositions.length === 0) {
-        return (
-            <div className="flex justify-center p-8">
-                <Loader2 className="animate-spin text-primary" />
-            </div>
-        );
-    }
-
     return (
         <div className="space-y-4">
-            {/* Filters */}
-            <div className="flex flex-wrap gap-3 p-4 bg-muted/30 rounded-xl border border-border/50">
-                <div className="flex items-center gap-2 flex-1 min-w-[150px]">
-                    <Search className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search symbol..."
-                        value={filters.symbol}
-                        onChange={(e) => setFilters({ ...filters, symbol: e.target.value })}
-                        className="h-9"
-                    />
-                </div>
-                <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                        type="date"
-                        value={filters.startDate}
-                        onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-                        className="h-9 w-[130px]"
-                    />
-                    <span className="text-muted-foreground">to</span>
-                    <Input
-                        type="date"
-                        value={filters.endDate}
-                        onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-                        className="h-9 w-[130px]"
-                    />
-                </div>
-                <Select
-                    value={filters.result}
-                    onValueChange={(value: "all" | "winners" | "losers" | "open") =>
-                        setFilters({ ...filters, result: value })
-                    }
-                >
-                    <SelectTrigger className="w-[130px] h-9">
-                        <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All ({openCount + closedCount})</SelectItem>
-                        <SelectItem value="open">
-                            <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3 text-blue-500" />
-                                Open ({openCount})
-                            </span>
-                        </SelectItem>
-                        <SelectItem value="winners">
-                            <span className="flex items-center gap-1">
-                                <TrendingUp className="h-3 w-3 text-green-500" />
-                                Winners
-                            </span>
-                        </SelectItem>
-                        <SelectItem value="losers">
-                            <span className="flex items-center gap-1">
-                                <TrendingDown className="h-3 w-3 text-red-500" />
-                                Losers
-                            </span>
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-                {brokers.length > 0 && (
-                    <Select
-                        value={filters.broker}
-                        onValueChange={(value) => setFilters({ ...filters, broker: value })}
-                    >
-                        <SelectTrigger className="w-[140px] h-9">
-                            <SelectValue placeholder="Broker" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Brokers</SelectItem>
-                            {brokers.map((broker) => (
-                                <SelectItem key={broker} value={broker}>
-                                    {broker}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                )}
-                <div className="flex items-center gap-2">
-                    <Button size="sm" onClick={handleApplyFilters}>
-                        Apply
-                    </Button>
-                    {hasActiveFilters && (
-                        <Button size="sm" variant="ghost" onClick={handleClearFilters}>
-                            <X className="h-4 w-4 mr-1" />
-                            Clear
-                        </Button>
-                    )}
-                </div>
-            </div>
+            {/* Global Filter Bar */}
+            <GlobalFilterBar onApply={fetchPositions} />
 
             {/* Table */}
             <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
@@ -382,9 +254,17 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredPositions.length === 0 ? (
+                        {loading && allPositions.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={10} className="text-center h-24 text-muted-foreground">
+                                <TableCell colSpan={11} className="text-center h-24">
+                                    <div className="flex justify-center">
+                                        <Loader2 className="animate-spin text-primary h-6 w-6" />
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ) : filteredPositions.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={11} className="text-center h-24 text-muted-foreground">
                                     {hasActiveFilters
                                         ? "No positions match your filters."
                                         : "No positions found. Connect your broker to sync data."}

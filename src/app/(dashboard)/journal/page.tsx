@@ -11,26 +11,23 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Loader2,
-  Search,
-  Filter,
   ArrowUpDown,
-  Calendar,
-  X,
-  BookOpen,
   Sparkles,
   TrendingUp,
   TrendingDown,
   Trash2,
+  BookOpen,
 } from "lucide-react";
 import { format } from "date-fns";
 import { TradeDetailSheet } from "@/components/trade-detail-sheet";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
 import { cn } from "@/lib/utils";
+import { useFilters } from "@/contexts/filter-context";
+import { GlobalFilterBar } from "@/components/global-filter-bar";
 
 interface Trade {
   id: string;
@@ -51,16 +48,11 @@ type SortField = "timestamp" | "symbol" | "action" | "quantity" | "price" | "val
 type SortDirection = "asc" | "desc";
 
 export default function JournalPage() {
+  const { filters, setBrokers } = useFilters();
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-
-  // Filters
-  const [searchSymbol, setSearchSymbol] = useState("");
-  const [actionFilter, setActionFilter] = useState<"ALL" | "BUY" | "SELL">("ALL");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
 
   // Sorting
   const [sortField, setSortField] = useState<SortField>("timestamp");
@@ -68,9 +60,16 @@ export default function JournalPage() {
 
   const fetchTrades = async () => {
     try {
+      setLoading(true);
       const res = await fetch(`/api/trades`);
       const data = await res.json();
-      setTrades(data.trades || []);
+      const loadedTrades: Trade[] = data.trades || [];
+      setTrades(loadedTrades);
+
+      // Extract brokers and update context
+      const uniqueBrokers = [...new Set(loadedTrades.map(t => t.account?.brokerName))].filter(Boolean) as string[];
+      setBrokers(uniqueBrokers);
+
     } catch (e) {
       console.error(e);
     } finally {
@@ -103,28 +102,42 @@ export default function JournalPage() {
     let result = [...trades];
 
     // Filter by symbol
-    if (searchSymbol) {
-      const symbols = searchSymbol.split(',').map((s) => s.trim().toLowerCase()).filter((s) => s.length > 0);
+    if (filters.symbol) {
+      const symbols = filters.symbol.split(',').map((s) => s.trim().toLowerCase()).filter((s) => s.length > 0);
       if (symbols.length > 0) {
-        result = result.filter((t) => symbols.includes(t.symbol.toLowerCase()));
+        result = result.filter((t) => symbols.some(s => t.symbol.toLowerCase().includes(s)));
       }
     }
 
     // Filter by action
-    if (actionFilter !== "ALL") {
-      result = result.filter((t) => t.action === actionFilter);
+    if (filters.action && filters.action !== "ALL") {
+      // SnapTrade often uses "BUY", "SELL", "BUY_TO_OPEN" etc.
+      // We map specific actions to rough Categories "BUY" or "SELL".
+      result = result.filter((t) => {
+        const a = t.action.toUpperCase();
+        if (filters.action === "BUY") return a.includes("BUY") || a === "ASSIGNMENT";
+        if (filters.action === "SELL") return a.includes("SELL") || a === "EXERCISES";
+        return true;
+      });
+    }
+
+    // Filter by broker
+    if (filters.broker && filters.broker !== "all") {
+      result = result.filter(t => t.account?.brokerName === filters.broker);
     }
 
     // Filter by date range
-    if (dateFrom) {
-      const fromDate = new Date(dateFrom);
+    if (filters.startDate) {
+      const fromDate = new Date(filters.startDate);
       result = result.filter((t) => new Date(t.timestamp) >= fromDate);
     }
-    if (dateTo) {
-      const toDate = new Date(dateTo);
+    if (filters.endDate) {
+      const toDate = new Date(filters.endDate);
       toDate.setHours(23, 59, 59, 999);
       result = result.filter((t) => new Date(t.timestamp) <= toDate);
     }
+
+    // Status filter is ignored for Raw Trades
 
     // Sort
     result.sort((a, b) => {
@@ -160,73 +173,31 @@ export default function JournalPage() {
           return 0;
       }
 
-      if (typeof aVal === "string" && typeof bVal === "string") {
-        return sortDirection === "asc"
-          ? aVal.localeCompare(bVal)
-          : bVal.localeCompare(aVal);
+      if (sortDirection === "asc") {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return aVal < bVal ? 1 : -1;
       }
-
-      return sortDirection === "asc"
-        ? (aVal as number) - (bVal as number)
-        : (bVal as number) - (aVal as number);
     });
 
     return result;
-  }, [trades, searchSymbol, actionFilter, dateFrom, dateTo, sortField, sortDirection]);
+  }, [trades, filters, sortField, sortDirection]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
       setSortDirection("desc");
     }
   };
 
-  const clearFilters = () => {
-    setSearchSymbol("");
-    setActionFilter("ALL");
-    setDateFrom("");
-    setDateTo("");
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="h-4 w-4 text-muted-foreground/30" />;
+    return sortDirection === "asc" ?
+      <TrendingUp className="h-4 w-4 text-primary" /> :
+      <TrendingDown className="h-4 w-4 text-primary" />;
   };
-
-  const hasActiveFilters = searchSymbol || actionFilter !== "ALL" || dateFrom || dateTo;
-
-  const SortableHeader = ({
-    field,
-    children,
-  }: {
-    field: SortField;
-    children: React.ReactNode;
-  }) => (
-    <TableHead
-      className="cursor-pointer hover:bg-muted/50 transition-colors"
-      onClick={() => handleSort(field)}
-    >
-      <div className="flex items-center gap-1">
-        {children}
-        <ArrowUpDown
-          className={cn(
-            "h-3 w-3 transition-opacity",
-            sortField === field ? "opacity-100" : "opacity-30"
-          )}
-        />
-      </div>
-    </TableHead>
-  );
-
-  // Calculate quick stats
-  const buyCount = filteredAndSortedTrades.filter(t => t.action === "BUY").length;
-  const sellCount = filteredAndSortedTrades.filter(t => t.action === "SELL").length;
-  const totalValue = filteredAndSortedTrades.reduce((sum, t) => sum + (t.price * Math.abs(t.quantity)), 0);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="animate-spin h-8 w-8 text-primary" />
-      </div>
-    );
-  }
 
   return (
     <PageTransition>
@@ -241,269 +212,134 @@ export default function JournalPage() {
           <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
               <span className="text-gradient">Trade Journal</span>
-              <Sparkles className="h-6 w-6 text-amber-500 float" />
+              <BookOpen className="h-6 w-6 text-blue-500 float" />
             </h1>
             <p className="text-muted-foreground">
-              Complete history of all your trading activity
+              Review and manage your trading history
             </p>
           </div>
-          <div className="text-sm text-muted-foreground bg-muted/50 px-4 py-2 rounded-lg">
-            <span className="font-semibold text-foreground">{filteredAndSortedTrades.length}</span> of{" "}
-            <span className="font-semibold text-foreground">{trades.length}</span> trades
-          </div>
+          <Button onClick={() => fetchTrades && fetchTrades()} variant="outline" size="sm" className="hidden md:flex">
+            Refresh
+          </Button>
         </motion.div>
 
-        {/* Quick Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <AnimatedCard delay={0.1}>
-            <Card className="card-hover overflow-hidden relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-transparent" />
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Buy Orders</p>
-                    <p className="text-2xl font-bold text-green-500">{buyCount}</p>
-                  </div>
-                  <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <TrendingUp className="h-5 w-5 text-green-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </AnimatedCard>
+        {/* Global Filter Bar */}
+        <AnimatedCard delay={0.1}>
+          <GlobalFilterBar showActionFilter={true} onApply={fetchTrades} />
+        </AnimatedCard>
 
-          <AnimatedCard delay={0.15}>
-            <Card className="card-hover overflow-hidden relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-transparent" />
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Sell Orders</p>
-                    <p className="text-2xl font-bold text-red-500">{sellCount}</p>
-                  </div>
-                  <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center">
-                    <TrendingDown className="h-5 w-5 text-red-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </AnimatedCard>
-
-          <AnimatedCard delay={0.2}>
-            <Card className="card-hover overflow-hidden relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Volume</p>
-                    <p className="text-2xl font-bold text-foreground">
-                      ${totalValue.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                    </p>
-                  </div>
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </AnimatedCard>
-        </div>
-
-        {/* Filters */}
-        <AnimatedCard delay={0.25}>
-          <Card className="card-hover overflow-hidden">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-medium flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Filter className="h-4 w-4 text-primary" />
-                  </div>
-                  Filters
-                </CardTitle>
-                {hasActiveFilters && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearFilters}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Clear All
-                  </Button>
-                )}
-              </div>
+        {/* Table Card */}
+        <AnimatedCard delay={0.2}>
+          <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-medium flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-amber-500" />
+                Recent Activity
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-4">
-                {/* Symbol Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search symbol..."
-                    value={searchSymbol}
-                    onChange={(e) => setSearchSymbol(e.target.value)}
-                    className="pl-9 bg-background"
-                  />
-                </div>
-
-                {/* Action Filter */}
-                <div>
-                  <select
-                    value={actionFilter}
-                    onChange={(e) => setActionFilter(e.target.value as "ALL" | "BUY" | "SELL")}
-                    className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring transition-all"
-                  >
-                    <option value="ALL">All Actions</option>
-                    <option value="BUY">Buy Only</option>
-                    <option value="SELL">Sell Only</option>
-                  </select>
-                </div>
-
-                {/* Date From */}
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="pl-9 bg-background"
-                    placeholder="From date"
-                  />
-                </div>
-
-                {/* Date To */}
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="pl-9 bg-background"
-                    placeholder="To date"
-                  />
-                </div>
+              <div className="rounded-md border bg-background">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="w-[180px] cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("timestamp")}>
+                        <div className="flex items-center gap-2">Date & Time {getSortIcon("timestamp")}</div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("symbol")}>
+                        <div className="flex items-center gap-2">Symbol {getSortIcon("symbol")}</div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("action")}>
+                        <div className="flex items-center gap-2">Action {getSortIcon("action")}</div>
+                      </TableHead>
+                      <TableHead className="text-right cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("quantity")}>
+                        <div className="flex items-center justify-end gap-2">Quantity {getSortIcon("quantity")}</div>
+                      </TableHead>
+                      <TableHead className="text-right cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("price")}>
+                        <div className="flex items-center justify-end gap-2">Price {getSortIcon("price")}</div>
+                      </TableHead>
+                      <TableHead className="text-right cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("value")}>
+                        <div className="flex items-center justify-end gap-2">Value {getSortIcon("value")}</div>
+                      </TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center">
+                          <div className="flex justify-center items-center">
+                            <Loader2 className="animate-spin h-6 w-6 text-primary" />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredAndSortedTrades.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                          No trades found matching your criteria.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredAndSortedTrades.map((trade, i) => (
+                        <motion.tr
+                          key={trade.id}
+                          className="table-row-hover cursor-pointer"
+                          onClick={() => {
+                            setSelectedTrade(trade);
+                            setSheetOpen(true);
+                          }}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2, delay: i * 0.05 }}
+                        >
+                          <TableCell className="font-medium text-muted-foreground whitespace-nowrap">
+                            {format(new Date(trade.timestamp), "MMM d, yyyy HH:mm")}
+                          </TableCell>
+                          <TableCell className="font-semibold">
+                            {trade.symbol}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={
+                              trade.action.includes("BUY") || trade.action === "ASSIGNMENT" ? "outline" : "secondary"
+                            } className={cn(
+                              "font-mono uppercase text-xs",
+                              (trade.action.includes("BUY") || trade.action === "ASSIGNMENT")
+                                ? "border-green-500 text-green-500 bg-green-500/10"
+                                : "text-red-500 bg-red-500/10"
+                            )}>
+                              {trade.action}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-mono">
+                            {trade.quantity}
+                          </TableCell>
+                          <TableCell className="text-right font-mono">
+                            ${trade.price.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-muted-foreground">
+                            ${(trade.quantity * trade.price).toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              onClick={(e) => handleDelete(trade.id, e)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </motion.tr>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>
         </AnimatedCard>
 
-        {/* Trade Table */}
-        <AnimatedCard delay={0.3}>
-          <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30 hover:bg-muted/30">
-                  <SortableHeader field="timestamp">Date</SortableHeader>
-                  <SortableHeader field="symbol">Symbol</SortableHeader>
-                  <SortableHeader field="action">Action</SortableHeader>
-                  <SortableHeader field="quantity">Qty</SortableHeader>
-                  <SortableHeader field="price">Price</SortableHeader>
-                  <SortableHeader field="value">Value</SortableHeader>
-                  <TableHead>Fees</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Broker</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAndSortedTrades.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={10} className="text-center h-32">
-                      <div className="flex flex-col items-center justify-center text-muted-foreground">
-                        <BookOpen className="h-10 w-10 mb-3 opacity-30" />
-                        <p className="font-medium">
-                          {trades.length === 0
-                            ? "No trades found"
-                            : "No trades match your filters"}
-                        </p>
-                        <p className="text-sm">
-                          {trades.length === 0
-                            ? "Connect your broker to sync data."
-                            : "Try adjusting your filter criteria."}
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredAndSortedTrades.map((trade, index) => (
-                    <motion.tr
-                      key={trade.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2, delay: index * 0.02 }}
-                      className="cursor-pointer table-row-hover transition-colors border-b"
-                      onClick={() => {
-                        setSelectedTrade(trade);
-                        setSheetOpen(true);
-                      }}
-                    >
-                      <TableCell className="font-mono text-sm">
-                        <div className="text-foreground">
-                          {format(new Date(trade.timestamp), "MMM dd, yyyy")}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {format(new Date(trade.timestamp), "HH:mm")}
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-semibold text-foreground">
-                        {trade.symbol}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "font-medium",
-                            trade.action === "BUY"
-                              ? "bg-green-500/10 text-green-500 border-green-500/30 hover:bg-green-500/20"
-                              : "bg-red-500/10 text-red-500 border-red-500/30 hover:bg-red-500/20"
-                          )}
-                        >
-                          {trade.action}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-mono text-foreground">
-                        {Math.abs(trade.quantity)}
-                      </TableCell>
-                      <TableCell className="font-mono text-foreground">
-                        ${trade.price.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="font-mono font-medium text-foreground">
-                        ${(trade.price * Math.abs(trade.quantity)).toLocaleString("en-US", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground font-mono text-sm">
-                        ${trade.fees?.toFixed(2) || "0.00"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs text-muted-foreground">
-                          {trade.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {trade.account?.brokerName || "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                          onClick={(e) => handleDelete(trade.id, e)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </motion.tr>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </AnimatedCard>
-
         <TradeDetailSheet
-          trade={selectedTrade}
+          trade={selectedTrade as any}
           open={sheetOpen}
           onOpenChange={setSheetOpen}
         />
