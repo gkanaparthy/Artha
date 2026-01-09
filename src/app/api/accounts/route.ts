@@ -29,3 +29,45 @@ export async function GET() {
         return NextResponse.json({ error: message }, { status: 500 });
     }
 }
+
+export async function DELETE(req: Request) {
+    try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const { searchParams } = new URL(req.url);
+        const accountId = searchParams.get('id');
+
+        if (!accountId) {
+            return NextResponse.json({ error: 'Account ID required' }, { status: 400 });
+        }
+
+        // Verify account belongs to user
+        const account = await prisma.brokerAccount.findUnique({
+            where: { id: accountId },
+        });
+
+        if (!account || account.userId !== session.user.id) {
+            return NextResponse.json({ error: 'Account not found or unauthorized' }, { status: 404 });
+        }
+
+        // Transaction to delete trades then account
+        await prisma.$transaction([
+            prisma.trade.deleteMany({
+                where: { accountId: accountId }
+            }),
+            prisma.brokerAccount.delete({
+                where: { id: accountId }
+            })
+        ]);
+
+        return NextResponse.json({ success: true });
+
+    } catch (error: unknown) {
+        console.error('Delete account error:', error);
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return NextResponse.json({ error: message }, { status: 500 });
+    }
+}

@@ -6,6 +6,7 @@ interface Position {
     quantity: number;
     price: number;
     timestamp: Date;
+    tradeId: string;
 }
 
 interface ClosedTrade {
@@ -26,6 +27,7 @@ interface OpenPosition {
     openedAt: Date;
     broker: string;
     currentValue: number;
+    tradeId: string;
 }
 
 interface FilterOptions {
@@ -35,6 +37,7 @@ interface FilterOptions {
 }
 
 function calculateMetricsFromTrades(trades: {
+    id: string;
     symbol: string;
     action: string;
     quantity: number;
@@ -57,70 +60,114 @@ function calculateMetricsFromTrades(trades: {
 
     // Process each symbol using FIFO matching
     for (const [symbol, symbolTrades] of tradesBySymbol) {
-        // Sort by timestamp
-        symbolTrades.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        // Sort by timestamp, then by action (BUY before SELL) to ensure intraday handles open -> close correctly
+        symbolTrades.sort((a, b) => {
+            const timeDiff = a.timestamp.getTime() - b.timestamp.getTime();
+            if (timeDiff !== 0) return timeDiff;
+            // If same time, process BUY before SELL
+            if (a.action === 'BUY' && b.action !== 'BUY') return -1;
+            if (a.action !== 'BUY' && b.action === 'BUY') return 1;
+            return 0;
+        });
 
+        // Open Positions can now be Positive (Long) or Negative (Short)
         const openPositions: (Position & { broker: string })[] = [];
 
         for (const trade of symbolTrades) {
-            if (trade.action === 'BUY') {
-                // Add to open positions
-                openPositions.push({
-                    quantity: trade.quantity,
-                    price: trade.price,
-                    timestamp: trade.timestamp,
-                    broker: trade.account?.brokerName || 'Unknown'
+            // Normalize quantity: BUY is positive, SELL is negative
+            // SnapTrade usually gives positive quantity + action, but let's be safe
+            let quantity = Math.abs(trade.quantity);
+            if (trade.action === 'SELL') quantity = -quantity;
+
+            // Skip non-trade actions (like SPLIT for now)
+            if (trade.action !== 'BUY' && trade.action !== 'SELL') continue;
+
+            const tradePrice = trade.price;
+            let remainingQty = quantity; // This can be positive or negative
+
+            // Match against opposite positions
+            // If buying (positive), look for shorts (negative)
+            // If selling (negative), look for longs (positive)
+            while (
+                openPositions.length > 0 &&
+                Math.abs(remainingQty) > 0.00000001 &&
+                (Math.sign(remainingQty) !== Math.sign(openPositions[0].quantity))
+            ) {
+                const oldestPosition = openPositions[0];
+
+                // We match the smaller magnitude
+                const matchQty = Math.min(Math.abs(remainingQty), Math.abs(oldestPosition.quantity));
+
+                // Prorate fees
+                const totalTradeFee = Math.abs(trade.fees);
+                const startTotalQty = Math.abs(quantity);
+                const feePerShare = startTotalQty > 0 ? totalTradeFee / startTotalQty : 0;
+                const matchedFee = feePerShare * matchQty;
+
+                let pnl = 0;
+
+                if (oldestPosition.quantity > 0) {
+                    // Closing Long (Selling)
+                    // PnL = (SellPrice - BuyPrice) * Qty - Fees
+                    pnl = (tradePrice - oldestPosition.price) * matchQty - matchedFee;
+                } else {
+                    // Closing Short (Buying)
+                    // Short Entry Price is oldestPosition.price.
+                    // Cover Price is tradePrice.
+                    // PnL = (EntryPrice - CoverPrice) * Qty - Fees
+                    pnl = (oldestPosition.price - tradePrice) * matchQty - matchedFee;
+                }
+
+                closedTrades.push({
+                    symbol,
+                    pnl,
+                    entryPrice: oldestPosition.price,
+                    exitPrice: tradePrice,
+                    quantity: matchQty,
+                    closedAt: trade.timestamp,
+                    openedAt: oldestPosition.timestamp,
+                    broker: oldestPosition.broker // Attribution to opening broker
                 });
-            } else if (trade.action === 'SELL') {
-                // Match against open positions (FIFO)
-                // Note: SELL quantities may be negative from SnapTrade, so use absolute value
-                let remainingToSell = Math.abs(trade.quantity);
-                const sellPrice = trade.price;
 
-                while (remainingToSell > 0 && openPositions.length > 0) {
-                    const oldestPosition = openPositions[0];
-                    const matchedQty = Math.min(remainingToSell, oldestPosition.quantity);
-
-                    // Calculate PnL for this matched portion
-                    const pnl = (sellPrice - oldestPosition.price) * matchedQty - Math.abs(trade.fees) * (matchedQty / remainingToSell);
-
-                    closedTrades.push({
-                        symbol,
-                        pnl,
-                        entryPrice: oldestPosition.price,
-                        exitPrice: sellPrice,
-                        quantity: matchedQty,
-                        closedAt: trade.timestamp,
-                        openedAt: oldestPosition.timestamp,
-                        broker: oldestPosition.broker
-                    });
-
-                    remainingToSell -= matchedQty;
-                    oldestPosition.quantity -= matchedQty;
-
-                    if (oldestPosition.quantity <= 0) {
-                        openPositions.shift();
-                    }
+                // Update remainders
+                if (remainingQty > 0) {
+                    remainingQty -= matchQty;
+                    oldestPosition.quantity += matchQty; // -10 + 5 = -5
+                } else {
+                    remainingQty += matchQty; // -10 + 5 = -5 (magnitude reduces)
+                    oldestPosition.quantity -= matchQty; // 10 - 5 = 5
                 }
 
-                // If we sold more than we had (short selling), track it
-                if (remainingToSell > 0) {
-                    // This is a short sale - we'll simplify and not track shorts for now
+                // Check if oldest position is closed
+                if (Math.abs(oldestPosition.quantity) <= 0.00000001) {
+                    openPositions.shift();
                 }
+            }
+
+            // If any quantity remains, add it as a new open position
+            if (Math.abs(remainingQty) > 0.00000001) {
+                openPositions.push({
+                    quantity: remainingQty,
+                    price: tradePrice,
+                    timestamp: trade.timestamp,
+                    broker: trade.account?.brokerName || 'Unknown',
+                    tradeId: trade.id
+                });
             }
         }
 
         // Track unrealized cost of remaining open positions
         for (const pos of openPositions) {
-            if (pos.quantity > 0) {
-                unrealizedCost += pos.price * pos.quantity;
+            if (Math.abs(pos.quantity) > 0.00000001) {
+                unrealizedCost += pos.price * Math.abs(pos.quantity);
                 allOpenPositions.push({
                     symbol,
-                    quantity: pos.quantity,
+                    quantity: pos.quantity, // Negative for shorts
                     entryPrice: pos.price,
                     openedAt: pos.timestamp,
                     broker: pos.broker,
-                    currentValue: pos.price * pos.quantity, // Could fetch current price later
+                    currentValue: pos.price * pos.quantity, // Placeholder current value
+                    tradeId: pos.tradeId,
                 });
             }
         }
@@ -130,10 +177,11 @@ function calculateMetricsFromTrades(trades: {
     let filteredTrades = closedTrades;
     if (filters) {
         if (filters.startDate) {
-            filteredTrades = filteredTrades.filter(t => t.closedAt >= filters.startDate!);
+            // For a Trading Journal, we often care about when the trade was Initiated (Entry)
+            filteredTrades = filteredTrades.filter(t => t.openedAt >= filters.startDate!);
         }
         if (filters.endDate) {
-            filteredTrades = filteredTrades.filter(t => t.closedAt <= filters.endDate!);
+            filteredTrades = filteredTrades.filter(t => t.openedAt <= filters.endDate!);
         }
         if (filters.symbol) {
             const symbolLower = filters.symbol.toLowerCase();

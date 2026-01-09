@@ -106,6 +106,28 @@ export default function SettingsPage() {
     }
   };
 
+  const handleDisconnect = async (accountId: string) => {
+    if (!confirm("Are you sure you want to disconnect this broker? This will DELETE ALL TRADES associated with this account.")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/accounts?id=${accountId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to disconnect");
+      }
+
+      // Refresh data
+      await fetchUserData();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to disconnect broker. Please try again.");
+    }
+  };
+
   const handleSyncAll = async () => {
     try {
       setSyncing(true);
@@ -314,6 +336,15 @@ export default function SettingsPage() {
                           <span className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse" />
                           Connected
                         </Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDisconnect(account.id)}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          title="Disconnect Broker"
+                        >
+                          <Unlink className="h-4 w-4" />
+                        </Button>
                       </div>
                     </motion.div>
                   ))}

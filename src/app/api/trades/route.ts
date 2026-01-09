@@ -35,5 +35,40 @@ export async function GET() {
     }
 }
 
-// POST to create/tag trades manually if needed? 
-// For now only fetching.
+
+export async function DELETE(req: Request) {
+    try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const { searchParams } = new URL(req.url);
+        const tradeId = searchParams.get('id');
+
+        if (!tradeId) {
+            return NextResponse.json({ error: 'Trade ID required' }, { status: 400 });
+        }
+
+        // Verify trade belongs to user's account
+        const trade = await prisma.trade.findUnique({
+            where: { id: tradeId },
+            include: { account: true }
+        });
+
+        if (!trade || trade.account.userId !== session.user.id) {
+            return NextResponse.json({ error: 'Trade not found or unauthorized' }, { status: 404 });
+        }
+
+        await prisma.trade.delete({
+            where: { id: tradeId }
+        });
+
+        return NextResponse.json({ success: true });
+
+    } catch (error: unknown) {
+        console.error('Delete trade error:', error);
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return NextResponse.json({ error: message }, { status: 500 });
+    }
+}

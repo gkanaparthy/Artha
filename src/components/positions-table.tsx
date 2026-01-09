@@ -19,7 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Search, X, Calendar, TrendingUp, TrendingDown, Clock } from "lucide-react";
+import { Loader2, Search, X, Calendar, TrendingUp, TrendingDown, Clock, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -41,6 +41,7 @@ interface OpenPosition {
     openedAt: string;
     broker: string;
     currentValue: number;
+    tradeId: string;
 }
 
 // Union type for display
@@ -54,6 +55,7 @@ interface DisplayPosition {
     closedAt: string | null;
     broker: string;
     status: "open" | "closed";
+    tradeId?: string;
 }
 
 interface Metrics {
@@ -134,6 +136,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                 closedAt: null,
                 broker: p.broker,
                 status: "open" as const,
+                tradeId: p.tradeId
             }));
 
             const combined = [...openDisplayPositions, ...closedDisplayPositions];
@@ -218,8 +221,25 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
         setTimeout(() => fetchPositions(), 0);
     };
 
+    const handleDelete = async (tradeId: string) => {
+        if (!confirm("Are you sure you want to delete this position? This will delete the underlying trade.")) return;
+
+        try {
+            const res = await fetch(`/api/trades?id=${tradeId}`, { method: "DELETE" });
+            if (res.ok) {
+                // Refresh positions
+                fetchPositions();
+            } else {
+                alert("Failed to delete position");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error deleting position");
+        }
+    };
+
     const hasActiveFilters = filters.symbol || filters.startDate || filters.endDate ||
-                             filters.result !== "all" || filters.broker !== "all";
+        filters.result !== "all" || filters.broker !== "all";
 
     const formatCurrency = (value: number) => {
         return Math.abs(value).toLocaleString("en-US", {
@@ -358,6 +378,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                             <TableHead className="text-right">P&L</TableHead>
                             <TableHead className="text-right">Return</TableHead>
                             <TableHead>Broker</TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -403,8 +424,8 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                                                     isOpen
                                                         ? "border-blue-500/50 text-blue-500 bg-blue-500/10"
                                                         : isProfit
-                                                        ? "border-green-500/50 text-green-500 bg-green-500/10"
-                                                        : "border-red-500/50 text-red-500 bg-red-500/10"
+                                                            ? "border-green-500/50 text-green-500 bg-green-500/10"
+                                                            : "border-red-500/50 text-red-500 bg-red-500/10"
                                                 )}
                                             >
                                                 {isOpen ? "OPEN" : "CLOSED"}
@@ -454,6 +475,18 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                                         </TableCell>
                                         <TableCell className="text-muted-foreground text-sm">
                                             {position.broker}
+                                        </TableCell>
+                                        <TableCell>
+                                            {isOpen && position.tradeId && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                                    onClick={() => handleDelete(position.tradeId!)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            )}
                                         </TableCell>
                                     </motion.tr>
                                 );

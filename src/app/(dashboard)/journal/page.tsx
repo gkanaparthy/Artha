@@ -24,6 +24,7 @@ import {
   Sparkles,
   TrendingUp,
   TrendingDown,
+  Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { TradeDetailSheet } from "@/components/trade-detail-sheet";
@@ -80,6 +81,23 @@ export default function JournalPage() {
   useEffect(() => {
     fetchTrades();
   }, []);
+
+  const handleDelete = async (tradeId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this trade?")) return;
+
+    try {
+      const res = await fetch(`/api/trades?id=${tradeId}`, { method: "DELETE" });
+      if (res.ok) {
+        setTrades((prev) => prev.filter((t) => t.id !== tradeId));
+      } else {
+        alert("Failed to delete trade");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting trade");
+    }
+  };
 
   const filteredAndSortedTrades = useMemo(() => {
     let result = [...trades];
@@ -383,12 +401,13 @@ export default function JournalPage() {
                   <TableHead>Fees</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Broker</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredAndSortedTrades.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center h-32">
+                    <TableCell colSpan={10} className="text-center h-32">
                       <div className="flex flex-col items-center justify-center text-muted-foreground">
                         <BookOpen className="h-10 w-10 mb-3 opacity-30" />
                         <p className="font-medium">
@@ -463,6 +482,16 @@ export default function JournalPage() {
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {trade.account?.brokerName || "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => handleDelete(trade.id, e)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </motion.tr>
                   ))
