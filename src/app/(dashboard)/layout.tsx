@@ -9,9 +9,17 @@ export default function DashboardLayout({
 }) {
   return (
     <FilterProvider>
-      <div className="flex bg-background h-screen w-full overflow-hidden text-foreground">
-        <AppSidebar />
-        <div className="flex-1 flex flex-col h-full overflow-hidden bg-background/95">
+      <div className="flex bg-background h-screen w-full overflow-hidden text-foreground relative">
+        {/* Ambient Background Effects */}
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-[-10%] right-[-5%] w-[40vw] h-[40vw] rounded-full bg-primary/5 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse duration-[10000ms]" />
+          <div className="absolute bottom-[-10%] left-[-5%] w-[30vw] h-[30vw] rounded-full bg-blue-500/5 blur-[100px] mix-blend-multiply dark:mix-blend-screen" />
+        </div>
+
+        <div className="z-10 h-full flex-none">
+          <AppSidebar />
+        </div>
+        <div className="flex-1 flex flex-col h-full overflow-hidden bg-background/40 backdrop-blur-[2px] z-10 relative">
           <Header />
           <main className="flex-1 overflow-auto p-6 scroll-smooth">
             {children}

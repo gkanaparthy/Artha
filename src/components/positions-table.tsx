@@ -317,10 +317,10 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
             <GlobalFilterBar onApply={fetchPositions} />
 
             {/* Table */}
-            <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
-                <Table>
+            <div className="rounded-xl border-0 px-2">
+                <Table className="border-separate border-spacing-y-2">
                     <TableHeader>
-                        <TableRow className="bg-muted/30 hover:bg-muted/30">
+                        <TableRow className="hover:bg-transparent border-none">
                             <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("symbol")}>
                                 <div className="flex items-center gap-2">Symbol {getSortIcon("symbol")}</div>
                             </TableHead>
@@ -384,7 +384,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.2, delay: idx * 0.02 }}
-                                        className="table-row-hover transition-colors border-b"
+                                        className="group transition-all hover:translate-y-[-2px] hover:shadow-lg bg-card/40 hover:bg-card border-0 [&_td:first-child]:rounded-l-xl [&_td:last-child]:rounded-r-xl"
                                     >
                                         <TableCell className="font-medium">
                                             <div className="flex items-center gap-2">

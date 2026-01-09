@@ -47,7 +47,7 @@ export function GlobalFilterBar({ showActionFilter = false, className, onApply }
         (showActionFilter && filters.action !== "ALL");
 
     return (
-        <div className={cn("flex flex-wrap gap-3 p-4 bg-muted/30 rounded-xl border border-border/50", className)}>
+        <div className={cn("flex flex-wrap gap-3 p-4 glass rounded-xl", className)}>
             {/* Symbol Search */}
             <div className="flex items-center gap-2 flex-1 min-w-[150px]">
                 <Search className="h-4 w-4 text-muted-foreground" />
