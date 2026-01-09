@@ -239,6 +239,6 @@ This project is licensed under the ISC License.
 
 <div align="center">
 
-**Built with ❤️ by [Gautham Kanaparthy](https://github.com/gkanaparthy)**
+**Built with passion by [Gautham Kanaparthy](https://www.linkedin.com/in/gkanaparthy/)**
 
 </div>
