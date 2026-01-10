@@ -3,11 +3,14 @@
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { Chrome, Apple, Loader2, TrendingUp, BarChart3, Target, Sparkles } from "lucide-react";
+import { Chrome, Apple, Loader2, Info } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { Playfair_Display, Inter } from "next/font/google";
+
+const playfair = Playfair_Display({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"] });
 
 export default function LoginPage() {
   const [loading, setLoading] = useState<"google" | "apple" | null>(null);
@@ -24,240 +27,153 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 relative overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <motion.div
-            className="absolute -top-20 -left-20 w-96 h-96 bg-white/10 rounded-full blur-3xl"
-            animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.3, 0.5, 0.3],
-            }}
-            transition={{ duration: 8, repeat: Infinity }}
-          />
-          <motion.div
-            className="absolute top-1/2 -right-20 w-80 h-80 bg-orange-400/20 rounded-full blur-3xl"
-            animate={{
-              scale: [1.2, 1, 1.2],
-              opacity: [0.4, 0.6, 0.4],
-            }}
-            transition={{ duration: 6, repeat: Infinity }}
-          />
-          <motion.div
-            className="absolute bottom-20 left-1/4 w-64 h-64 bg-yellow-300/20 rounded-full blur-3xl"
-            animate={{
-              scale: [1, 1.3, 1],
-              opacity: [0.3, 0.4, 0.3],
-            }}
-            transition={{ duration: 10, repeat: Infinity }}
-          />
-        </div>
+    <div className={cn("min-h-screen flex bg-[#FAFBF6]", inter.className)}>
+      {/* Left Panel - Illustration */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#E8EFE0] flex-col justify-between p-12">
+        {/* Brand Top Left */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="flex items-center gap-4 z-10"
+        >
+          <div className="w-16 h-16 relative flex items-center justify-center">
+            <Image src="/logo.png" alt="Artha Logo" fill className="object-contain" />
+          </div>
+          <span className={cn("text-[#2E4A3B] text-3xl font-bold tracking-tight", playfair.className)}>
+            Artha
+          </span>
+        </motion.div>
 
-        {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center p-12 text-white">
-          <motion.div
+        {/* Tagline/Copy */}
+        <div className="z-10 mt-auto mb-20">
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className={cn("text-5xl font-bold text-[#2E4A3B] leading-tight mb-6", playfair.className)}
           >
-            <div className="flex items-center gap-4 mb-8">
-              <Image
-                src="/logo.svg"
-                alt="Artha Logo"
-                width={64}
-                height={64}
-                className="rounded-2xl"
-              />
-              <div>
-                <h1 className="text-4xl font-bold">Artha</h1>
-                <p className="text-white/80">Trading Journal</p>
-              </div>
-            </div>
+            Where your trading <br /> journey grows.
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="text-[#2E4A3B]/80 text-lg max-w-md"
+          >
+            Join thousands of traders improving their performance with advanced analytics and journaling.
+          </motion.p>
+        </div>
 
-            <h2 className="text-3xl font-bold mb-4">
-              Track Your Trades.<br />
-              Improve Your Results.
-            </h2>
+        {/* Landscape Illustration (CSS Shapes) */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          {/* Sun */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+            className="absolute top-24 right-24 w-32 h-32 rounded-full bg-[#E59889]/20 blur-xl" // Soft peach sun
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
+            className="absolute top-32 right-32 w-16 h-16 rounded-full bg-[#E59889] mix-blend-multiply opacity-80"
+          />
 
-            <p className="text-lg text-white/90 mb-12 max-w-md">
-              Connect your brokerage accounts and gain powerful insights into your trading performance.
-            </p>
-
-            {/* Features */}
-            <div className="space-y-4">
-              <motion.div
-                className="flex items-center gap-4"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-              >
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="font-semibold">Real-time Sync</p>
-                  <p className="text-sm text-white/80">Auto-import trades from your brokers</p>
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="flex items-center gap-4"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4, duration: 0.5 }}
-              >
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <BarChart3 className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="font-semibold">Advanced Analytics</p>
-                  <p className="text-sm text-white/80">Visualize your trading patterns</p>
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="flex items-center gap-4"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6, duration: 0.5 }}
-              >
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                  <Target className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="font-semibold">Performance Tracking</p>
-                  <p className="text-sm text-white/80">Win rate, profit factor, and more</p>
-                </div>
-              </motion.div>
-            </div>
-          </motion.div>
+          {/* Hills */}
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 1, delay: 0.3 }}
+            className="absolute bottom-0 right-0 w-[120%] h-[50%] bg-[#C8D6B9] rounded-[100%] translate-x-1/4 translate-y-1/4" // Light green hill
+          />
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 1, delay: 0.5 }}
+            className="absolute bottom-0 left-0 w-[120%] h-[40%] bg-[#A8C5A5] rounded-[100%] -translate-x-1/4 translate-y-1/4" // Medium green hill
+          />
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 1, delay: 0.7 }}
+            className="absolute bottom-[-10%] left-[-10%] w-[120%] h-[35%] bg-[#2E4A3B] rounded-[100%] translate-y-1/4 opacity-10" // Dark foreground hill
+          />
         </div>
       </div>
 
       {/* Right Panel - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-background">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
-        >
+      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#FAFBF6] relative">
+        <div className="w-full max-w-[380px] space-y-8">
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <Image
-              src="/logo.svg"
-              alt="Artha Logo"
-              width={48}
-              height={48}
-              className="rounded-xl"
-            />
-            <div>
-              <h1 className="text-2xl font-bold text-gradient">Artha</h1>
-              <p className="text-sm text-muted-foreground">Trading Journal</p>
+          <div className="lg:hidden flex justify-center mb-8">
+            <span className={cn("text-[#2E4A3B] text-3xl font-bold", playfair.className)}>Artha</span>
+          </div>
+
+          <div className="space-y-2 text-center">
+            <h1 className={cn("text-4xl font-bold text-[#2E4A3B]", playfair.className)}>
+              Welcome back
+            </h1>
+            <p className="text-[#2E4A3B]/60 text-base">
+              Please enter your details to sign in.
+            </p>
+          </div>
+
+          <div className="space-y-4 pt-4">
+            {/* Google Button */}
+            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+              <Button
+                className="w-full h-14 bg-white hover:bg-white/80 text-[#2E4A3B] border border-[#2E4A3B]/10 rounded-xl text-base font-medium shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-3"
+                onClick={() => handleSignIn("google")}
+                disabled={loading !== null}
+              >
+                {loading === "google" ? (
+                  <Loader2 className="h-5 w-5 animate-spin text-[#2E4A3B]" />
+                ) : (
+                  <Chrome className="h-5 w-5 text-[#4285F4]" />
+                )}
+                Continue with Google
+              </Button>
+            </motion.div>
+
+            {/* Apple Button */}
+            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+              <Button
+                className="w-full h-14 bg-[#2E4A3B] hover:bg-[#2E4A3B]/90 text-white rounded-xl text-base font-medium shadow-lg shadow-[#2E4A3B]/20 hover:shadow-xl transition-all flex items-center justify-center gap-3"
+                onClick={() => handleSignIn("apple")}
+                disabled={loading !== null}
+              >
+                {loading === "apple" ? (
+                  <Loader2 className="h-5 w-5 animate-spin text-white" />
+                ) : (
+                  <Apple className="h-5 w-5 fill-current" />
+                )}
+                Continue with Apple
+              </Button>
+            </motion.div>
+
+            <div className="flex items-center gap-3 my-6">
+              <div className="h-[1px] flex-1 bg-[#2E4A3B]/10"></div>
+              <span className="text-xs text-[#2E4A3B]/40 font-medium uppercase tracking-wider">Secure secured</span>
+              <div className="h-[1px] flex-1 bg-[#2E4A3B]/10"></div>
             </div>
           </div>
 
-          <Card className="border-0 shadow-xl bg-card/50 backdrop-blur-sm">
-            <CardHeader className="space-y-1 text-center pb-2">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
-                className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-600/20 flex items-center justify-center mb-4"
-              >
-                <Sparkles className="h-8 w-8 text-amber-500" />
-              </motion.div>
-              <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-              <CardDescription className="text-muted-foreground">
-                Sign in to access your trading journal
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-4">
-              {/* Google Sign In */}
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full h-12 text-base font-medium relative overflow-hidden",
-                    "border-2 hover:border-primary/50 hover:bg-primary/5",
-                    "transition-all duration-300"
-                  )}
-                  onClick={() => handleSignIn("google")}
-                  disabled={loading !== null}
-                >
-                  {loading === "google" ? (
-                    <Loader2 className="h-5 w-5 animate-spin mr-3" />
-                  ) : (
-                    <Chrome className="h-5 w-5 mr-3 text-[#4285F4]" />
-                  )}
-                  Continue with Google
-                </Button>
-              </motion.div>
+          {/* Footer Links */}
+          <p className="text-xs text-center text-[#2E4A3B]/50 leading-relaxed max-w-xs mx-auto">
+            By continuing, you agree to our <br />
+            <a href="#" className="font-semibold text-[#2E4A3B] hover:underline">Terms of Service</a> and <a href="#" className="font-semibold text-[#2E4A3B] hover:underline">Privacy Policy</a>.
+          </p>
+        </div>
 
-              {/* Apple Sign In */}
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full h-12 text-base font-medium relative overflow-hidden",
-                    "border-2 hover:border-primary/50 hover:bg-primary/5",
-                    "transition-all duration-300"
-                  )}
-                  onClick={() => handleSignIn("apple")}
-                  disabled={loading !== null}
-                >
-                  {loading === "apple" ? (
-                    <Loader2 className="h-5 w-5 animate-spin mr-3" />
-                  ) : (
-                    <Apple className="h-5 w-5 mr-3" />
-                  )}
-                  Continue with Apple
-                </Button>
-              </motion.div>
-
-              {/* Divider */}
-              <div className="relative py-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">
-                    Secure & Private
-                  </span>
-                </div>
-              </div>
-
-              {/* Info */}
-              <p className="text-xs text-center text-muted-foreground">
-                By signing in, you agree to our{" "}
-                <a href="#" className="text-primary hover:underline">Terms of Service</a>
-                {" "}and{" "}
-                <a href="#" className="text-primary hover:underline">Privacy Policy</a>
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Bottom text */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="text-center text-sm text-muted-foreground mt-8"
-          >
-            Don&apos;t have an account?{" "}
-            <span className="text-primary font-medium">
-              Sign in to create one automatically
-            </span>
-          </motion.p>
-        </motion.div>
+        {/* Floating Help Button (Aesthetic touch) */}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          className="absolute bottom-8 right-8 w-12 h-12 rounded-full bg-[#E59889] text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all"
+        >
+          <Info className="h-6 w-6" />
+        </motion.button>
       </div>
     </div>
   );
