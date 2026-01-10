@@ -18,6 +18,7 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-switch": "^1.2.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -26,6 +27,7 @@
     "lucide-react": "^0.562.0",
     "next": "16.1.1",
     "next-auth": "^5.0.0-beta.25",
+    "next-themes": "^0.4.6",
     "react": "19.2.3",
     "react-day-picker": "^9.13.0",
     "react-dom": "19.2.3",
@@ -50,7 +52,12 @@
   },
   "description": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).",
   "main": "index.js",
-  "keywords": ["trading", "journal", "analytics", "nextjs"],
+  "keywords": [
+    "trading",
+    "journal",
+    "analytics",
+    "nextjs"
+  ],
   "author": "Gautham Kanaparthy",
   "license": "ISC",
   "engines": {

@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
+import { useTheme } from "next-themes";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Loader2,
   Link2,
@@ -14,12 +16,13 @@ import {
   LogOut,
   User,
   Building2,
-  AlertCircle,
   Settings,
   Sparkles,
   Shield,
   Mail,
   CheckCircle2,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
@@ -44,10 +47,16 @@ interface UserData {
 
 export default function SettingsPage() {
   const { data: session, status } = useSession();
+  const { theme, setTheme } = useTheme();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const fetchUserData = async () => {
     try {
@@ -372,11 +381,21 @@ export default function SettingsPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="p-4 rounded-lg border bg-muted/20">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-foreground">Theme</span>
-                    <Badge variant="outline">System</Badge>
+                    <span className="font-medium text-foreground flex items-center gap-2">
+                      {mounted && theme === "dark" ? (
+                        <Moon className="h-4 w-4" />
+                      ) : (
+                        <Sun className="h-4 w-4" />
+                      )}
+                      Theme
+                    </span>
+                    <Switch
+                      checked={mounted && theme === "dark"}
+                      onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                    />
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Follows your system&apos;s dark/light mode preference.
+                    {mounted && theme === "dark" ? "Dark mode enabled" : "Light mode enabled"}
                   </p>
                 </div>
                 <div className="p-4 rounded-lg border bg-muted/20">
@@ -388,46 +407,6 @@ export default function SettingsPage() {
                     All values displayed in US Dollars.
                   </p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </AnimatedCard>
-
-        {/* Danger Zone */}
-        <AnimatedCard delay={0.4}>
-          <Card className="border-destructive/30 overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-destructive/5 via-transparent to-transparent pointer-events-none" />
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-destructive/20 to-destructive/10 flex items-center justify-center">
-                  <AlertCircle className="h-5 w-5 text-destructive" />
-                </div>
-                <div>
-                  <CardTitle className="text-destructive">Danger Zone</CardTitle>
-                  <CardDescription>
-                    Irreversible actions that affect your account
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between p-4 rounded-xl border border-destructive/30 bg-destructive/5">
-                <div>
-                  <div className="font-semibold text-foreground">Sign Out</div>
-                  <div className="text-sm text-muted-foreground max-w-md">
-                    Sign out of your account. Your data will remain saved and you can sign back in
-                    at any time using the same OAuth provider.
-                  </div>
-                </div>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleSignOut}
-                  className="shrink-0"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </Button>
               </div>
             </CardContent>
           </Card>
