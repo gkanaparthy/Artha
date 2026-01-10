@@ -169,7 +169,7 @@ export default function LoginPage() {
           {/* Footer Links */}
           <p className="text-xs text-center text-[#2E4A3B]/50 leading-relaxed max-w-xs mx-auto">
             By continuing, you agree to our <br />
-            <a href="#" className="font-semibold text-[#2E4A3B] hover:underline">Terms of Service</a> and <a href="#" className="font-semibold text-[#2E4A3B] hover:underline">Privacy Policy</a>.
+            <Link href="/terms" className="font-semibold text-[#2E4A3B] hover:underline">Terms of Service</Link> and <Link href="/privacy" className="font-semibold text-[#2E4A3B] hover:underline">Privacy Policy</Link>.
           </p>
         </div>
 
