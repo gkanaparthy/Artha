@@ -166,23 +166,23 @@ export default function DashboardPage() {
             <div className="space-y-8">
                 {/* Header */}
                 <motion.div
-                    className="flex items-center justify-between"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
                     <div className="space-y-1">
-                        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-3">
                             <span className="text-gradient">Dashboard</span>
-                            <Sparkles className="h-6 w-6 text-amber-500 float" />
+                            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-amber-500 float" />
                         </h1>
-                        <p className="text-muted-foreground">Track your trading performance at a glance</p>
+                        <p className="text-sm sm:text-base text-muted-foreground">Track your trading performance at a glance</p>
                     </div>
                     <Button
                         variant="outline"
                         onClick={handleSync}
                         disabled={syncing}
-                        className="btn-glow"
+                        className="btn-glow w-full sm:w-auto"
                     >
                         <RefreshCw className={cn("mr-2 h-4 w-4", syncing && "animate-spin")} />
                         Sync Trades

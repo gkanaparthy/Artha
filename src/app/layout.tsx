@@ -24,20 +24,11 @@ export const metadata: Metadata = {
     siteName: "Artha",
     title: "Artha - Free Trading Journal & Analytics",
     description: "The beautiful, automated trading journal for serious traders. Sync trades instantly, track performance, and refine your edge—completely free.",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Artha Trading Journal",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Artha - Free Trading Journal & Analytics",
     description: "The beautiful, automated trading journal for serious traders. Sync trades instantly, track performance, and refine your edge—completely free.",
-    images: ["/og-image.png"],
   },
   robots: {
     index: true,
