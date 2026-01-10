@@ -10,7 +10,7 @@ import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 
 const sidebarItems = [
-    { icon: Home, label: "Dashboard", href: "/" },
+    { icon: Home, label: "Dashboard", href: "/dashboard" },
     { icon: BookOpen, label: "Journal", href: "/journal" },
     { icon: BarChart3, label: "Reports", href: "/reports" },
     { icon: Settings, label: "Settings", href: "/settings" },
@@ -49,19 +49,20 @@ export function AppSidebar() {
 
     return (
         <div className="w-64 border-r bg-card h-screen flex flex-col hidden md:flex">
-            <div className="p-6 flex items-center gap-3">
-                <Image
-                    src="/logo.svg"
-                    alt="Artha Logo"
-                    width={40}
-                    height={40}
-                    className="rounded-lg"
-                />
+            <Link href="/dashboard" className="p-6 flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <div className="w-10 h-10 relative flex items-center justify-center">
+                    <Image
+                        src="/logo.png"
+                        alt="Artha Logo"
+                        fill
+                        className="object-contain"
+                    />
+                </div>
                 <div>
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-amber-600 to-amber-800 dark:from-amber-400 dark:to-amber-600 bg-clip-text text-transparent">Artha</h1>
+                    <h1 className="text-xl font-bold font-serif">Artha</h1>
                     <p className="text-xs text-muted-foreground">Trading Journal</p>
                 </div>
-            </div>
+            </Link>
             <nav className="flex-1 px-4 space-y-2">
                 {sidebarItems.map((item) => {
                     const isActive = pathname === item.href;

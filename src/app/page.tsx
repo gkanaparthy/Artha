@@ -119,11 +119,13 @@ export default function LandingPage() {
                                 <div className="absolute inset-0 bg-gradient-to-t from-[#FAFBF6] via-transparent to-transparent z-10 bottom-0 h-20" /> {/* Fade at bottom */}
                                 <div className="rounded-xl overflow-hidden shadow-2xl border border-[#2E4A3B]/10 bg-white p-2 md:p-4">
                                     <div className="rounded-lg overflow-hidden bg-[#F3F7E8] aspect-[16/9] relative flex items-center justify-center border border-[#2E4A3B]/5">
-                                        {/* Placeholder for Dashboard Screenshot */}
-                                        <div className="text-center">
-                                            <BarChart3 className="h-16 w-16 text-[#2E4A3B]/20 mx-auto mb-4" />
-                                            <p className="text-[#2E4A3B]/40 font-medium">Dashboard Preview</p>
-                                        </div>
+                                        <Image
+                                            src="/dashboard-preview.png"
+                                            alt="Artha Dashboard Preview"
+                                            fill
+                                            className="object-cover"
+                                            priority
+                                        />
                                     </div>
                                 </div>
                             </motion.div>
