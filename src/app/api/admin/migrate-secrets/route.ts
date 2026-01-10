@@ -20,8 +20,21 @@ export async function POST() {
 
         // Only allow specific admin email to run this migration
         const adminEmail = process.env.ADMIN_EMAIL;
-        if (!adminEmail || session.user.email !== adminEmail) {
-            return NextResponse.json({ error: "Forbidden - Admin only" }, { status: 403 });
+        if (!adminEmail) {
+            return NextResponse.json({
+                error: "ADMIN_EMAIL environment variable not configured"
+            }, { status: 500 });
+        }
+
+        if (session.user.email !== adminEmail) {
+            return NextResponse.json({
+                error: "Forbidden - Admin only",
+                debug: {
+                    sessionEmail: session.user.email,
+                    adminEmail: adminEmail,
+                    match: session.user.email === adminEmail
+                }
+            }, { status: 403 });
         }
 
         // Check if encryption key is configured
