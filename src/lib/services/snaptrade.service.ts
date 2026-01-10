@@ -1,5 +1,6 @@
 import { snapTrade } from '@/lib/snaptrade';
 import { prisma } from '@/lib/prisma';
+import { encrypt, safeDecrypt } from '@/lib/encryption';
 
 export class SnapTradeService {
     /**
@@ -21,28 +22,27 @@ export class SnapTradeService {
         }
 
         // Register with SnapTrade
-        // We use the localUserId as the SnapTrade User ID for simplicity,
-        // provided it meets their requirements (immutable, unique).
-        // Or we let them generate one?
-        // Docs: "You will need to provide a unique SnapTrade userId"
         const snapTradeUserId = localUserId;
 
         const result = await snapTrade.authentication.registerSnapTradeUser({
             userId: snapTradeUserId,
         });
 
-        // Save secret
+        // Encrypt the secret before saving to database
+        const encryptedSecret = encrypt(result.data.userSecret!);
+
+        // Save encrypted secret
         await prisma.user.update({
             where: { id: localUserId },
             data: {
                 snapTradeUserId: result.data.userId,
-                snapTradeUserSecret: result.data.userSecret,
+                snapTradeUserSecret: encryptedSecret,
             },
         });
 
         return {
             userId: result.data.userId,
-            userSecret: result.data.userSecret,
+            userSecret: result.data.userSecret, // Return plain for immediate use
         };
     }
 
@@ -64,9 +64,15 @@ export class SnapTradeService {
             );
         }
 
+        // Decrypt the secret for API use
+        const decryptedSecret = safeDecrypt(user.snapTradeUserSecret);
+        if (!decryptedSecret) {
+            throw new Error('Failed to decrypt SnapTrade secret');
+        }
+
         const result = await snapTrade.authentication.loginSnapTradeUser({
             userId: user.snapTradeUserId,
-            userSecret: user.snapTradeUserSecret,
+            userSecret: decryptedSecret,
             customRedirect: customRedirectUri,
             immediateRedirect: true,
         });
@@ -87,7 +93,14 @@ export class SnapTradeService {
             throw new Error('User not found or not registered');
         }
 
-        const { snapTradeUserId, snapTradeUserSecret } = user;
+        // Decrypt the secret for API use
+        const decryptedSecret = safeDecrypt(user.snapTradeUserSecret);
+        if (!decryptedSecret) {
+            throw new Error('Failed to decrypt SnapTrade secret');
+        }
+
+        const snapTradeUserId = user.snapTradeUserId;
+        const snapTradeUserSecret = decryptedSecret;
 
         // 1. Get Accounts (to ensure we have them all)
         console.log('[SnapTrade Sync] Fetching accounts for user:', snapTradeUserId);
@@ -140,7 +153,8 @@ export class SnapTradeService {
                 const activityList = activities.data?.data || [];
                 console.log('[SnapTrade Sync] Account', acc.id, 'returned', activityList.length, 'activities');
                 if (activityList.length > 0) {
-                    console.log('[SnapTrade Sync] First activity:', JSON.stringify(activityList[0], null, 2));
+                    // Log only safe identifiers, not full trade data
+                    console.log('[SnapTrade Sync] First activity id:', activityList[0]?.id, 'type:', activityList[0]?.type);
                 }
                 // Attach account ID to each activity since it's not included in response
                 for (const activity of activityList) {
@@ -154,9 +168,6 @@ export class SnapTradeService {
 
         const tradeData = allActivities;
         console.log('[SnapTrade Sync] Total activities received:', tradeData.length);
-        if (tradeData.length > 0) {
-            console.log('[SnapTrade Sync] First activity sample:', JSON.stringify(tradeData[0], null, 2));
-        }
 
         let count = 0;
 
