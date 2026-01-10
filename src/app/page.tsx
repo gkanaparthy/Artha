@@ -26,7 +26,7 @@ export default function LandingPage() {
             <header className="sticky top-0 z-50 w-full border-b border-[#2E4A3B]/5 bg-[#FAFBF6]/80 backdrop-blur-md">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-6xl">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 relative flex items-center justify-center">
+                        <div className="w-10 h-10 relative flex items-center justify-center">
                             <Image src="/logo.png" alt="Artha" fill className="object-contain" />
                         </div>
                         <span className={cn("text-[#2E4A3B] text-2xl font-bold tracking-tight", playfair.className)}>
@@ -209,9 +209,9 @@ export default function LandingPage() {
 
             <footer className="bg-[#2E4A3B] text-white py-12">
                 <div className="container mx-auto px-4 max-w-6xl flex flex-col md:flex-row justify-between items-center gap-8">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 relative bg-white/10 rounded-lg flex items-center justify-center">
-                            <span className={cn("font-serif font-bold text-lg", playfair.className)}>A</span>
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 relative flex items-center justify-center">
+                            <Image src="/logo.png" alt="Artha" fill className="object-contain brightness-0 invert" />
                         </div>
                         <span className={cn("text-2xl font-bold", playfair.className)}>Artha</span>
                     </div>

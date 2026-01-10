@@ -40,10 +40,10 @@ export default function LoginPage() {
           className="flex items-center gap-4 z-10"
         >
           <Link href="/" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
-            <div className="w-16 h-16 relative flex items-center justify-center">
+            <div className="w-20 h-20 relative flex items-center justify-center">
               <Image src="/logo.png" alt="Artha Logo" fill className="object-contain" />
             </div>
-            <span className={cn("text-[#2E4A3B] text-3xl font-bold tracking-tight", playfair.className)}>
+            <span className={cn("text-[#2E4A3B] text-4xl font-bold tracking-tight", playfair.className)}>
               Artha
             </span>
           </Link>
@@ -112,8 +112,8 @@ export default function LoginPage() {
         <div className="w-full max-w-[380px] space-y-8">
           {/* Mobile Logo */}
           <div className="lg:hidden flex justify-center mb-8">
-            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <span className={cn("text-[#2E4A3B] text-3xl font-bold", playfair.className)}>Artha</span>
+            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+               <div className="w-12 h-12 relative flex items-center justify-center"> <Image src="/logo.png" alt="Artha Logo" fill className="object-contain" /> </div> <span className={cn("text-[#2E4A3B] text-3xl font-bold", playfair.className)}>Artha</span>
             </Link>
           </div>
 
