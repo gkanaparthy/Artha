@@ -67,6 +67,25 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     // Use ref to track if we've mounted (avoids saving on initial render)
     const isMounted = useRef(false);
 
+    // Fetch brokers from connected accounts on mount
+    useEffect(() => {
+        const fetchBrokers = async () => {
+            try {
+                const res = await fetch('/api/accounts');
+                if (res.ok) {
+                    const data = await res.json();
+                    const accounts = data.accounts || [];
+                    // Get unique broker names from all connected accounts
+                    const uniqueBrokers = [...new Set(accounts.map((a: { brokerName: string }) => a.brokerName))].filter(Boolean) as string[];
+                    setBrokers(uniqueBrokers);
+                }
+            } catch (e) {
+                console.error("Failed to fetch broker accounts", e);
+            }
+        };
+        fetchBrokers();
+    }, []);
+
     // Persist to localStorage when filters change (skip initial render)
     useEffect(() => {
         if (isMounted.current) {
@@ -79,7 +98,11 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     const resetFilters = useCallback(() => setFilters(defaultFilters), []);
 
     const setBrokersStable = useCallback((newBrokers: string[]) => {
-        setBrokers(newBrokers);
+        setBrokers(prev => {
+            // Merge new brokers with existing ones to ensure we don't lose any
+            const merged = [...new Set([...prev, ...newBrokers])];
+            return merged;
+        });
     }, []);
 
     return (
