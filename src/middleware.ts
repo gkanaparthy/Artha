@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const isLoginPage = req.nextUrl.pathname === "/login";
+  const isLandingPage = req.nextUrl.pathname === "/";
   const isAuthCallback = req.nextUrl.pathname.startsWith("/api/auth");
   const isPublicApi = req.nextUrl.pathname === "/api/health";
 
@@ -14,11 +15,11 @@ export default auth((req) => {
 
   // Redirect logged-in users away from login page
   if (isLoggedIn && isLoginPage) {
-    return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // Redirect non-logged-in users to login page
-  if (!isLoggedIn && !isLoginPage) {
+  // Redirect non-logged-in users to login page if they are not on public pages
+  if (!isLoggedIn && !isLoginPage && !isLandingPage) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 

@@ -18,7 +18,7 @@ export default function LoginPage() {
   const handleSignIn = async (provider: "google" | "apple") => {
     setLoading(provider);
     try {
-      await signIn(provider, { callbackUrl: "/" });
+      await signIn(provider, { callbackUrl: "/dashboard" });
     } catch (error) {
       console.error("Sign in error:", error);
     } finally {
