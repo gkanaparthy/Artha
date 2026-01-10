@@ -186,10 +186,33 @@ export class SnapTradeService {
 
             if (!account) continue;
 
+            // Parse trade date - SnapTrade may use snake_case or camelCase depending on SDK version
+            const rawTradeDate = trade.trade_date || trade.tradeDate;
+            const rawSettlementDate = trade.settlement_date || trade.settlementDate;
+
+            let tradeTimestamp: Date;
+            if (rawTradeDate) {
+                tradeTimestamp = new Date(rawTradeDate);
+            } else if (rawSettlementDate) {
+                tradeTimestamp = new Date(rawSettlementDate);
+            } else {
+                console.warn('[SnapTrade Sync] Trade missing date, skipping:', trade.id, 'Raw data:', JSON.stringify(trade));
+                continue; // Skip trades without valid dates instead of using import date
+            }
+
+            // Validate the parsed date
+            if (isNaN(tradeTimestamp.getTime())) {
+                console.warn('[SnapTrade Sync] Invalid date for trade:', trade.id, 'Raw values:', { rawTradeDate, rawSettlementDate });
+                continue;
+            }
+
+            console.log('[SnapTrade Sync] Processing trade:', trade.id, 'Date:', tradeTimestamp.toISOString(), 'Symbol:', trade.symbol?.symbol);
+
             // Upsert Trade
             await prisma.trade.upsert({
                 where: { snapTradeTradeId: trade.id },
                 update: {
+                    timestamp: tradeTimestamp, // Always update the timestamp in case it was wrong before
                     universalSymbolId: trade.optionSymbol ? trade.optionSymbol.id : trade.symbol?.id,
                     optionType: trade.optionSymbol?.optionType,
                     strikePrice: trade.optionSymbol?.strikePrice,
@@ -199,13 +222,13 @@ export class SnapTradeService {
                     accountId: account.id,
                     symbol: trade.symbol?.symbol || trade.symbol?.rawSymbol || 'UNKNOWN',
                     universalSymbolId: trade.optionSymbol ? trade.optionSymbol.id : trade.symbol?.id,
-                    quantity: trade.units || 0, // Caution: sign matters? SnapTrade usually positive units + action
+                    quantity: trade.units || 0,
                     price: trade.price || 0,
                     action: action,
-                    timestamp: new Date(trade.tradeDate || trade.settlementDate || new Date()), // Use tradeDate or settlementDate
-                    fees: trade.fee || 0, // SDK uses 'fee' (singular)
-                    currency: trade.currency?.code || 'USD', // currency is an object with 'code' property
-                    type: trade.optionSymbol ? 'OPTION' : 'STOCK', // Heuristic
+                    timestamp: tradeTimestamp,
+                    fees: trade.fee || 0,
+                    currency: trade.currency?.code || 'USD',
+                    type: trade.optionSymbol ? 'OPTION' : 'STOCK',
                     snapTradeTradeId: trade.id,
 
                     // Detailed Option Data
