@@ -50,7 +50,10 @@
   },
   "description": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).",
   "main": "index.js",
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "keywords": ["trading", "journal", "analytics", "nextjs"],
+  "author": "Gautham Kanaparthy",
+  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0 <23.0.0"
+  }
 }
