@@ -114,16 +114,16 @@ export default function LandingPage() {
                                 initial={{ opacity: 0, y: 40 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.8, delay: 0.4 }}
-                                className="w-full max-w-4xl mt-12 relative"
+                                className="w-full max-w-5xl mt-12 relative"
                             >
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#FAFBF6] via-transparent to-transparent z-10 bottom-0 h-20" /> {/* Fade at bottom */}
                                 <div className="rounded-xl overflow-hidden shadow-2xl border border-[#2E4A3B]/10 bg-white p-2 md:p-4">
-                                    <div className="rounded-lg overflow-hidden bg-[#F3F7E8] aspect-[16/9] relative flex items-center justify-center border border-[#2E4A3B]/5">
+                                    <div className="rounded-lg overflow-hidden bg-[#F3F7E8] relative border border-[#2E4A3B]/5">
                                         <Image
                                             src="/dashboard-preview.png"
                                             alt="Artha Dashboard Preview"
-                                            fill
-                                            className="object-cover"
+                                            width={1024}
+                                            height={1024}
+                                            className="w-full h-auto shadow-sm"
                                             priority
                                         />
                                     </div>
