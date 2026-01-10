@@ -1,5 +1,7 @@
 "use client";
 
+
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -37,12 +39,14 @@ export default function LoginPage() {
           transition={{ duration: 0.6 }}
           className="flex items-center gap-4 z-10"
         >
-          <div className="w-16 h-16 relative flex items-center justify-center">
-            <Image src="/logo.png" alt="Artha Logo" fill className="object-contain" />
-          </div>
-          <span className={cn("text-[#2E4A3B] text-3xl font-bold tracking-tight", playfair.className)}>
-            Artha
-          </span>
+          <Link href="/" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
+            <div className="w-16 h-16 relative flex items-center justify-center">
+              <Image src="/logo.png" alt="Artha Logo" fill className="object-contain" />
+            </div>
+            <span className={cn("text-[#2E4A3B] text-3xl font-bold tracking-tight", playfair.className)}>
+              Artha
+            </span>
+          </Link>
         </motion.div>
 
         {/* Tagline/Copy */}
@@ -108,7 +112,9 @@ export default function LoginPage() {
         <div className="w-full max-w-[380px] space-y-8">
           {/* Mobile Logo */}
           <div className="lg:hidden flex justify-center mb-8">
-            <span className={cn("text-[#2E4A3B] text-3xl font-bold", playfair.className)}>Artha</span>
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <span className={cn("text-[#2E4A3B] text-3xl font-bold", playfair.className)}>Artha</span>
+            </Link>
           </div>
 
           <div className="space-y-2 text-center">
