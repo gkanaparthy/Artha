@@ -3,12 +3,23 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "installCommand": "npm install",
-  "regions": ["iad1"],
+  "regions": [
+    "iad1"
+  ],
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 30
+    },
+    "src/app/api/cron/sync-all/route.ts": {
+      "maxDuration": 300
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/sync-all",
+      "schedule": "0 10 * * 1-6"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
