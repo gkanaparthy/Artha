@@ -107,10 +107,12 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
             setLoading(true);
             const params = new URLSearchParams();
 
-            // Only apply server-side filters for date and symbol
+            // Apply all filters server-side
             if (filters.symbol) params.append("symbol", filters.symbol);
             if (filters.startDate) params.append("startDate", filters.startDate);
             if (filters.endDate) params.append("endDate", filters.endDate);
+            if (filters.accountId && filters.accountId !== 'all') params.append("accountId", filters.accountId);
+            if (filters.assetType && filters.assetType !== 'all') params.append("assetType", filters.assetType);
 
             const res = await fetch(`/api/metrics?${params.toString()}`);
             const data: Metrics = await res.json();
@@ -155,13 +157,12 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
         } finally {
             setLoading(false);
         }
-    }, [filters.symbol, filters.startDate, filters.endDate, applyFilters]);
+    }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType, applyFilters]);
 
-    // Initial load
+    // Refetch when any filter changes
     useEffect(() => {
         fetchPositions();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Run once on mount
+    }, [fetchPositions]);
 
     useEffect(() => {
         if (allPositions.length > 0 || rawMetrics) {

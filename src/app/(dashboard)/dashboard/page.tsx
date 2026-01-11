@@ -19,6 +19,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
 import { cn } from "@/lib/utils";
+import { useFilters } from "@/contexts/filter-context";
 
 interface Metrics {
     netPnL: number;
@@ -82,6 +83,7 @@ function MetricCard({
 }
 
 export default function DashboardPage() {
+    const { filters } = useFilters();
     const [syncing, setSyncing] = useState(false);
     const [metrics, setMetrics] = useState<Metrics>({
         netPnL: 0,
@@ -97,15 +99,23 @@ export default function DashboardPage() {
     });
     const [refreshKey, setRefreshKey] = useState(0);
 
+    // Fetch metrics whenever filters change
     const fetchMetrics = useCallback(async () => {
         try {
-            const res = await fetch(`/api/metrics`);
+            const params = new URLSearchParams();
+            if (filters.symbol) params.append("symbol", filters.symbol);
+            if (filters.startDate) params.append("startDate", filters.startDate);
+            if (filters.endDate) params.append("endDate", filters.endDate);
+            if (filters.accountId && filters.accountId !== 'all') params.append("accountId", filters.accountId);
+            if (filters.assetType && filters.assetType !== 'all') params.append("assetType", filters.assetType);
+
+            const res = await fetch(`/api/metrics?${params.toString()}`);
             const data = await res.json();
             setMetrics(data);
         } catch (e) {
             console.error(e);
         }
-    }, []);
+    }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType]);
 
     const handleSync = async () => {
         try {
@@ -123,10 +133,23 @@ export default function DashboardPage() {
         }
     };
 
+    // Update metrics when PositionsTable applies client-side filters (status filter)
     const handleMetricsUpdate = useCallback((newMetrics: Metrics) => {
-        setMetrics(newMetrics);
+        setMetrics(prev => ({
+            ...prev,
+            // Only update the fields that are affected by status filter
+            netPnL: newMetrics.netPnL,
+            winRate: newMetrics.winRate,
+            totalTrades: newMetrics.totalTrades,
+            avgWin: newMetrics.avgWin,
+            avgLoss: newMetrics.avgLoss,
+            profitFactor: newMetrics.profitFactor,
+            winningTrades: newMetrics.winningTrades,
+            losingTrades: newMetrics.losingTrades,
+        }));
     }, []);
 
+    // Refetch when filters change
     useEffect(() => {
         fetchMetrics();
     }, [fetchMetrics]);
@@ -163,42 +186,43 @@ export default function DashboardPage() {
 
     return (
         <PageTransition>
-            <div className="space-y-8">
+            <div className="space-y-8 p-4 md:p-8 pt-6">
                 {/* Header */}
                 <motion.div
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
                     <div className="space-y-1">
-                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-3">
-                            <span className="text-gradient">Dashboard</span>
-                            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-amber-500 float" />
+                        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+                            <Sparkles className="h-8 w-8 text-amber-500" />
+                            Dashboard
                         </h1>
-                        <p className="text-sm sm:text-base text-muted-foreground">Track your trading performance at a glance</p>
+                        <p className="text-muted-foreground">
+                            Your trading performance at a glance
+                        </p>
                     </div>
                     <Button
-                        variant="outline"
                         onClick={handleSync}
                         disabled={syncing}
-                        className="btn-glow w-full sm:w-auto"
+                        className="gap-2 btn-primary"
                     >
-                        <RefreshCw className={cn("mr-2 h-4 w-4", syncing && "animate-spin")} />
-                        Sync Trades
+                        <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
+                        {syncing ? "Syncing..." : "Sync Trades"}
                     </Button>
                 </motion.div>
 
-                {/* Main Metrics Row */}
+                {/* Metrics Cards */}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <MetricCard
                         title="Net P&L"
                         value={formatCurrency(metrics.netPnL, true)}
-                        subtitle="From filtered positions"
+                        subtitle="Based on filtered trades"
                         icon={DollarSign}
-                        iconColor={metrics.netPnL >= 0 ? "text-green-500" : "text-red-500"}
+                        iconColor={getPnLColor(metrics.netPnL)}
                         valueColor={getPnLColor(metrics.netPnL)}
-                        delay={0.1}
+                        delay={0}
                         glowClass={metrics.netPnL >= 0 ? "glow-green" : "glow-red"}
                     />
                     <MetricCard
@@ -206,16 +230,16 @@ export default function DashboardPage() {
                         value={`${metrics.winRate}%`}
                         subtitle={`${metrics.winningTrades}W / ${metrics.losingTrades}L`}
                         icon={Target}
-                        iconColor="text-amber-500"
+                        iconColor={getWinRateColor(metrics.winRate)}
                         valueColor={getWinRateColor(metrics.winRate)}
-                        delay={0.15}
+                        delay={0.1}
                     />
                     <MetricCard
                         title="MTD P&L"
                         value={formatCurrency(metrics.mtdPnL, true)}
                         subtitle="Month to date"
                         icon={Calendar}
-                        iconColor={metrics.mtdPnL >= 0 ? "text-green-500" : "text-red-500"}
+                        iconColor={getPnLColor(metrics.mtdPnL)}
                         valueColor={getPnLColor(metrics.mtdPnL)}
                         delay={0.2}
                     />
@@ -224,66 +248,58 @@ export default function DashboardPage() {
                         value={formatCurrency(metrics.ytdPnL, true)}
                         subtitle="Year to date"
                         icon={CalendarDays}
-                        iconColor={metrics.ytdPnL >= 0 ? "text-green-500" : "text-red-500"}
+                        iconColor={getPnLColor(metrics.ytdPnL)}
                         valueColor={getPnLColor(metrics.ytdPnL)}
-                        delay={0.25}
+                        delay={0.3}
                     />
                 </div>
 
-                {/* Secondary Metrics Row */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <MetricCard
-                        title="Profit Factor"
-                        value={metrics.profitFactor !== null ? metrics.profitFactor.toFixed(2) : "—"}
-                        subtitle="Gross profit / Gross loss"
-                        icon={BarChart3}
-                        iconColor="text-blue-500"
-                        valueColor={getProfitFactorColor(metrics.profitFactor)}
-                        delay={0.3}
-                    />
+                {/* Secondary Metrics */}
+                <div className="grid gap-4 md:grid-cols-3">
                     <MetricCard
                         title="Total Trades"
                         value={metrics.totalTrades}
                         subtitle="Closed positions"
-                        icon={Activity}
-                        iconColor="text-purple-500"
-                        delay={0.35}
-                    />
-                    <MetricCard
-                        title="Average Win"
-                        value={formatCurrency(metrics.avgWin, true)}
-                        subtitle="Mean profit per win"
-                        icon={TrendingUp}
-                        iconColor="text-green-500"
-                        valueColor="text-gradient-green"
+                        icon={BarChart3}
+                        iconColor="text-primary"
                         delay={0.4}
-                        glowClass="glow-green"
                     />
                     <MetricCard
-                        title="Average Loss"
-                        value={formatCurrency(-metrics.avgLoss, true)}
-                        subtitle="Mean loss per loss"
-                        icon={TrendingDown}
-                        iconColor="text-red-500"
-                        valueColor="text-gradient-red"
-                        delay={0.45}
-                        glowClass="glow-red"
+                        title="Avg Win / Loss"
+                        value={`$${metrics.avgWin.toFixed(0)} / $${metrics.avgLoss.toFixed(0)}`}
+                        subtitle="Per trade"
+                        icon={Activity}
+                        iconColor="text-primary"
+                        delay={0.5}
+                    />
+                    <MetricCard
+                        title="Profit Factor"
+                        value={metrics.profitFactor !== null ? metrics.profitFactor.toFixed(2) : "∞"}
+                        subtitle="Gross profit / Gross loss"
+                        icon={metrics.profitFactor !== null && metrics.profitFactor >= 1 ? TrendingUp : TrendingDown}
+                        iconColor={getProfitFactorColor(metrics.profitFactor)}
+                        valueColor={getProfitFactorColor(metrics.profitFactor)}
+                        delay={0.6}
                     />
                 </div>
 
                 {/* Positions Table */}
-                <motion.div
-                    className="space-y-4"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.5 }}
-                >
-                    <div className="flex items-center gap-3">
-                        <h2 className="text-xl font-semibold">Positions</h2>
-                        <div className="h-px flex-1 bg-gradient-to-r from-border via-border/50 to-transparent" />
-                    </div>
-                    <PositionsTable key={refreshKey} onMetricsUpdate={handleMetricsUpdate} />
-                </motion.div>
+                <AnimatedCard delay={0.7}>
+                    <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
+                        <CardHeader>
+                            <CardTitle className="text-lg font-medium flex items-center gap-2">
+                                <Activity className="h-5 w-5 text-primary" />
+                                Positions
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <PositionsTable
+                                key={refreshKey}
+                                onMetricsUpdate={handleMetricsUpdate}
+                            />
+                        </CardContent>
+                    </Card>
+                </AnimatedCard>
             </div>
         </PageTransition>
     );
