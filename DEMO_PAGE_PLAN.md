@@ -9,7 +9,17 @@ Create `src/lib/demo-data.ts` to export realistic datasets.
 **Data Artifacts:**
 1. `DEMO_METRICS` (Metrics object for Dashboard & Reports)
 2. `DEMO_TRADES` (Array of Trade objects for Journal)
-3. `DEMO_POSITIONS` (Array of DisplayPosition objects for Dashboard Table)
+3. `DEMO_POSITIONS` (Array of mixed Open/Closed DisplayPosition objects)
+
+**Data Requirement Details:**
+- **DEMO_POSITIONS**: Must include at least 15-20 items:
+  - 5 Active Open Positions (e.g., TSLA Call, AAPL Stock, NVDA Put).
+  - 10+ Closed Positions mixing:
+    - Stocks (Winners & Losers).
+    - Options (Calls & Puts, Expired & Exercised).
+    - Diverse Brokers ("Robinhood", "TDA", "IBKR").
+- **DEMO_TRADES**: Corresponding granular trade execution logs.
+- **DEMO_METRICS**: Pre-calculated aggregations for the above.
 
 **Data Structure (Excerpt):**
 ```typescript
