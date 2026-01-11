@@ -11,9 +11,10 @@ export default auth((req) => {
   const isPublicPage = req.nextUrl.pathname.startsWith("/privacy") ||
                        req.nextUrl.pathname.startsWith("/terms") ||
                        req.nextUrl.pathname.startsWith("/contact");
+  const isDemoPage = req.nextUrl.pathname.startsWith("/demo");
 
-  // Allow auth callbacks, cron jobs, and public APIs
-  if (isAuthCallback || isPublicApi || isCronApi || isPublicPage) {
+  // Allow auth callbacks, cron jobs, demo pages, and public APIs
+  if (isAuthCallback || isPublicApi || isCronApi || isPublicPage || isDemoPage) {
     return NextResponse.next();
   }
 

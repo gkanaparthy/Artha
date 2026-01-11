@@ -41,6 +41,9 @@ export default function LandingPage() {
                         <Link href="#pricing" className="text-[#2E4A3B]/70 hover:text-[#2E4A3B] text-sm font-medium transition-colors">
                             Pricing
                         </Link>
+                        <Link href="/demo" className="text-[#E59889] font-medium text-sm hover:text-[#E59889]/80 transition-colors">
+                            Try Demo
+                        </Link>
                         <Link href="/login" className="text-[#2E4A3B] font-medium text-sm hover:opacity-80 transition-opacity">
                             Log in
                         </Link>
@@ -104,10 +107,15 @@ export default function LandingPage() {
                                         <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                                     </Button>
                                 </Link>
-                                <p className="text-sm text-[#2E4A3B]/60 font-medium">
-                                    No credit card required
-                                </p>
+                                <Link href="/demo">
+                                    <Button variant="outline" className="h-14 px-8 rounded-full border-[#E59889] text-[#E59889] hover:bg-[#E59889]/10 text-lg">
+                                        Try Demo
+                                    </Button>
+                                </Link>
                             </motion.div>
+                            <p className="text-sm text-[#2E4A3B]/60 font-medium">
+                                No credit card required
+                            </p>
 
                             {/* Dashboard Preview Mockup */}
                             <motion.div

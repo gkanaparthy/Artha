@@ -21,6 +21,8 @@ import type { DisplayPosition, Metrics } from "@/types/trading";
 
 interface PositionsTableProps {
     onMetricsUpdate?: (metrics: Metrics) => void;
+    initialPositions?: DisplayPosition[];
+    isDemo?: boolean;
 }
 
 type SortField = "symbol" | "status" | "entryDate" | "exitDate" | "quantity" | "entryPrice" | "exitPrice" | "pnl" | "return" | "broker";
@@ -42,11 +44,11 @@ const getSortValue = (p: DisplayPosition, field: SortField): string | number => 
     }
 };
 
-export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
+export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = false }: PositionsTableProps) {
     const { filters } = useFilters();
-    const [allPositions, setAllPositions] = useState<DisplayPosition[]>([]);
-    const [filteredPositions, setFilteredPositions] = useState<DisplayPosition[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [allPositions, setAllPositions] = useState<DisplayPosition[]>(initialPositions || []);
+    const [filteredPositions, setFilteredPositions] = useState<DisplayPosition[]>(initialPositions || []);
+    const [loading, setLoading] = useState(!isDemo);
     const [rawMetrics, setRawMetrics] = useState<Metrics | null>(null);
 
     const { sortedData: sortedPositions, handleSort, getSortIcon } = useSort<DisplayPosition, SortField>({
@@ -104,6 +106,14 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
     }, [JSON.stringify(filters), onMetricsUpdate]); // React to ALL filter changes
 
     const fetchPositions = useCallback(async () => {
+        // In demo mode, just apply filters to initial positions
+        if (isDemo) {
+            if (initialPositions) {
+                applyFilters(initialPositions, null);
+            }
+            return;
+        }
+
         try {
             setLoading(true);
             const params = new URLSearchParams();
@@ -159,7 +169,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
             setLoading(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [JSON.stringify(filters), applyFilters]); // React to ALL filter changes
+    }, [JSON.stringify(filters), applyFilters, isDemo, initialPositions]); // React to ALL filter changes
 
     // Refetch when any filter changes
     useEffect(() => {
@@ -173,8 +183,9 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [JSON.stringify(filters), allPositions, rawMetrics, applyFilters]); // React to ALL filter changes
 
-    // Handle Delete
+    // Handle Delete (disabled in demo mode)
     const handleDelete = async (tradeId: string) => {
+        if (isDemo) return; // Disabled in demo mode
         if (!confirm("Are you sure you want to delete this position? This will delete the underlying trade.")) return;
 
         try {
@@ -253,7 +264,9 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                                 <TableCell colSpan={11} className="text-center h-24 text-muted-foreground">
                                     {hasActiveFilters
                                         ? "No positions match your filters."
-                                        : "No positions found. Connect your broker to sync data."}
+                                        : isDemo
+                                            ? "No demo positions available."
+                                            : "No positions found. Connect your broker to sync data."}
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -342,7 +355,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                                             {position.broker}
                                         </TableCell>
                                         <TableCell>
-                                            {isOpen && position.tradeId && (
+                                            {!isDemo && isOpen && position.tradeId && (
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
