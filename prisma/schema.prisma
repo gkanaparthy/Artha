@@ -79,6 +79,7 @@ model BrokerAccount {
 
   brokerName         String?
   snapTradeAccountId String   @unique
+  accountNumber      String?  // Actual brokerage account number (may be masked)
 
   trades             Trade[]
 

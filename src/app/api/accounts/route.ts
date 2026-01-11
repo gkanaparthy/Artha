@@ -18,6 +18,7 @@ export async function GET() {
                 id: true,
                 brokerName: true,
                 snapTradeAccountId: true,
+                accountNumber: true,
             }
         });
 

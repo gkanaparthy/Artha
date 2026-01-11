@@ -9,6 +9,7 @@ export interface Account {
     id: string;
     brokerName: string;
     snapTradeAccountId: string;
+    accountNumber: string | null;
 }
 
 interface FilterState {

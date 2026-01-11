@@ -64,7 +64,7 @@ export function GlobalFilterBar({ showStatusFilter = true, className }: GlobalFi
                         <SelectItem value="all">All Accounts</SelectItem>
                         {accounts.map((account) => (
                             <SelectItem key={account.id} value={account.id}>
-                                {account.brokerName || "Unknown"} ({account.snapTradeAccountId.slice(-4)})
+                                {account.brokerName || "Unknown"} ({account.accountNumber ? `****${account.accountNumber.slice(-4)}` : account.snapTradeAccountId.slice(-4)})
                             </SelectItem>
                         ))}
                     </SelectContent>

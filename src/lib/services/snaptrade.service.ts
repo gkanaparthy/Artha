@@ -125,16 +125,18 @@ export class SnapTradeService {
 
         // Update/Create Accounts in DB
         for (const acc of accounts.data || []) {
-            console.log('[SnapTrade Sync] Account:', acc.id, acc.institution_name);
+            console.log('[SnapTrade Sync] Account:', acc.id, acc.institution_name, 'Number:', acc.number);
             await prisma.brokerAccount.upsert({
                 where: { snapTradeAccountId: acc.id },
                 update: {
                     brokerName: acc.institution_name,
+                    accountNumber: acc.number || null,
                 },
                 create: {
                     userId: localUserId,
                     snapTradeAccountId: acc.id,
                     brokerName: acc.institution_name,
+                    accountNumber: acc.number || null,
                 },
             });
         }
