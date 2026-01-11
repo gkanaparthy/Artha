@@ -99,7 +99,7 @@ export default function DashboardPage() {
     });
     const [refreshKey, setRefreshKey] = useState(0);
 
-    // Fetch metrics whenever filters change
+    // Fetch metrics whenever ANY filter changes
     const fetchMetrics = useCallback(async () => {
         try {
             const params = new URLSearchParams();
@@ -108,6 +108,7 @@ export default function DashboardPage() {
             if (filters.endDate) params.append("endDate", filters.endDate);
             if (filters.accountId && filters.accountId !== 'all') params.append("accountId", filters.accountId);
             if (filters.assetType && filters.assetType !== 'all') params.append("assetType", filters.assetType);
+            // Status filter is applied client-side after fetch
 
             const res = await fetch(`/api/metrics?${params.toString()}`);
             const data = await res.json();
@@ -115,7 +116,8 @@ export default function DashboardPage() {
         } catch (e) {
             console.error(e);
         }
-    }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [JSON.stringify(filters)]); // React to ALL filter changes
 
     const handleSync = async () => {
         try {

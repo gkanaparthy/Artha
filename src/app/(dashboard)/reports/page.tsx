@@ -184,7 +184,8 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters.startDate, filters.endDate, filters.symbol, filters.accountId, filters.assetType]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(filters)]); // React to ALL filter changes
 
   useEffect(() => {
     fetchMetrics();

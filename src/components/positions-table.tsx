@@ -100,7 +100,8 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                 profitFactor: totalLosses > 0 ? Math.round((totalWins / totalLosses) * 100) / 100 : totalWins > 0 ? null : 0,
             });
         }
-    }, [filters.status, filters.accountId, filters.assetType, onMetricsUpdate]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [JSON.stringify(filters), onMetricsUpdate]); // React to ALL filter changes
 
     const fetchPositions = useCallback(async () => {
         try {
@@ -157,7 +158,8 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
         } finally {
             setLoading(false);
         }
-    }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType, applyFilters]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [JSON.stringify(filters), applyFilters]); // React to ALL filter changes
 
     // Refetch when any filter changes
     useEffect(() => {
@@ -168,7 +170,8 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
         if (allPositions.length > 0 || rawMetrics) {
             applyFilters(allPositions, rawMetrics);
         }
-    }, [filters.status, filters.accountId, filters.assetType, allPositions, rawMetrics, applyFilters]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [JSON.stringify(filters), allPositions, rawMetrics, applyFilters]); // React to ALL filter changes
 
     // Handle Delete
     const handleDelete = async (tradeId: string) => {
