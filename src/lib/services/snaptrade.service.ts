@@ -241,35 +241,59 @@ export class SnapTradeService {
                 continue;
             }
 
-            console.log('[SnapTrade Sync] Processing trade:', trade.id, 'Date:', tradeTimestamp.toISOString(), 'Symbol:', trade.symbol?.symbol);
+            // SnapTrade SDK uses snake_case for all fields
+            // option_symbol contains option details, symbol contains stock details
+            const optionSymbol = trade.option_symbol;
+            const isOption = !!optionSymbol;
+
+            // For options, use the OCC ticker from option_symbol; for stocks, use symbol
+            const tradeSymbol = isOption
+                ? (optionSymbol.ticker || trade.symbol?.symbol || 'UNKNOWN')
+                : (trade.symbol?.symbol || trade.symbol?.raw_symbol || 'UNKNOWN');
+
+            // Contract multiplier: 100 for standard options, 10 for mini options, 1 for stocks
+            const contractMultiplier = isOption
+                ? (optionSymbol.is_mini_option ? 10 : 100)
+                : 1;
+
+            // Option action (BUY_TO_OPEN, SELL_TO_CLOSE, etc.) is in trade.option_type
+            const optionAction = trade.option_type || null;
+
+            console.log('[SnapTrade Sync] Processing trade:', trade.id, 'Date:', tradeTimestamp.toISOString(), 'Symbol:', tradeSymbol, 'Type:', isOption ? 'OPTION' : 'STOCK', 'Multiplier:', contractMultiplier);
 
             // Upsert Trade
             await prisma.trade.upsert({
                 where: { snapTradeTradeId: trade.id },
                 update: {
                     timestamp: tradeTimestamp, // Always update the timestamp in case it was wrong before
-                    universalSymbolId: trade.optionSymbol ? trade.optionSymbol.id : trade.symbol?.id,
-                    optionType: trade.optionSymbol?.optionType,
-                    strikePrice: trade.optionSymbol?.strikePrice,
-                    expiryDate: trade.optionSymbol?.expirationDate ? new Date(trade.optionSymbol.expirationDate) : null,
+                    symbol: tradeSymbol,
+                    universalSymbolId: isOption ? optionSymbol.id : trade.symbol?.id,
+                    type: isOption ? 'OPTION' : 'STOCK',
+                    optionType: optionSymbol?.option_type || null,
+                    strikePrice: optionSymbol?.strike_price || null,
+                    expiryDate: optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null,
+                    optionAction: optionAction,
+                    contractMultiplier: contractMultiplier,
                 },
                 create: {
                     accountId: account.id,
-                    symbol: trade.symbol?.symbol || trade.symbol?.rawSymbol || 'UNKNOWN',
-                    universalSymbolId: trade.optionSymbol ? trade.optionSymbol.id : trade.symbol?.id,
+                    symbol: tradeSymbol,
+                    universalSymbolId: isOption ? optionSymbol.id : trade.symbol?.id,
                     quantity: trade.units || 0,
                     price: trade.price || 0,
                     action: action,
                     timestamp: tradeTimestamp,
                     fees: trade.fee || 0,
                     currency: trade.currency?.code || 'USD',
-                    type: trade.optionSymbol ? 'OPTION' : 'STOCK',
+                    type: isOption ? 'OPTION' : 'STOCK',
                     snapTradeTradeId: trade.id,
+                    contractMultiplier: contractMultiplier,
+                    optionAction: optionAction,
 
-                    // Detailed Option Data
-                    optionType: trade.optionSymbol?.optionType,
-                    strikePrice: trade.optionSymbol?.strikePrice,
-                    expiryDate: trade.optionSymbol?.expirationDate ? new Date(trade.optionSymbol.expirationDate) : null,
+                    // Detailed Option Data (snake_case from SnapTrade SDK)
+                    optionType: optionSymbol?.option_type || null,
+                    strikePrice: optionSymbol?.strike_price || null,
+                    expiryDate: optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null,
                 },
             });
 

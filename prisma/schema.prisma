@@ -111,9 +111,11 @@ model Trade {
   type        String
 
   // Option specific (nullable)
-  optionType  String?
+  optionType  String?              // CALL or PUT
   strikePrice Float?
   expiryDate  DateTime?
+  optionAction String?             // BUY_TO_OPEN, SELL_TO_CLOSE, etc.
+  contractMultiplier Int @default(1) // 100 for standard options, 10 for mini options, 1 for stocks
 
   tags        Tag[]
 

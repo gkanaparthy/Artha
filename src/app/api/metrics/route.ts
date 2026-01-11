@@ -72,6 +72,7 @@ interface TradeInput {
     optionType?: string | null;
     strikePrice?: number | null;
     expiryDate?: Date | null;
+    contractMultiplier?: number;
 }
 
 interface Lot {
@@ -81,6 +82,7 @@ interface Lot {
     quantity: number; // Absolute quantity remaining
     broker: string;
     originalQuantity: number;
+    multiplier: number; // Contract multiplier (100 for options, 1 for stocks)
 }
 
 function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOptions) {
@@ -119,11 +121,13 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
             const price = trade.price;
             const broker = trade.account?.brokerName || 'Unknown';
             const date = trade.timestamp;
+            // Contract multiplier: 100 for standard options, 10 for mini options, 1 for stocks
+            const multiplier = trade.contractMultiplier || 1;
 
             if (quantity === 0) continue;
 
-            const isBuy = action === 'BUY' || action === 'BUY_TO_OPEN' || action === 'ASSIGNMENT';
-            const isSell = action === 'SELL' || action === 'SELL_TO_OPEN' || action === 'EXERCISES';
+            const isBuy = action === 'BUY' || action === 'BUY_TO_OPEN' || action === 'BUY_TO_CLOSE' || action === 'ASSIGNMENT';
+            const isSell = action === 'SELL' || action === 'SELL_TO_OPEN' || action === 'SELL_TO_CLOSE' || action === 'EXERCISES';
 
             if (!isBuy && !isSell) continue;
 
@@ -132,14 +136,16 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
             const feePerUnit = totalFee / quantity;
 
             if (isBuy) {
-                // Trying to Buy. 
+                // Trying to Buy.
                 // Check if we have Short Lots to Cover (Close)
                 while (remainingQty > 0.000001 && shortLots.length > 0) {
                     const matchLot = shortLots[0]; // FIFO
                     const matchQty = Math.min(remainingQty, matchLot.quantity);
+                    // Use the lot's multiplier for P&L calculation (for options: qty * multiplier * price diff)
+                    const lotMultiplier = matchLot.multiplier;
 
-                    // Matched Close
-                    const pnl = (matchLot.price - price) * matchQty - (feePerUnit * matchQty);
+                    // Matched Close - multiply by contract multiplier for correct P&L
+                    const pnl = (matchLot.price - price) * matchQty * lotMultiplier - (feePerUnit * matchQty * lotMultiplier);
 
                     closedTrades.push({
                         symbol: keyDetails.get(key)?.symbol || trade.symbol,
@@ -168,7 +174,8 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                         price: price,
                         quantity: remainingQty,
                         originalQuantity: remainingQty,
-                        broker: broker
+                        broker: broker,
+                        multiplier: multiplier
                     });
                 }
             } else {
@@ -177,9 +184,11 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                 while (remainingQty > 0.000001 && longLots.length > 0) {
                     const matchLot = longLots[0]; // FIFO
                     const matchQty = Math.min(remainingQty, matchLot.quantity);
+                    // Use the lot's multiplier for P&L calculation (for options: qty * multiplier * price diff)
+                    const lotMultiplier = matchLot.multiplier;
 
-                    // Matched Close
-                    const pnl = (price - matchLot.price) * matchQty - (feePerUnit * matchQty);
+                    // Matched Close - multiply by contract multiplier for correct P&L
+                    const pnl = (price - matchLot.price) * matchQty * lotMultiplier - (feePerUnit * matchQty * lotMultiplier);
 
                     closedTrades.push({
                         symbol: keyDetails.get(key)?.symbol || trade.symbol,
@@ -208,7 +217,8 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                         price: price,
                         quantity: remainingQty,
                         originalQuantity: remainingQty,
-                        broker: broker
+                        broker: broker,
+                        multiplier: multiplier
                     });
                 }
             }
@@ -222,7 +232,8 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                 entryPrice: lot.price,
                 openedAt: lot.date,
                 broker: lot.broker,
-                currentValue: lot.price * lot.quantity,
+                // Include contract multiplier in current value for options
+                currentValue: lot.price * lot.quantity * lot.multiplier,
                 tradeId: lot.tradeId
             });
         }
@@ -233,15 +244,16 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                 entryPrice: lot.price,
                 openedAt: lot.date,
                 broker: lot.broker,
-                currentValue: lot.price * -lot.quantity,
+                // Include contract multiplier in current value for options
+                currentValue: lot.price * -lot.quantity * lot.multiplier,
                 tradeId: lot.tradeId
             });
         }
     }
 
-    // Calculate total unrealized cost
+    // Calculate total unrealized cost (already includes multiplier from currentValue)
     for (const pos of allOpenPositions) {
-        unrealizedCost += Math.abs(pos.quantity) * pos.entryPrice;
+        unrealizedCost += Math.abs(pos.currentValue);
     }
 
     // Apply filters to closed trades and open positions
