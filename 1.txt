@@ -1,0 +1,9 @@
+curl -X GET "https://arthatrades.com/api/cron/sync-all" \ -H "Authorization: Bearer 2852b132d4bef41399c66e0fce0c23cb55166cfcd38272ae1f05e1b946e2c4c8" 
+
+curl -X GET "https://arthatrades.com/api/cron/sync-all" -H "Authorization:    
+  Bearer 2852b132d4bef41399c66e0fce0c23cb55166cfcd38272ae1f05e1b946e2c4c8"
+
+  curl -L https://arthatrades.com/api/cron/sync-all -H "Authorization: Bearer   
+  2852b132d4bef41399c66e0fce0c23cb55166cfcd38272ae1f05e1b946e2c4c8"
+
+  artha-omega.vercel.app
