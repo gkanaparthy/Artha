@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { createServiceClient } from "@/lib/prisma-rls";
+import { prisma } from "@/lib/prisma";
 import { encrypt, isEncrypted } from "@/lib/encryption";
 
 /**
@@ -10,9 +10,6 @@ import { encrypt, isEncrypted } from "@/lib/encryption";
  * This endpoint should only be accessible to the app owner/admin.
  * 
  * Security: Checks if the requesting user's email matches the admin email.
- * 
- * NOTE: Uses createServiceClient() which bypasses RLS - this is intentional
- * for admin operations that need to access all users' data.
  */
 export async function POST() {
     try {
@@ -46,9 +43,6 @@ export async function POST() {
                 error: "DATA_ENCRYPTION_KEY not configured"
             }, { status: 500 });
         }
-
-        // Use service client (bypasses RLS) for admin operations
-        const prisma = createServiceClient();
 
         // Find all users with SnapTrade secrets
         const users = await prisma.user.findMany({

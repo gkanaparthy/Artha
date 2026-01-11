@@ -1,5 +1,5 @@
 import { snapTrade } from '@/lib/snaptrade';
-import { createRLSClient } from '@/lib/prisma-rls';
+import { prisma } from '@/lib/prisma';
 import { encrypt, safeDecrypt } from '@/lib/encryption';
 
 export class SnapTradeService {
@@ -8,8 +8,7 @@ export class SnapTradeService {
      * and saves the secret to the database.
      */
     async registerUser(localUserId: string) {
-        const db = createRLSClient(localUserId);
-        const user = await db.user.findUnique({
+        const user = await prisma.user.findUnique({
             where: { id: localUserId },
         });
 
@@ -33,7 +32,7 @@ export class SnapTradeService {
         const encryptedSecret = encrypt(result.data.userSecret!);
 
         // Save encrypted secret
-        await db.user.update({
+        await prisma.user.update({
             where: { id: localUserId },
             data: {
                 snapTradeUserId: result.data.userId,
@@ -51,8 +50,7 @@ export class SnapTradeService {
      * Generates a connection link (redirect URI) for the user to link a broker.
      */
     async generateConnectionLink(localUserId: string, customRedirectUri?: string) {
-        const db = createRLSClient(localUserId);
-        const user = await db.user.findUnique({
+        const user = await prisma.user.findUnique({
             where: { id: localUserId },
         });
 
@@ -93,8 +91,7 @@ export class SnapTradeService {
         skippedTrades: number;
         error?: string;
     }> {
-        const db = createRLSClient(localUserId);
-        const user = await db.user.findUnique({
+        const user = await prisma.user.findUnique({
             where: { id: localUserId },
             include: { brokerAccounts: true },
         });
@@ -129,7 +126,7 @@ export class SnapTradeService {
         // Update/Create Accounts in DB
         for (const acc of accounts.data || []) {
             console.log('[SnapTrade Sync] Account:', acc.id, acc.institution_name, 'Number:', acc.number);
-            await db.brokerAccount.upsert({
+            await prisma.brokerAccount.upsert({
                 where: { snapTradeAccountId: acc.id },
                 update: {
                     brokerName: acc.institution_name,
@@ -215,7 +212,7 @@ export class SnapTradeService {
                 skippedTrades++;
                 continue;
             }
-            const account = await db.brokerAccount.findUnique({
+            const account = await prisma.brokerAccount.findUnique({
                 where: { snapTradeAccountId },
             });
 
@@ -267,7 +264,7 @@ export class SnapTradeService {
             console.log('[SnapTrade Sync] Processing trade:', trade.id, 'Date:', tradeTimestamp.toISOString(), 'Symbol:', tradeSymbol, 'Type:', isOption ? 'OPTION' : 'STOCK', 'Multiplier:', contractMultiplier);
 
             // Upsert Trade
-            await db.trade.upsert({
+            await prisma.trade.upsert({
                 where: { snapTradeTradeId: trade.id },
                 update: {
                     timestamp: tradeTimestamp, // Always update the timestamp in case it was wrong before

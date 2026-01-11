@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { createRLSClient } from "@/lib/prisma-rls";
+import { prisma } from "@/lib/prisma";
 
-// DELETE /api/trades/cleanup - Deletes all trades for the current user
+// DELETE /api/trades - Deletes all trades for the current user
 export async function DELETE() {
     try {
         const session = await auth();
@@ -10,24 +10,24 @@ export async function DELETE() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Use RLS-enabled client
-        const db = createRLSClient(session.user.id);
+        const userId = session.user.id;
 
-        // RLS automatically filters to user's accounts
-        const accounts = await db.brokerAccount.findMany({
+        // Get all broker accounts for this user
+        const accounts = await prisma.brokerAccount.findMany({
+            where: { userId },
             select: { id: true },
         });
 
         const accountIds = accounts.map((a) => a.id);
 
-        // Delete all trades for these accounts (RLS ensures only user's trades)
-        const result = await db.trade.deleteMany({
+        // Delete all trades for these accounts
+        const result = await prisma.trade.deleteMany({
             where: {
                 accountId: { in: accountIds },
             },
         });
 
-        console.log(`[Cleanup] Deleted ${result.count} trades for user ${session.user.id}`);
+        console.log(`[Cleanup] Deleted ${result.count} trades for user ${userId}`);
 
         return NextResponse.json({
             success: true,

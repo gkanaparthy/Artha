@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { createRLSClient } from "@/lib/prisma-rls";
+import { prisma } from "@/lib/prisma";
 
 // GET /api/debug/accounts - Debug endpoint to see all accounts and their trade counts
 export async function GET() {
@@ -10,11 +10,11 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Use RLS-enabled client
-        const db = createRLSClient(session.user.id);
+        const userId = session.user.id;
 
-        // Get all broker accounts with trade counts (RLS enforced)
-        const accounts = await db.brokerAccount.findMany({
+        // Get all broker accounts with trade counts
+        const accounts = await prisma.brokerAccount.findMany({
+            where: { userId },
             include: {
                 _count: {
                     select: { trades: true }
@@ -22,16 +22,19 @@ export async function GET() {
             }
         });
 
-        // Get trade count by broker name (RLS enforced)
-        const tradesByBroker = await db.trade.groupBy({
+        // Get trade count by broker name
+        const tradesByBroker = await prisma.trade.groupBy({
             by: ['accountId'],
+            where: {
+                account: { userId }
+            },
             _count: { id: true }
         });
 
         // Map accountId to broker name
         const brokerTradeMap = await Promise.all(
             tradesByBroker.map(async (item) => {
-                const account = await db.brokerAccount.findUnique({
+                const account = await prisma.brokerAccount.findUnique({
                     where: { id: item.accountId },
                     select: { brokerName: true, snapTradeAccountId: true }
                 });
@@ -44,8 +47,11 @@ export async function GET() {
             })
         );
 
-        // Get unique brokers from trades (RLS enforced)
-        const uniqueBrokersInTrades = await db.trade.findMany({
+        // Get unique brokers from trades
+        const uniqueBrokersInTrades = await prisma.trade.findMany({
+            where: {
+                account: { userId }
+            },
             select: {
                 account: {
                     select: { brokerName: true }
@@ -55,7 +61,7 @@ export async function GET() {
         });
 
         return NextResponse.json({
-            userId: session.user.id,
+            userId,
             totalAccounts: accounts.length,
             accounts: accounts.map(a => ({
                 id: a.id,
