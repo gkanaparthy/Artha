@@ -82,25 +82,38 @@ export class SnapTradeService {
 
     /**
      * Syncs trade activities/transactions for all accounts of the user.
+     * Returns detailed sync result including any partial failures.
      */
-    async syncTrades(localUserId: string) {
+    async syncTrades(localUserId: string): Promise<{
+        synced: number;
+        accounts: number;
+        failedAccounts: string[];
+        skippedTrades: number;
+        error?: string;
+    }> {
         const user = await prisma.user.findUnique({
             where: { id: localUserId },
             include: { brokerAccounts: true },
         });
 
-        if (!user || !user.snapTradeUserId || !user.snapTradeUserSecret) {
-            throw new Error('User not found or not registered');
+        if (!user) {
+            return { synced: 0, accounts: 0, failedAccounts: [], skippedTrades: 0, error: 'User not found' };
+        }
+
+        if (!user.snapTradeUserId || !user.snapTradeUserSecret) {
+            return { synced: 0, accounts: 0, failedAccounts: [], skippedTrades: 0, error: 'No broker connected. Please connect a broker first.' };
         }
 
         // Decrypt the secret for API use
         const decryptedSecret = safeDecrypt(user.snapTradeUserSecret);
         if (!decryptedSecret) {
-            throw new Error('Failed to decrypt SnapTrade secret');
+            return { synced: 0, accounts: 0, failedAccounts: [], skippedTrades: 0, error: 'Failed to decrypt credentials. Please reconnect your broker.' };
         }
 
         const snapTradeUserId = user.snapTradeUserId;
         const snapTradeUserSecret = decryptedSecret;
+        const failedAccounts: string[] = [];
+        let skippedTrades = 0;
 
         // 1. Get Accounts (to ensure we have them all)
         console.log('[SnapTrade Sync] Fetching accounts for user:', snapTradeUserId);
@@ -140,7 +153,8 @@ export class SnapTradeService {
         const allActivities: any[] = [];
 
         for (const acc of accounts.data || []) {
-            console.log('[SnapTrade Sync] Fetching activities for account:', acc.id);
+            const accountName = acc.institution_name || acc.id;
+            console.log('[SnapTrade Sync] Fetching activities for account:', acc.id, accountName);
             try {
                 const activities = await snapTrade.accountInformation.getAccountActivities({
                     accountId: acc.id,
@@ -162,7 +176,8 @@ export class SnapTradeService {
                 }
                 allActivities.push(...activityList);
             } catch (err) {
-                console.error('[SnapTrade Sync] Error fetching account activities:', err);
+                console.error('[SnapTrade Sync] Error fetching account activities for', accountName, ':', err);
+                failedAccounts.push(accountName);
             }
         }
 
@@ -182,20 +197,27 @@ export class SnapTradeService {
             // Actually SnapTrade returns normalized types usually.
 
             const action = trade.type?.toUpperCase();
-            if (!action) continue;
+            if (!action) {
+                skippedTrades++;
+                continue;
+            }
 
             // Ensure account exists locally (it should from step 1)
             // Use _accountId we attached, or fall back to trade.account?.id for old API
             const snapTradeAccountId = trade._accountId || trade.account?.id;
             if (!snapTradeAccountId) {
                 console.log('[SnapTrade Sync] Skipping trade - no account ID:', trade.id);
+                skippedTrades++;
                 continue;
             }
             const account = await prisma.brokerAccount.findUnique({
                 where: { snapTradeAccountId },
             });
 
-            if (!account) continue;
+            if (!account) {
+                skippedTrades++;
+                continue;
+            }
 
             // Parse trade date - SnapTrade may use snake_case or camelCase depending on SDK version
             const rawTradeDate = trade.trade_date || trade.tradeDate;
@@ -208,12 +230,14 @@ export class SnapTradeService {
                 tradeTimestamp = new Date(rawSettlementDate);
             } else {
                 console.warn('[SnapTrade Sync] Trade missing date, skipping:', trade.id, 'Raw data:', JSON.stringify(trade));
+                skippedTrades++;
                 continue; // Skip trades without valid dates instead of using import date
             }
 
             // Validate the parsed date
             if (isNaN(tradeTimestamp.getTime())) {
                 console.warn('[SnapTrade Sync] Invalid date for trade:', trade.id, 'Raw values:', { rawTradeDate, rawSettlementDate });
+                skippedTrades++;
                 continue;
             }
 
@@ -252,7 +276,15 @@ export class SnapTradeService {
             count++;
         }
 
-        return { synced: count };
+        const accountCount = accounts.data?.length || 0;
+        console.log('[SnapTrade Sync] Completed. Synced:', count, 'Accounts:', accountCount, 'Failed:', failedAccounts.length, 'Skipped:', skippedTrades);
+
+        return {
+            synced: count,
+            accounts: accountCount,
+            failedAccounts,
+            skippedTrades,
+        };
     }
 }
 

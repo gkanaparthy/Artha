@@ -141,15 +141,38 @@ export default function SettingsPage() {
     try {
       setSyncing(true);
 
-      await fetch("/api/trades/sync", {
+      const response = await fetch("/api/trades/sync", {
         method: "POST",
       });
 
+      const result = await response.json();
+
+      if (!response.ok || result.error) {
+        alert(result.error || "Sync failed. Please try again.");
+        return;
+      }
+
       await fetchUserData();
-      alert("Sync completed successfully!");
+
+      // Build detailed feedback message
+      let message = `Sync complete! ${result.synced} trade${result.synced !== 1 ? 's' : ''} synced`;
+
+      if (result.accounts > 0) {
+        message += ` from ${result.accounts} account${result.accounts !== 1 ? 's' : ''}`;
+      }
+
+      if (result.failedAccounts?.length > 0) {
+        message += `\n\nWarning: Failed to sync ${result.failedAccounts.length} account(s): ${result.failedAccounts.join(', ')}`;
+      }
+
+      if (result.skippedTrades > 0) {
+        message += `\n\n${result.skippedTrades} activities skipped (dividends, transfers, etc.)`;
+      }
+
+      alert(message);
     } catch (e) {
       console.error(e);
-      alert("Sync failed. Please try again.");
+      alert("Network error. Please check your connection and try again.");
     } finally {
       setSyncing(false);
     }
