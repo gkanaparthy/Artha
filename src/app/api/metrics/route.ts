@@ -402,6 +402,27 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
         largestLoss: Math.round(largestLoss * 100) / 100,
         avgTrade: Math.round(avgTrade * 100) / 100,
         unrealizedCost: Math.round(unrealizedCost * 100) / 100,
+        // MTD and YTD PnL calculations
+        mtdPnL: (() => {
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            let sum = 0;
+            for (const t of filteredTrades) {
+                const closed = new Date(t.closedAt);
+                if (closed >= startOfMonth) sum += t.pnl;
+            }
+            return Math.round(sum * 100) / 100;
+        })(),
+        ytdPnL: (() => {
+            const now = new Date();
+            const startOfYear = new Date(now.getFullYear(), 0, 1);
+            let sum = 0;
+            for (const t of filteredTrades) {
+                const closed = new Date(t.closedAt);
+                if (closed >= startOfYear) sum += t.pnl;
+            }
+            return Math.round(sum * 100) / 100;
+        })(),
         openPositionsCount: filteredOpenPositions.length,
         closedTrades: sortedClosedTrades.map(t => ({
             ...t,
