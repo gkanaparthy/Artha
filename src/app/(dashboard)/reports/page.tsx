@@ -280,13 +280,13 @@ export default function ReportsPage() {
   }
 
   // Calculate drawdown
-  let peak = 0;
+  let peak = -Infinity;
   let maxDrawdown = 0;
   let cumulative = 0;
   const drawdownData = metrics.cumulativePnL.map(d => {
     cumulative = d.cumulative;
     if (cumulative > peak) peak = cumulative;
-    const drawdown = peak > 0 ? ((peak - cumulative) / peak) * 100 : 0;
+    const drawdown = peak !== -Infinity && peak > 0 ? ((peak - cumulative) / peak) * 100 : 0;
     maxDrawdown = Math.max(maxDrawdown, drawdown);
     return {
       date: d.date,
