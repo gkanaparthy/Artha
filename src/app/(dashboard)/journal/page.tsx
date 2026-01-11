@@ -39,7 +39,7 @@ const getTradeSortValue = (t: Trade, field: SortField): string | number => {
 };
 
 export default function JournalPage() {
-  const { filters, setBrokers } = useFilters();
+  const { filters } = useFilters();
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
@@ -52,17 +52,12 @@ export default function JournalPage() {
       const data = await res.json();
       const loadedTrades: Trade[] = data.trades || [];
       setTrades(loadedTrades);
-
-      // Extract brokers and update context
-      const uniqueBrokers = [...new Set(loadedTrades.map(t => t.account?.brokerName))].filter(Boolean) as string[];
-      setBrokers(uniqueBrokers);
-
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
-  }, [setBrokers]);
+  }, []);
 
   useEffect(() => {
     fetchTrades();
@@ -107,9 +102,9 @@ export default function JournalPage() {
       });
     }
 
-    // Filter by broker
-    if (filters.broker && filters.broker !== "all") {
-      result = result.filter(t => t.account?.brokerName === filters.broker);
+    // Filter by account
+    if (filters.accountId && filters.accountId !== "all") {
+      result = result.filter(t => t.accountId === filters.accountId);
     }
 
     // Filter by date range
@@ -160,7 +155,7 @@ export default function JournalPage() {
 
         {/* Global Filter Bar */}
         <AnimatedCard delay={0.1}>
-          <GlobalFilterBar showActionFilter={true} onApply={fetchTrades} />
+          <GlobalFilterBar />
         </AnimatedCard>
 
         {/* Table Card */}

@@ -18,6 +18,7 @@ interface ClosedTrade {
     closedAt: Date;
     openedAt: Date;
     broker: string;
+    accountId: string;
 }
 
 interface OpenPosition {
@@ -26,6 +27,7 @@ interface OpenPosition {
     entryPrice: number;
     openedAt: Date;
     broker: string;
+    accountId: string;
     currentValue: number;
     tradeId: string;
 }
@@ -34,7 +36,7 @@ interface FilterOptions {
     startDate?: Date;
     endDate?: Date;
     symbol?: string;
-    broker?: string;
+    accountId?: string;
 }
 
 function getCanonicalKey(trade: {
@@ -66,6 +68,7 @@ interface TradeInput {
     price: number;
     timestamp: Date;
     fees: number;
+    accountId: string;
     account?: { brokerName: string | null };
     type?: string;
     universalSymbolId?: string | null;
@@ -79,10 +82,11 @@ interface Lot {
     tradeId: string;
     date: Date;
     price: number;
-    quantity: number; // Absolute quantity remaining
+    quantity: number;
     broker: string;
+    accountId: string;
     originalQuantity: number;
-    multiplier: number; // Contract multiplier (100 for options, 1 for stocks)
+    multiplier: number;
 }
 
 function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOptions) {
@@ -117,9 +121,10 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
 
             // Normalize action and quantity
             const action = trade.action.toUpperCase();
-            const quantity = Math.abs(trade.quantity); // Always positive for calculations here
+            const quantity = Math.abs(trade.quantity);
             const price = trade.price;
             const broker = trade.account?.brokerName || 'Unknown';
+            const accountId = trade.accountId;
             const date = trade.timestamp;
             // Contract multiplier: 100 for standard options, 10 for mini options, 1 for stocks
             const multiplier = trade.contractMultiplier || 1;
@@ -155,7 +160,8 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                         quantity: matchQty,
                         closedAt: date,
                         openedAt: matchLot.date,
-                        broker: matchLot.broker
+                        broker: matchLot.broker,
+                        accountId: matchLot.accountId
                     });
 
                     matchLot.quantity -= matchQty;
@@ -175,6 +181,7 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                         quantity: remainingQty,
                         originalQuantity: remainingQty,
                         broker: broker,
+                        accountId: accountId,
                         multiplier: multiplier
                     });
                 }
@@ -198,7 +205,8 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                         quantity: matchQty,
                         closedAt: date,
                         openedAt: matchLot.date,
-                        broker: matchLot.broker
+                        broker: matchLot.broker,
+                        accountId: matchLot.accountId
                     });
 
                     matchLot.quantity -= matchQty;
@@ -218,6 +226,7 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                         quantity: remainingQty,
                         originalQuantity: remainingQty,
                         broker: broker,
+                        accountId: accountId,
                         multiplier: multiplier
                     });
                 }
@@ -232,7 +241,7 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                 entryPrice: lot.price,
                 openedAt: lot.date,
                 broker: lot.broker,
-                // Include contract multiplier in current value for options
+                accountId: lot.accountId,
                 currentValue: lot.price * lot.quantity * lot.multiplier,
                 tradeId: lot.tradeId
             });
@@ -240,11 +249,11 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
         for (const lot of shortLots) {
             allOpenPositions.push({
                 symbol: keyDetails.get(key)?.symbol || key,
-                quantity: -lot.quantity, // Negative for Short info
+                quantity: -lot.quantity,
                 entryPrice: lot.price,
                 openedAt: lot.date,
                 broker: lot.broker,
-                // Include contract multiplier in current value for options
+                accountId: lot.accountId,
                 currentValue: lot.price * -lot.quantity * lot.multiplier,
                 tradeId: lot.tradeId
             });
@@ -277,116 +286,116 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                 filteredOpenPositions = filteredOpenPositions.filter(p => symbols.includes(p.symbol.toLowerCase()));
             }
         }
-        if (filters.broker && filters.broker !== 'all') {
-            filteredTrades = filteredTrades.filter(t => t.broker === filters.broker);
-            filteredOpenPositions = filteredOpenPositions.filter(p => p.broker === filters.broker);
+        if (filters.accountId && filters.accountId !== 'all') {
+            filteredTrades = filteredTrades.filter(t => t.accountId === filters.accountId);
+            filteredOpenPositions = filteredOpenPositions.filter(p => p.accountId === filters.accountId);
         }
     }
 
-// Calculate metrics from filtered trades
-const winningTrades = filteredTrades.filter(t => t.pnl > 0);
-const losingTrades = filteredTrades.filter(t => t.pnl < 0);
+    // Calculate metrics from filtered trades
+    const winningTrades = filteredTrades.filter(t => t.pnl > 0);
+    const losingTrades = filteredTrades.filter(t => t.pnl < 0);
 
-const totalClosedTrades = filteredTrades.length;
-const winRate = totalClosedTrades > 0 ? (winningTrades.length / totalClosedTrades) * 100 : 0;
+    const totalClosedTrades = filteredTrades.length;
+    const winRate = totalClosedTrades > 0 ? (winningTrades.length / totalClosedTrades) * 100 : 0;
 
-const totalWins = winningTrades.reduce((sum, t) => sum + t.pnl, 0);
-const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + t.pnl, 0));
+    const totalWins = winningTrades.reduce((sum, t) => sum + t.pnl, 0);
+    const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + t.pnl, 0));
 
-const avgWin = winningTrades.length > 0 ? totalWins / winningTrades.length : 0;
-const avgLoss = losingTrades.length > 0 ? totalLosses / losingTrades.length : 0;
+    const avgWin = winningTrades.length > 0 ? totalWins / winningTrades.length : 0;
+    const avgLoss = losingTrades.length > 0 ? totalLosses / losingTrades.length : 0;
 
-const netPnL = filteredTrades.reduce((sum, t) => sum + t.pnl, 0);
-const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0;
+    const netPnL = filteredTrades.reduce((sum, t) => sum + t.pnl, 0);
+    const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0;
 
-// Calculate MTD and YTD PnL from all closed trades (not filtered)
-const now = new Date();
-const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-const startOfYear = new Date(now.getFullYear(), 0, 1);
+    // Calculate MTD and YTD PnL from all closed trades (not filtered)
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-const mtdPnL = closedTrades
-    .filter(t => t.closedAt >= startOfMonth)
-    .reduce((sum, t) => sum + t.pnl, 0);
+    const mtdPnL = closedTrades
+        .filter(t => t.closedAt >= startOfMonth)
+        .reduce((sum, t) => sum + t.pnl, 0);
 
-const ytdPnL = closedTrades
-    .filter(t => t.closedAt >= startOfYear)
-    .reduce((sum, t) => sum + t.pnl, 0);
+    const ytdPnL = closedTrades
+        .filter(t => t.closedAt >= startOfYear)
+        .reduce((sum, t) => sum + t.pnl, 0);
 
-// Calculate cumulative PnL for chart
-const sortedClosedTrades = [...filteredTrades].sort(
-    (a, b) => a.closedAt.getTime() - b.closedAt.getTime()
-);
+    // Calculate cumulative PnL for chart
+    const sortedClosedTrades = [...filteredTrades].sort(
+        (a, b) => a.closedAt.getTime() - b.closedAt.getTime()
+    );
 
-let cumulative = 0;
-const cumulativePnL = sortedClosedTrades.map((t) => {
-    cumulative += t.pnl;
+    let cumulative = 0;
+    const cumulativePnL = sortedClosedTrades.map((t) => {
+        cumulative += t.pnl;
+        return {
+            date: t.closedAt.toISOString().split('T')[0],
+            pnl: Math.round(t.pnl * 100) / 100,
+            cumulative: Math.round(cumulative * 100) / 100,
+            symbol: t.symbol,
+        };
+    });
+
+    // Calculate monthly performance
+    const monthlyPerformance = new Map<string, number>();
+    for (const trade of sortedClosedTrades) {
+        const monthKey = trade.closedAt.toISOString().slice(0, 7); // YYYY-MM
+        monthlyPerformance.set(monthKey, (monthlyPerformance.get(monthKey) || 0) + trade.pnl);
+    }
+    const monthlyData = Array.from(monthlyPerformance.entries())
+        .map(([month, pnl]) => ({
+            month,
+            pnl: Math.round(pnl * 100) / 100,
+        }))
+        .sort((a, b) => a.month.localeCompare(b.month));
+
+    // Calculate performance by symbol
+    const symbolPerformance = new Map<string, { pnl: number; trades: number; wins: number }>();
+    for (const trade of filteredTrades) {
+        const existing = symbolPerformance.get(trade.symbol) || { pnl: 0, trades: 0, wins: 0 };
+        existing.pnl += trade.pnl;
+        existing.trades += 1;
+        if (trade.pnl > 0) existing.wins += 1;
+        symbolPerformance.set(trade.symbol, existing);
+    }
+    const symbolData = Array.from(symbolPerformance.entries())
+        .map(([symbol, data]) => ({
+            symbol,
+            pnl: Math.round(data.pnl * 100) / 100,
+            trades: data.trades,
+            winRate: data.trades > 0 ? Math.round((data.wins / data.trades) * 100) : 0,
+        }))
+        .sort((a, b) => b.pnl - a.pnl);
+
     return {
-        date: t.closedAt.toISOString().split('T')[0],
-        pnl: Math.round(t.pnl * 100) / 100,
-        cumulative: Math.round(cumulative * 100) / 100,
-        symbol: t.symbol,
+        netPnL: Math.round(netPnL * 100) / 100,
+        winRate: Math.round(winRate * 10) / 10,
+        totalTrades: totalClosedTrades,
+        avgWin: Math.round(avgWin * 100) / 100,
+        avgLoss: Math.round(avgLoss * 100) / 100,
+        profitFactor: profitFactor === Infinity ? null : Math.round(profitFactor * 100) / 100,
+        winningTrades: winningTrades.length,
+        losingTrades: losingTrades.length,
+        unrealizedCost: Math.round(unrealizedCost * 100) / 100,
+        mtdPnL: Math.round(mtdPnL * 100) / 100,
+        ytdPnL: Math.round(ytdPnL * 100) / 100,
+        closedTrades: sortedClosedTrades.map(t => ({
+            ...t,
+            closedAt: t.closedAt.toISOString(),
+            openedAt: t.openedAt.toISOString(),
+            pnl: Math.round(t.pnl * 100) / 100,
+        })),
+        openPositions: filteredOpenPositions.map(p => ({
+            ...p,
+            openedAt: p.openedAt.toISOString(),
+            entryPrice: Math.round(p.entryPrice * 100) / 100,
+            currentValue: Math.round(p.currentValue * 100) / 100,
+        })),
+        cumulativePnL,
+        monthlyData,
+        symbolData,
     };
-});
-
-// Calculate monthly performance
-const monthlyPerformance = new Map<string, number>();
-for (const trade of sortedClosedTrades) {
-    const monthKey = trade.closedAt.toISOString().slice(0, 7); // YYYY-MM
-    monthlyPerformance.set(monthKey, (monthlyPerformance.get(monthKey) || 0) + trade.pnl);
-}
-const monthlyData = Array.from(monthlyPerformance.entries())
-    .map(([month, pnl]) => ({
-        month,
-        pnl: Math.round(pnl * 100) / 100,
-    }))
-    .sort((a, b) => a.month.localeCompare(b.month));
-
-// Calculate performance by symbol
-const symbolPerformance = new Map<string, { pnl: number; trades: number; wins: number }>();
-for (const trade of filteredTrades) {
-    const existing = symbolPerformance.get(trade.symbol) || { pnl: 0, trades: 0, wins: 0 };
-    existing.pnl += trade.pnl;
-    existing.trades += 1;
-    if (trade.pnl > 0) existing.wins += 1;
-    symbolPerformance.set(trade.symbol, existing);
-}
-const symbolData = Array.from(symbolPerformance.entries())
-    .map(([symbol, data]) => ({
-        symbol,
-        pnl: Math.round(data.pnl * 100) / 100,
-        trades: data.trades,
-        winRate: data.trades > 0 ? Math.round((data.wins / data.trades) * 100) : 0,
-    }))
-    .sort((a, b) => b.pnl - a.pnl);
-
-return {
-    netPnL: Math.round(netPnL * 100) / 100,
-    winRate: Math.round(winRate * 10) / 10,
-    totalTrades: totalClosedTrades,
-    avgWin: Math.round(avgWin * 100) / 100,
-    avgLoss: Math.round(avgLoss * 100) / 100,
-    profitFactor: profitFactor === Infinity ? null : Math.round(profitFactor * 100) / 100,
-    winningTrades: winningTrades.length,
-    losingTrades: losingTrades.length,
-    unrealizedCost: Math.round(unrealizedCost * 100) / 100,
-    mtdPnL: Math.round(mtdPnL * 100) / 100,
-    ytdPnL: Math.round(ytdPnL * 100) / 100,
-    closedTrades: sortedClosedTrades.map(t => ({
-        ...t,
-        closedAt: t.closedAt.toISOString(),
-        openedAt: t.openedAt.toISOString(),
-        pnl: Math.round(t.pnl * 100) / 100,
-    })),
-    openPositions: filteredOpenPositions.map(p => ({
-        ...p,
-        openedAt: p.openedAt.toISOString(),
-        entryPrice: Math.round(p.entryPrice * 100) / 100,
-        currentValue: Math.round(p.currentValue * 100) / 100,
-    })),
-    cumulativePnL,
-    monthlyData,
-    symbolData,
-};
 }
 
 export async function GET(req: NextRequest) {
@@ -401,7 +410,7 @@ export async function GET(req: NextRequest) {
         const startDate = searchParams.get('startDate');
         const endDate = searchParams.get('endDate');
         const symbol = searchParams.get('symbol');
-        const broker = searchParams.get('broker');
+        const accountId = searchParams.get('accountId');
 
         const trades = await prisma.trade.findMany({
             where: {
@@ -412,7 +421,7 @@ export async function GET(req: NextRequest) {
             },
             include: {
                 account: {
-                    select: { brokerName: true }
+                    select: { brokerName: true, id: true }
                 }
             },
             orderBy: [
@@ -420,6 +429,12 @@ export async function GET(req: NextRequest) {
                 { id: 'asc' }
             ]
         });
+
+        // Map trades to include accountId at the top level
+        const tradesWithAccountId = trades.map(t => ({
+            ...t,
+            accountId: t.accountId
+        }));
 
         const filters: FilterOptions = {};
         if (startDate) filters.startDate = new Date(startDate);
@@ -429,7 +444,7 @@ export async function GET(req: NextRequest) {
             filters.endDate = end;
         }
         if (symbol) filters.symbol = symbol;
-        if (broker) filters.broker = broker;
+        if (accountId) filters.accountId = accountId;
 
         const metrics = calculateMetricsFromTrades(trades, Object.keys(filters).length > 0 ? filters : undefined);
 

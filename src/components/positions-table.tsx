@@ -43,7 +43,7 @@ const getSortValue = (p: DisplayPosition, field: SortField): string | number => 
 };
 
 export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
-    const { filters, setBrokers } = useFilters();
+    const { filters } = useFilters();
     const [allPositions, setAllPositions] = useState<DisplayPosition[]>([]);
     const [filteredPositions, setFilteredPositions] = useState<DisplayPosition[]>([]);
     const [loading, setLoading] = useState(true);
@@ -68,9 +68,9 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
             filtered = filtered.filter(p => p.status === "open");
         }
 
-        // Broker Filter
-        if (filters.broker && filters.broker !== "all") {
-            filtered = filtered.filter(p => p.broker === filters.broker);
+        // Account Filter
+        if (filters.accountId && filters.accountId !== "all") {
+            filtered = filtered.filter(p => p.accountId === filters.accountId);
         }
 
         setFilteredPositions(filtered);
@@ -95,7 +95,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                 profitFactor: totalLosses > 0 ? Math.round((totalWins / totalLosses) * 100) / 100 : totalWins > 0 ? null : 0,
             });
         }
-    }, [filters.status, filters.broker, onMetricsUpdate]);
+    }, [filters.status, filters.accountId, onMetricsUpdate]);
 
     const fetchPositions = useCallback(async () => {
         try {
@@ -111,7 +111,6 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
             const data: Metrics = await res.json();
             setRawMetrics(data);
 
-            // Convert to display format
             const closedDisplayPositions: DisplayPosition[] = (data.closedTrades || []).map(p => ({
                 symbol: p.symbol,
                 quantity: p.quantity,
@@ -121,6 +120,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                 openedAt: p.openedAt,
                 closedAt: p.closedAt,
                 broker: p.broker,
+                accountId: p.accountId,
                 status: "closed" as const,
             }));
 
@@ -133,16 +133,13 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                 openedAt: p.openedAt,
                 closedAt: null,
                 broker: p.broker,
+                accountId: p.accountId,
                 status: "open" as const,
                 tradeId: p.tradeId
             }));
 
             const combined = [...openDisplayPositions, ...closedDisplayPositions];
             setAllPositions(combined);
-
-            // Get unique brokers and update global context
-            const uniqueBrokers = [...new Set(combined.map(p => p.broker))].filter(Boolean);
-            setBrokers(uniqueBrokers);
 
             // Apply client-side filters
             applyFilters(combined, data);
@@ -151,20 +148,19 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
         } finally {
             setLoading(false);
         }
-    }, [filters.symbol, filters.startDate, filters.endDate, setBrokers, applyFilters]); // Dependencies for fetch function creation
+    }, [filters.symbol, filters.startDate, filters.endDate, applyFilters]);
 
     // Initial load
     useEffect(() => {
         fetchPositions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Run once on mount
 
-    // Re-apply client-side filters when they change (Instant)
     useEffect(() => {
         if (allPositions.length > 0 || rawMetrics) {
             applyFilters(allPositions, rawMetrics);
         }
-    }, [filters.status, filters.broker, allPositions, rawMetrics, applyFilters]);
+    }, [filters.status, filters.accountId, allPositions, rawMetrics, applyFilters]);
 
     // Handle Delete
     const handleDelete = async (tradeId: string) => {
@@ -184,7 +180,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
     };
 
     const hasActiveFilters = filters.symbol || filters.startDate || filters.endDate ||
-        filters.status !== "all" || filters.broker !== "all";
+        filters.status !== "all" || filters.accountId !== "all";
 
     const openCount = allPositions.filter(p => p.status === "open").length;
     const closedCount = allPositions.filter(p => p.status === "closed").length;
@@ -192,7 +188,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
     return (
         <div className="space-y-4">
             {/* Global Filter Bar */}
-            <GlobalFilterBar onApply={fetchPositions} />
+            <GlobalFilterBar />
 
             {/* Table */}
             <div className="rounded-xl border-0 px-2">

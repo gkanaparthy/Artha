@@ -9,6 +9,7 @@ export interface ClosedPosition {
   closedAt: string;
   openedAt: string;
   broker: string;
+  accountId: string;
 }
 
 export interface OpenPosition {
@@ -17,6 +18,7 @@ export interface OpenPosition {
   entryPrice: number;
   openedAt: string;
   broker: string;
+  accountId: string;
   currentValue: number;
   tradeId: string;
 }
@@ -30,6 +32,7 @@ export interface DisplayPosition {
   openedAt: string;
   closedAt: string | null;
   broker: string;
+  accountId: string;
   status: "open" | "closed";
   tradeId?: string;
 }
@@ -43,6 +46,7 @@ export interface Trade {
   timestamp: string;
   type: string;
   fees: number;
+  accountId: string;
   account: {
     brokerName: string;
   };

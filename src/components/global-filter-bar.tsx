@@ -11,53 +11,65 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, Calendar as CalendarIcon, X, Clock, TrendingUp, TrendingDown, Filter } from "lucide-react";
+import { Search, Calendar as CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface GlobalFilterBarProps {
-    showActionFilter?: boolean; // enable optional Action filter for Journal
+    showStatusFilter?: boolean;
     className?: string;
-    onApply?: () => void;
 }
 
-export function GlobalFilterBar({ showActionFilter = false, className, onApply }: GlobalFilterBarProps) {
-    const { filters, setFilters, resetFilters, brokers } = useFilters();
+export function GlobalFilterBar({ showStatusFilter = true, className }: GlobalFilterBarProps) {
+    const { filters, setFilters, resetFilters, accounts } = useFilters();
     const [startDateOpen, setStartDateOpen] = useState(false);
     const [endDateOpen, setEndDateOpen] = useState(false);
 
     const handleClearFilters = () => {
         resetFilters();
-        if (onApply) setTimeout(onApply, 0);
     };
-
-    // Helper to trigger apply if parent wants it (e.g. force refetch)
-    // But generally filters update context, and parents listen to context.
-    // We'll keep 'Apply' button to be explicit if needed, or remove it if instant.
-    // Dashboard had "Apply". 
 
     const hasActiveFilters =
         filters.symbol ||
         filters.startDate ||
         filters.endDate ||
         filters.status !== "all" ||
-        filters.broker !== "all" ||
-        (showActionFilter && filters.action !== "ALL");
+        filters.accountId !== "all";
 
     return (
-        <div className={cn("flex flex-wrap gap-3 p-4 glass rounded-xl", className)}>
+        <div className={cn("flex flex-wrap items-center gap-3 p-4 glass rounded-xl", className)}>
             {/* Symbol Search */}
-            <div className="flex items-center gap-2 flex-1 min-w-[150px]">
-                <Search className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2 min-w-[180px] flex-1 max-w-[250px]">
+                <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <Input
-                    placeholder="Search symbol..."
+                    placeholder="Filter by symbol..."
                     value={filters.symbol}
                     onChange={(e) => setFilters(prev => ({ ...prev, symbol: e.target.value }))}
                     className="h-9"
                 />
             </div>
+
+            {/* Account Filter */}
+            {accounts.length > 0 && (
+                <Select
+                    value={filters.accountId}
+                    onValueChange={(value) => setFilters(prev => ({ ...prev, accountId: value }))}
+                >
+                    <SelectTrigger className="w-[180px] h-9">
+                        <SelectValue placeholder="All Accounts" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Accounts</SelectItem>
+                        {accounts.map((account) => (
+                            <SelectItem key={account.id} value={account.id}>
+                                {account.brokerName || "Unknown"} ({account.snapTradeAccountId.slice(-4)})
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            )}
 
             {/* Date Range */}
             <div className="flex items-center gap-2">
@@ -66,15 +78,15 @@ export function GlobalFilterBar({ showActionFilter = false, className, onApply }
                         <Button
                             variant={"outline"}
                             className={cn(
-                                "w-[140px] h-9 justify-start text-left font-normal",
+                                "w-[130px] h-9 justify-start text-left font-normal",
                                 !filters.startDate && "text-muted-foreground"
                             )}
                         >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {filters.startDate ? (
-                                format(new Date(new Date(filters.startDate).getTime() + new Date(filters.startDate).getTimezoneOffset() * 60000), "MMM dd, yyyy")
+                                format(new Date(new Date(filters.startDate).getTime() + new Date(filters.startDate).getTimezoneOffset() * 60000), "MMM dd, yy")
                             ) : (
-                                <span>Start Date</span>
+                                <span>From</span>
                             )}
                         </Button>
                     </PopoverTrigger>
@@ -84,7 +96,6 @@ export function GlobalFilterBar({ showActionFilter = false, className, onApply }
                             selected={filters.startDate ? new Date(new Date(filters.startDate).getTime() + new Date(filters.startDate).getTimezoneOffset() * 60000) : undefined}
                             onSelect={(date) => {
                                 if (date) {
-                                    // Format as YYYY-MM-DD local
                                     const offset = date.getTimezoneOffset();
                                     const localDate = new Date(date.getTime() - (offset * 60 * 1000));
                                     setFilters(prev => ({ ...prev, startDate: localDate.toISOString().split('T')[0] }));
@@ -105,15 +116,15 @@ export function GlobalFilterBar({ showActionFilter = false, className, onApply }
                         <Button
                             variant={"outline"}
                             className={cn(
-                                "w-[140px] h-9 justify-start text-left font-normal",
+                                "w-[130px] h-9 justify-start text-left font-normal",
                                 !filters.endDate && "text-muted-foreground"
                             )}
                         >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {filters.endDate ? (
-                                format(new Date(new Date(filters.endDate).getTime() + new Date(filters.endDate).getTimezoneOffset() * 60000), "MMM dd, yyyy")
+                                format(new Date(new Date(filters.endDate).getTime() + new Date(filters.endDate).getTimezoneOffset() * 60000), "MMM dd, yy")
                             ) : (
-                                <span>End Date</span>
+                                <span>To</span>
                             )}
                         </Button>
                     </PopoverTrigger>
@@ -137,92 +148,33 @@ export function GlobalFilterBar({ showActionFilter = false, className, onApply }
                 </Popover>
             </div>
 
-            {/* Status Filter */}
-            <Select
-                value={filters.status}
-                onValueChange={(value: "all" | "open" | "winners" | "losers") =>
-                    setFilters(prev => ({ ...prev, status: value }))
-                }
-            >
-                <SelectTrigger className="w-[130px] h-9">
-                    <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="open">
-                        <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3 text-blue-500" />
-                            Open
-                        </span>
-                    </SelectItem>
-                    <SelectItem value="winners">
-                        <span className="flex items-center gap-1">
-                            <TrendingUp className="h-3 w-3 text-green-500" />
-                            Winners
-                        </span>
-                    </SelectItem>
-                    <SelectItem value="losers">
-                        <span className="flex items-center gap-1">
-                            <TrendingDown className="h-3 w-3 text-red-500" />
-                            Losers
-                        </span>
-                    </SelectItem>
-                </SelectContent>
-            </Select>
-
-            {/* Optional Action Filter */}
-            {showActionFilter && (
+            {/* Status Filter (Optional) */}
+            {showStatusFilter && (
                 <Select
-                    value={filters.action}
-                    onValueChange={(value: "ALL" | "BUY" | "SELL") =>
-                        setFilters(prev => ({ ...prev, action: value }))
+                    value={filters.status}
+                    onValueChange={(value: "all" | "open" | "winners" | "losers") =>
+                        setFilters(prev => ({ ...prev, status: value }))
                     }
                 >
-                    <SelectTrigger className="w-[130px] h-9">
-                        <SelectValue placeholder="Action" />
+                    <SelectTrigger className="w-[120px] h-9">
+                        <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="ALL">All Actions</SelectItem>
-                        <SelectItem value="BUY">Buy</SelectItem>
-                        <SelectItem value="SELL">Sell</SelectItem>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="winners">Winners</SelectItem>
+                        <SelectItem value="losers">Losers</SelectItem>
                     </SelectContent>
                 </Select>
             )}
 
-            {/* Broker Filter */}
-            {brokers.length > 0 && (
-                <Select
-                    value={filters.broker}
-                    onValueChange={(value) => setFilters(prev => ({ ...prev, broker: value }))}
-                >
-                    <SelectTrigger className="w-[140px] h-9">
-                        <SelectValue placeholder="Broker" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Brokers</SelectItem>
-                        {brokers.map((broker) => (
-                            <SelectItem key={broker} value={broker}>
-                                {broker}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+            {/* Clear Button */}
+            {hasActiveFilters && (
+                <Button size="sm" variant="ghost" onClick={handleClearFilters}>
+                    <X className="h-4 w-4 mr-1" />
+                    Clear
+                </Button>
             )}
-
-            {/* Actions */}
-            <div className="flex items-center gap-2">
-                {onApply && (
-                    <Button size="sm" onClick={onApply}>
-                        Apply
-                    </Button>
-                )}
-                {hasActiveFilters && (
-                    <Button size="sm" variant="ghost" onClick={handleClearFilters}>
-                        <X className="h-4 w-4 mr-1" />
-                        Clear
-                    </Button>
-                )}
-            </div>
         </div>
     );
 }
