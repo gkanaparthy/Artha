@@ -11,8 +11,6 @@ import {
     DollarSign,
     BarChart3,
     Activity,
-    Calendar,
-    CalendarDays,
     Sparkles,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
@@ -30,8 +28,10 @@ interface Metrics {
     profitFactor: number | null;
     winningTrades: number;
     losingTrades: number;
-    mtdPnL: number;
-    ytdPnL: number;
+    largestWin: number;
+    largestLoss: number;
+    avgTrade: number;
+    openPositionsCount: number;
 }
 
 function MetricCard({
@@ -94,8 +94,10 @@ export default function DashboardPage() {
         profitFactor: null,
         winningTrades: 0,
         losingTrades: 0,
-        mtdPnL: 0,
-        ytdPnL: 0,
+        largestWin: 0,
+        largestLoss: 0,
+        avgTrade: 0,
+        openPositionsCount: 0,
     });
     const [refreshKey, setRefreshKey] = useState(0);
 
@@ -237,27 +239,27 @@ export default function DashboardPage() {
                         delay={0.1}
                     />
                     <MetricCard
-                        title="MTD P&L"
-                        value={formatCurrency(metrics.mtdPnL, true)}
-                        subtitle="Month to date"
-                        icon={Calendar}
-                        iconColor={getPnLColor(metrics.mtdPnL)}
-                        valueColor={getPnLColor(metrics.mtdPnL)}
+                        title="Largest Win"
+                        value={formatCurrency(metrics.largestWin, true)}
+                        subtitle="Best single trade"
+                        icon={TrendingUp}
+                        iconColor="text-gradient-green"
+                        valueColor="text-gradient-green"
                         delay={0.2}
                     />
                     <MetricCard
-                        title="YTD P&L"
-                        value={formatCurrency(metrics.ytdPnL, true)}
-                        subtitle="Year to date"
-                        icon={CalendarDays}
-                        iconColor={getPnLColor(metrics.ytdPnL)}
-                        valueColor={getPnLColor(metrics.ytdPnL)}
+                        title="Largest Loss"
+                        value={formatCurrency(metrics.largestLoss, true)}
+                        subtitle="Worst single trade"
+                        icon={TrendingDown}
+                        iconColor="text-gradient-red"
+                        valueColor="text-gradient-red"
                         delay={0.3}
                     />
                 </div>
 
                 {/* Secondary Metrics */}
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <MetricCard
                         title="Total Trades"
                         value={metrics.totalTrades}
@@ -267,12 +269,21 @@ export default function DashboardPage() {
                         delay={0.4}
                     />
                     <MetricCard
-                        title="Avg Win / Loss"
-                        value={`$${metrics.avgWin.toFixed(0)} / $${metrics.avgLoss.toFixed(0)}`}
-                        subtitle="Per trade"
+                        title="Open Positions"
+                        value={metrics.openPositionsCount}
+                        subtitle="Active trades"
                         icon={Activity}
-                        iconColor="text-primary"
+                        iconColor="text-amber-500"
                         delay={0.5}
+                    />
+                    <MetricCard
+                        title="Avg Trade"
+                        value={formatCurrency(metrics.avgTrade, true)}
+                        subtitle="Expected per trade"
+                        icon={Target}
+                        iconColor={getPnLColor(metrics.avgTrade)}
+                        valueColor={getPnLColor(metrics.avgTrade)}
+                        delay={0.6}
                     />
                     <MetricCard
                         title="Profit Factor"
@@ -281,7 +292,7 @@ export default function DashboardPage() {
                         icon={metrics.profitFactor !== null && metrics.profitFactor >= 1 ? TrendingUp : TrendingDown}
                         iconColor={getProfitFactorColor(metrics.profitFactor)}
                         valueColor={getProfitFactorColor(metrics.profitFactor)}
-                        delay={0.6}
+                        delay={0.7}
                     />
                 </div>
 

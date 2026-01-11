@@ -65,8 +65,10 @@ export interface Metrics {
   profitFactor: number | null;
   winningTrades: number;
   losingTrades: number;
-  mtdPnL: number;
-  ytdPnL: number;
+  largestWin: number;
+  largestLoss: number;
+  avgTrade: number;
+  openPositionsCount: number;
   closedTrades: ClosedPosition[];
   openPositions?: OpenPosition[];
   cumulativePnL?: { date: string; pnl: number; cumulative: number; symbol: string }[];

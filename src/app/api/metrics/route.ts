@@ -49,18 +49,22 @@ function getCanonicalKey(trade: {
     optionType?: string | null;
     strikePrice?: number | null;
     expiryDate?: Date | null;
+    accountId: string; // REQUIRED: trades must be matched within same account
 }): string {
+    // Include accountId to ensure trades are matched within the same brokerage account
+    const accountPrefix = trade.accountId;
+
     // 1. Prefer ID if available (Stock or Option)
-    if (trade.universalSymbolId) return trade.universalSymbolId;
+    if (trade.universalSymbolId) return `${accountPrefix}:${trade.universalSymbolId}`;
 
     // 2. If Option but no ID (fallback), try to construct unique key or use symbol
     if (trade.type === 'OPTION') {
         // If SnapTrade gives a distinct symbol for option (e.g. AAPL230120C...), use it.
-        return trade.symbol;
+        return `${accountPrefix}:${trade.symbol}`;
     }
 
     // 3. Stock fallback
-    return trade.symbol;
+    return `${accountPrefix}:${trade.symbol}`;
 }
 
 interface TradeInput {
@@ -323,18 +327,20 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
     const netPnL = filteredTrades.reduce((sum, t) => sum + t.pnl, 0);
     const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0;
 
-    // Calculate MTD and YTD PnL from all closed trades (not filtered)
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    // Calculate MTD and YTD PnL from all closed trades    // Calculate largest win and loss
+    const largestWin = winningTrades.length > 0
+        ? Math.max(...winningTrades.map(t => t.pnl))
+        : 0;
+    const largestLoss = losingTrades.length > 0
+        ? Math.min(...losingTrades.map(t => t.pnl))
+        : 0;
 
-    const mtdPnL = closedTrades
-        .filter(t => t.closedAt >= startOfMonth)
-        .reduce((sum, t) => sum + t.pnl, 0);
+    // Calculate unrealized P&L (open positions)
+    // For now, we use unrealizedCost as a proxy (total cost basis of open positions)
+    // TODO: Would need current market prices to calculate actual unrealized P&L
 
-    const ytdPnL = closedTrades
-        .filter(t => t.closedAt >= startOfYear)
-        .reduce((sum, t) => sum + t.pnl, 0);
+    // Average trade P&L
+    const avgTrade = totalClosedTrades > 0 ? netPnL / totalClosedTrades : 0;
 
     // Calculate cumulative PnL for chart
     const sortedClosedTrades = [...filteredTrades].sort(
@@ -392,9 +398,11 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
         profitFactor: profitFactor === Infinity ? null : Math.round(profitFactor * 100) / 100,
         winningTrades: winningTrades.length,
         losingTrades: losingTrades.length,
+        largestWin: Math.round(largestWin * 100) / 100,
+        largestLoss: Math.round(largestLoss * 100) / 100,
+        avgTrade: Math.round(avgTrade * 100) / 100,
         unrealizedCost: Math.round(unrealizedCost * 100) / 100,
-        mtdPnL: Math.round(mtdPnL * 100) / 100,
-        ytdPnL: Math.round(ytdPnL * 100) / 100,
+        openPositionsCount: filteredOpenPositions.length,
         closedTrades: sortedClosedTrades.map(t => ({
             ...t,
             closedAt: t.closedAt.toISOString(),
