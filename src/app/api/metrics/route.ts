@@ -442,7 +442,8 @@ export async function GET(req: NextRequest) {
             },
             orderBy: [
                 { timestamp: 'asc' },
-                { id: 'asc' }
+                { snapTradeTradeId: 'asc' }, // Use broker's trade ID for same-timestamp ordering
+                { id: 'asc' } // Fallback
             ]
         });
 
