@@ -174,6 +174,7 @@ export default function ReportsPage() {
       if (filters.endDate) params.append("endDate", filters.endDate);
       if (filters.symbol) params.append("symbol", filters.symbol);
       if (filters.accountId && filters.accountId !== 'all') params.append("accountId", filters.accountId);
+      if (filters.assetType && filters.assetType !== 'all') params.append("assetType", filters.assetType);
 
       const res = await fetch(`/api/metrics?${params.toString()}`);
       const data: Metrics = await res.json();
@@ -183,7 +184,7 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters.startDate, filters.endDate, filters.symbol, filters.accountId]);
+  }, [filters.startDate, filters.endDate, filters.symbol, filters.accountId, filters.assetType]);
 
   useEffect(() => {
     fetchMetrics();

@@ -19,6 +19,7 @@ interface ClosedTrade {
     openedAt: Date;
     broker: string;
     accountId: string;
+    type: string;
 }
 
 interface OpenPosition {
@@ -30,6 +31,7 @@ interface OpenPosition {
     accountId: string;
     currentValue: number;
     tradeId: string;
+    type: string;
 }
 
 interface FilterOptions {
@@ -37,6 +39,7 @@ interface FilterOptions {
     endDate?: Date;
     symbol?: string;
     accountId?: string;
+    assetType?: string;
 }
 
 function getCanonicalKey(trade: {
@@ -87,6 +90,7 @@ interface Lot {
     accountId: string;
     originalQuantity: number;
     multiplier: number;
+    type: string;
 }
 
 function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOptions) {
@@ -126,6 +130,7 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
             const broker = trade.account?.brokerName || 'Unknown';
             const accountId = trade.accountId;
             const date = trade.timestamp;
+            const tradeType = trade.type || 'STOCK';
             // Contract multiplier: 100 for standard options, 10 for mini options, 1 for stocks
             const multiplier = trade.contractMultiplier || 1;
 
@@ -161,7 +166,8 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                         closedAt: date,
                         openedAt: matchLot.date,
                         broker: matchLot.broker,
-                        accountId: matchLot.accountId
+                        accountId: matchLot.accountId,
+                        type: matchLot.type
                     });
 
                     matchLot.quantity -= matchQty;
@@ -182,7 +188,8 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                         originalQuantity: remainingQty,
                         broker: broker,
                         accountId: accountId,
-                        multiplier: multiplier
+                        multiplier: multiplier,
+                        type: tradeType
                     });
                 }
             } else {
@@ -206,7 +213,8 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                         closedAt: date,
                         openedAt: matchLot.date,
                         broker: matchLot.broker,
-                        accountId: matchLot.accountId
+                        accountId: matchLot.accountId,
+                        type: matchLot.type
                     });
 
                     matchLot.quantity -= matchQty;
@@ -227,7 +235,8 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                         originalQuantity: remainingQty,
                         broker: broker,
                         accountId: accountId,
-                        multiplier: multiplier
+                        multiplier: multiplier,
+                        type: tradeType
                     });
                 }
             }
@@ -243,7 +252,8 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                 broker: lot.broker,
                 accountId: lot.accountId,
                 currentValue: lot.price * lot.quantity * lot.multiplier,
-                tradeId: lot.tradeId
+                tradeId: lot.tradeId,
+                type: lot.type
             });
         }
         for (const lot of shortLots) {
@@ -255,7 +265,8 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                 broker: lot.broker,
                 accountId: lot.accountId,
                 currentValue: lot.price * -lot.quantity * lot.multiplier,
-                tradeId: lot.tradeId
+                tradeId: lot.tradeId,
+                type: lot.type
             });
         }
     }
@@ -289,6 +300,10 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
         if (filters.accountId && filters.accountId !== 'all') {
             filteredTrades = filteredTrades.filter(t => t.accountId === filters.accountId);
             filteredOpenPositions = filteredOpenPositions.filter(p => p.accountId === filters.accountId);
+        }
+        if (filters.assetType && filters.assetType !== 'all') {
+            filteredTrades = filteredTrades.filter(t => t.type === filters.assetType);
+            filteredOpenPositions = filteredOpenPositions.filter(p => p.type === filters.assetType);
         }
     }
 
@@ -411,6 +426,7 @@ export async function GET(req: NextRequest) {
         const endDate = searchParams.get('endDate');
         const symbol = searchParams.get('symbol');
         const accountId = searchParams.get('accountId');
+        const assetType = searchParams.get('assetType');
 
         const trades = await prisma.trade.findMany({
             where: {
@@ -445,6 +461,7 @@ export async function GET(req: NextRequest) {
         }
         if (symbol) filters.symbol = symbol;
         if (accountId) filters.accountId = accountId;
+        if (assetType) filters.assetType = assetType;
 
         const metrics = calculateMetricsFromTrades(trades, Object.keys(filters).length > 0 ? filters : undefined);
 

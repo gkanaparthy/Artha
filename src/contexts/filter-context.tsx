@@ -4,6 +4,7 @@ import { createContext, useContext, useState, ReactNode, useEffect, useCallback,
 
 export type FilterStatus = "all" | "open" | "winners" | "losers";
 export type FilterAction = "ALL" | "BUY" | "SELL";
+export type FilterAssetType = "all" | "STOCK" | "OPTION";
 
 export interface Account {
     id: string;
@@ -18,7 +19,8 @@ interface FilterState {
     endDate: string;
     status: FilterStatus;
     action: FilterAction;
-    accountId: string; // Changed from broker to accountId
+    accountId: string;
+    assetType: FilterAssetType;
 }
 
 interface FilterContextType {
@@ -36,6 +38,7 @@ const defaultFilters: FilterState = {
     status: "all",
     action: "ALL",
     accountId: "all",
+    assetType: "all",
 };
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
@@ -45,7 +48,7 @@ function loadFiltersFromStorage(): FilterState {
     if (typeof window === 'undefined') return defaultFilters;
 
     try {
-        const saved = localStorage.getItem("dashboard_filters_v2");
+        const saved = localStorage.getItem("dashboard_filters_v3");
         if (saved) {
             const parsed = JSON.parse(saved);
             if (parsed && typeof parsed === 'object') {
@@ -56,6 +59,7 @@ function loadFiltersFromStorage(): FilterState {
                     status: ['all', 'open', 'winners', 'losers'].includes(parsed.status) ? parsed.status : 'all',
                     action: ['ALL', 'BUY', 'SELL'].includes(parsed.action) ? parsed.action : 'ALL',
                     accountId: typeof parsed.accountId === 'string' ? parsed.accountId : 'all',
+                    assetType: ['all', 'STOCK', 'OPTION'].includes(parsed.assetType) ? parsed.assetType : 'all',
                 };
             }
         }
@@ -89,7 +93,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     // Persist to localStorage when filters change (skip initial render)
     useEffect(() => {
         if (isMounted.current) {
-            localStorage.setItem("dashboard_filters_v2", JSON.stringify(filters));
+            localStorage.setItem("dashboard_filters_v3", JSON.stringify(filters));
         } else {
             isMounted.current = true;
         }

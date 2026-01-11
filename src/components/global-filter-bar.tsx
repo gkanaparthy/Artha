@@ -36,7 +36,8 @@ export function GlobalFilterBar({ showStatusFilter = true, className }: GlobalFi
         filters.startDate ||
         filters.endDate ||
         filters.status !== "all" ||
-        filters.accountId !== "all";
+        filters.accountId !== "all" ||
+        filters.assetType !== "all";
 
     return (
         <div className={cn("flex flex-wrap items-center gap-3 p-4 glass rounded-xl", className)}>
@@ -70,6 +71,23 @@ export function GlobalFilterBar({ showStatusFilter = true, className }: GlobalFi
                     </SelectContent>
                 </Select>
             )}
+
+            {/* Asset Type Filter */}
+            <Select
+                value={filters.assetType}
+                onValueChange={(value: "all" | "STOCK" | "OPTION") =>
+                    setFilters(prev => ({ ...prev, assetType: value }))
+                }
+            >
+                <SelectTrigger className="w-[110px] h-9">
+                    <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="STOCK">Stocks</SelectItem>
+                    <SelectItem value="OPTION">Options</SelectItem>
+                </SelectContent>
+            </Select>
 
             {/* Date Range */}
             <div className="flex items-center gap-2">

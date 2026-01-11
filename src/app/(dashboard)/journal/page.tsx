@@ -118,6 +118,11 @@ export default function JournalPage() {
       result = result.filter((t) => new Date(t.timestamp) <= toDate);
     }
 
+    // Filter by asset type
+    if (filters.assetType && filters.assetType !== "all") {
+      result = result.filter(t => t.type === filters.assetType);
+    }
+
     return result;
   }, [trades, filters]);
 

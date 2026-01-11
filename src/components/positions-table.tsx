@@ -73,6 +73,11 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
             filtered = filtered.filter(p => p.accountId === filters.accountId);
         }
 
+        // Asset Type Filter
+        if (filters.assetType && filters.assetType !== "all") {
+            filtered = filtered.filter(p => p.type === filters.assetType);
+        }
+
         setFilteredPositions(filtered);
 
         // Update parent metrics based on filtered closed positions only
@@ -95,7 +100,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                 profitFactor: totalLosses > 0 ? Math.round((totalWins / totalLosses) * 100) / 100 : totalWins > 0 ? null : 0,
             });
         }
-    }, [filters.status, filters.accountId, onMetricsUpdate]);
+    }, [filters.status, filters.accountId, filters.assetType, onMetricsUpdate]);
 
     const fetchPositions = useCallback(async () => {
         try {
@@ -122,6 +127,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                 broker: p.broker,
                 accountId: p.accountId,
                 status: "closed" as const,
+                type: p.type,
             }));
 
             const openDisplayPositions: DisplayPosition[] = (data.openPositions || []).map(p => ({
@@ -135,7 +141,8 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
                 broker: p.broker,
                 accountId: p.accountId,
                 status: "open" as const,
-                tradeId: p.tradeId
+                tradeId: p.tradeId,
+                type: p.type,
             }));
 
             const combined = [...openDisplayPositions, ...closedDisplayPositions];
@@ -160,7 +167,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
         if (allPositions.length > 0 || rawMetrics) {
             applyFilters(allPositions, rawMetrics);
         }
-    }, [filters.status, filters.accountId, allPositions, rawMetrics, applyFilters]);
+    }, [filters.status, filters.accountId, filters.assetType, allPositions, rawMetrics, applyFilters]);
 
     // Handle Delete
     const handleDelete = async (tradeId: string) => {
@@ -180,7 +187,7 @@ export function PositionsTable({ onMetricsUpdate }: PositionsTableProps) {
     };
 
     const hasActiveFilters = filters.symbol || filters.startDate || filters.endDate ||
-        filters.status !== "all" || filters.accountId !== "all";
+        filters.status !== "all" || filters.accountId !== "all" || filters.assetType !== "all";
 
     const openCount = allPositions.filter(p => p.status === "open").length;
     const closedCount = allPositions.filter(p => p.status === "closed").length;
