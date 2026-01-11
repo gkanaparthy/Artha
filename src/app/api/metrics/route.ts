@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { createRLSClient } from '@/lib/prisma-rls';
 import { auth } from '@/lib/auth';
 
 interface Position {
@@ -436,11 +436,11 @@ export async function GET(req: NextRequest) {
         const accountId = searchParams.get('accountId');
         const assetType = searchParams.get('assetType');
 
-        const trades = await prisma.trade.findMany({
+        // Use RLS-enabled client
+        const db = createRLSClient(session.user.id);
+
+        const trades = await db.trade.findMany({
             where: {
-                account: {
-                    userId: session.user.id
-                },
                 action: { in: ['BUY', 'SELL', 'BUY_TO_OPEN', 'BUY_TO_CLOSE', 'SELL_TO_OPEN', 'SELL_TO_CLOSE', 'ASSIGNMENT', 'EXERCISES'] }
             },
             include: {

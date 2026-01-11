@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { createRLSClient } from '@/lib/prisma-rls';
 import { auth } from '@/lib/auth';
 
 export async function GET() {
@@ -10,7 +10,10 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const user = await prisma.user.findUnique({
+        // Use RLS-enabled client
+        const db = createRLSClient(session.user.id);
+
+        const user = await db.user.findUnique({
             where: { id: session.user.id },
             include: {
                 brokerAccounts: {

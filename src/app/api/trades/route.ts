@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { createRLSClient } from '@/lib/prisma-rls';
 import { auth } from '@/lib/auth';
 
 export async function GET() {
@@ -10,12 +10,11 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const trades = await prisma.trade.findMany({
-            where: {
-                account: {
-                    userId: session.user.id
-                }
-            },
+        // Use RLS-enabled client
+        const db = createRLSClient(session.user.id);
+
+        // RLS will automatically filter to only this user's trades
+        const trades = await db.trade.findMany({
             orderBy: {
                 timestamp: 'desc'
             },
@@ -50,17 +49,19 @@ export async function DELETE(req: Request) {
             return NextResponse.json({ error: 'Trade ID required' }, { status: 400 });
         }
 
-        // Verify trade belongs to user's account
-        const trade = await prisma.trade.findUnique({
+        // Use RLS-enabled client
+        const db = createRLSClient(session.user.id);
+
+        // RLS ensures trade belongs to user's account
+        const trade = await db.trade.findUnique({
             where: { id: tradeId },
-            include: { account: true }
         });
 
-        if (!trade || trade.account.userId !== session.user.id) {
+        if (!trade) {
             return NextResponse.json({ error: 'Trade not found or unauthorized' }, { status: 404 });
         }
 
-        await prisma.trade.delete({
+        await db.trade.delete({
             where: { id: tradeId }
         });
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createServiceClient } from "@/lib/prisma-rls";
 import { SnapTradeService } from "@/lib/services/snaptrade.service";
 
 /**
@@ -9,6 +9,9 @@ import { SnapTradeService } from "@/lib/services/snaptrade.service";
  * Runs automatically based on Vercel Cron configuration.
  * 
  * Security: Protected by CRON_SECRET to prevent unauthorized access.
+ * 
+ * NOTE: This endpoint uses createServiceClient() which bypasses RLS.
+ * This is intentional - cron jobs need to access all users' data.
  */
 export async function GET(request: Request) {
     try {
@@ -27,6 +30,9 @@ export async function GET(request: Request) {
         }
 
         console.log("[Cron Sync] Starting scheduled sync for all users...");
+
+        // Use service client (bypasses RLS) for admin operations
+        const prisma = createServiceClient();
 
         // Find all users with SnapTrade credentials
         const usersWithSnapTrade = await prisma.user.findMany({
@@ -52,6 +58,7 @@ export async function GET(request: Request) {
             try {
                 console.log(`[Cron Sync] Syncing user ${user.id} (${user.email})...`);
 
+                // syncTrades uses RLS internally with the user's ID
                 const syncResult = await snapTradeService.syncTrades(user.id);
 
                 results.push({

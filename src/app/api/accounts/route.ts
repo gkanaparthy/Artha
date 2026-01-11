@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { createRLSClient } from '@/lib/prisma-rls';
 import { auth } from '@/lib/auth';
 
 export async function GET() {
@@ -10,10 +10,11 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const accounts = await prisma.brokerAccount.findMany({
-            where: {
-                userId: session.user.id
-            },
+        // Use RLS-enabled client
+        const db = createRLSClient(session.user.id);
+
+        // RLS will automatically filter to only this user's accounts
+        const accounts = await db.brokerAccount.findMany({
             select: {
                 id: true,
                 brokerName: true,
@@ -45,24 +46,27 @@ export async function DELETE(req: Request) {
             return NextResponse.json({ error: 'Account ID required' }, { status: 400 });
         }
 
-        // Verify account belongs to user
-        const account = await prisma.brokerAccount.findUnique({
+        // Use RLS-enabled client
+        const db = createRLSClient(session.user.id);
+
+        // RLS will ensure the account belongs to the user
+        // If no matching account, findUnique returns null
+        const account = await db.brokerAccount.findUnique({
             where: { id: accountId },
         });
 
-        if (!account || account.userId !== session.user.id) {
+        if (!account) {
             return NextResponse.json({ error: 'Account not found or unauthorized' }, { status: 404 });
         }
 
-        // Transaction to delete trades then account
-        await prisma.$transaction([
-            prisma.trade.deleteMany({
-                where: { accountId: accountId }
-            }),
-            prisma.brokerAccount.delete({
-                where: { id: accountId }
-            })
-        ]);
+        // Delete trades then account (RLS enforced on both)
+        await db.trade.deleteMany({
+            where: { accountId: accountId }
+        });
+
+        await db.brokerAccount.delete({
+            where: { id: accountId }
+        });
 
         return NextResponse.json({ success: true });
 
