@@ -7,9 +7,13 @@ export default auth((req) => {
   const isLandingPage = req.nextUrl.pathname === "/";
   const isAuthCallback = req.nextUrl.pathname.startsWith("/api/auth");
   const isPublicApi = req.nextUrl.pathname === "/api/health";
+  const isCronApi = req.nextUrl.pathname.startsWith("/api/cron");
+  const isPublicPage = req.nextUrl.pathname.startsWith("/privacy") ||
+                       req.nextUrl.pathname.startsWith("/terms") ||
+                       req.nextUrl.pathname.startsWith("/contact");
 
-  // Allow auth callbacks and public APIs
-  if (isAuthCallback || isPublicApi) {
+  // Allow auth callbacks, cron jobs, and public APIs
+  if (isAuthCallback || isPublicApi || isCronApi || isPublicPage) {
     return NextResponse.next();
   }
 
