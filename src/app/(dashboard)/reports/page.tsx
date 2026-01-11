@@ -286,7 +286,7 @@ export default function ReportsPage() {
   const drawdownData = metrics.cumulativePnL.map(d => {
     cumulative = d.cumulative;
     if (cumulative > peak) peak = cumulative;
-    const drawdown = peak !== -Infinity && peak > 0 ? ((peak - cumulative) / peak) * 100 : 0;
+    const drawdown = peak !== -Infinity ? Math.max(0, peak - cumulative) : 0;
     maxDrawdown = Math.max(maxDrawdown, drawdown);
     return {
       date: d.date,
@@ -330,7 +330,7 @@ export default function ReportsPage() {
     { metric: "Win Rate", value: metrics.winRate, fullMark: 100 },
     { metric: "Profit Factor", value: Math.min((metrics.profitFactor ?? 0) * 25, 100), fullMark: 100 },
     { metric: "Risk/Reward", value: Math.min(riskRewardRatio * 25, 100), fullMark: 100 },
-    { metric: "Consistency", value: Math.max(0, 100 - maxDrawdown), fullMark: 100 },
+    { metric: "Consistency", value: Math.max(0, 100 - (metrics.netPnL > 0 ? (maxDrawdown / metrics.netPnL) * 100 : 0)), fullMark: 100 },
     { metric: "Activity", value: Math.min(metrics.totalTrades * 2, 100), fullMark: 100 },
   ];
 
@@ -447,10 +447,10 @@ export default function ReportsPage() {
               />
               <SummaryCard
                 title="Max Drawdown"
-                value={`${maxDrawdown.toFixed(1)}%`}
+                value={`-${formatCurrency(maxDrawdown)}`}
                 icon={TrendingDown}
                 iconColor="text-orange-500"
-                valueColor={maxDrawdown <= 10 ? "text-green-500" : maxDrawdown <= 25 ? "text-amber-500" : "text-red-500"}
+                valueColor={maxDrawdown === 0 ? "text-green-500" : "text-red-500"}
                 delay={0.4}
               />
               <SummaryCard
@@ -780,7 +780,7 @@ export default function ReportsPage() {
                         />
                         <YAxis
                           tick={{ fontSize: 11, fill: "currentColor" }}
-                          tickFormatter={(value) => `${value}%`}
+                          tickFormatter={(value) => `$${value}`}
                           stroke="currentColor"
                           reversed
                         />
@@ -794,7 +794,7 @@ export default function ReportsPage() {
                                 color: "oklch(0.65 0.2 25)"
                               }))}
                               label={String(label ?? "")}
-                              formatter={(value) => [`${value.toFixed(2)}%`, "Drawdown"]}
+                              formatter={(value) => [formatCurrency(value), "Drawdown"]}
                               labelFormatter={(l) => new Date(l).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
                             />
                           )}
