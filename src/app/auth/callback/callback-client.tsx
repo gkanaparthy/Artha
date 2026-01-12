@@ -26,6 +26,10 @@ export function CallbackClient() {
           return;
         }
 
+        // Wait a few seconds for SnapTrade to process the new connection
+        setMessage("Finalizing broker connection...");
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
         // Sync trades after successful connection
         setMessage("Syncing your trades...");
         const syncRes = await fetch("/api/trades/sync", {
