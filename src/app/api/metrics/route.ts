@@ -127,9 +127,16 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
             const broker = trade.account?.brokerName || 'Unknown';
             const accountId = trade.accountId;
             const date = trade.timestamp;
-            const tradeType = trade.type || 'STOCK';
+            let tradeType = trade.type || 'STOCK';
             // Contract multiplier: 100 for standard options, 10 for mini options, 1 for stocks
-            const multiplier = trade.contractMultiplier || 1;
+            let multiplier = trade.contractMultiplier || 1;
+
+            // Heuristic catch for Options that were saved as Stocks (raw symbol fallback)
+            // e.g. "SPXW  260105C06920000"
+            if (multiplier === 1 && /^[A-Z]+\s*[0-9]{6}[CP][0-9]{8}$/.test(trade.symbol)) {
+                multiplier = 100;
+                tradeType = 'OPTION';
+            }
 
             if (quantity === 0) continue;
 
