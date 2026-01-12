@@ -187,7 +187,7 @@ export class SnapTradeService {
 
                         // Convert executed orders to activity format
                         for (const order of orders) {
-                            if (order.status === 'Executed' || order.status === 'Filled') {
+                            if (order.status === 'EXECUTED' || order.status === 'PARTIAL') {
                                 const activity = {
                                     id: order.brokerage_order_id || `order_${order.symbol?.symbol}_${Date.now()}`,
                                     type: order.action, // BUY or SELL
