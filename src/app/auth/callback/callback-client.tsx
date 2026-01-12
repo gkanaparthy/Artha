@@ -27,14 +27,13 @@ export function CallbackClient() {
         }
 
         // Sync trades after successful connection
-        const userId = localStorage.getItem("trade_journal_user_id");
-        if (userId) {
-          setMessage("Syncing your trades...");
-          await fetch("/api/trades/sync", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId }),
-          });
+        setMessage("Syncing your trades...");
+        const syncRes = await fetch("/api/trades/sync", {
+          method: "POST",
+        });
+
+        if (!syncRes.ok) {
+          console.warn("Auto-sync failed, user can manually sync later");
         }
 
         setStatus("success");

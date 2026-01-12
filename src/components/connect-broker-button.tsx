@@ -24,18 +24,9 @@ export function ConnectBrokerButton() {
         try {
             setLoading(true);
 
-            // Generate a user ID for this session
-            let userId = localStorage.getItem("trade_journal_user_id");
-            if (!userId) {
-                userId = `user_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-                localStorage.setItem("trade_journal_user_id", userId);
-            }
-
-            // 1. Register (idempotent)
+            // 1. Register with SnapTrade (idempotent - uses session user)
             const registerRes = await fetch("/api/auth/snaptrade/register", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId }),
             });
 
             if (!registerRes.ok) {
@@ -43,12 +34,12 @@ export function ConnectBrokerButton() {
                 throw new Error(error.error || "Registration failed");
             }
 
-            // 2. Get Link with callback URL
+            // 2. Get connection link with callback URL
             const callbackUrl = `${window.location.origin}/auth/callback`;
             const res = await fetch("/api/auth/snaptrade/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId, redirectUri: callbackUrl }),
+                body: JSON.stringify({ redirectUri: callbackUrl }),
             });
 
             if (!res.ok) {
