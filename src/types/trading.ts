@@ -51,7 +51,7 @@ export interface Trade {
   fees: number;
   accountId: string;
   account: {
-    brokerName: string;
+    brokerName: string | null;
   };
   tags: { id: string; name: string; color: string }[];
 }

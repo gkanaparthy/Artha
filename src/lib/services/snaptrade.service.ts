@@ -77,7 +77,7 @@ export class SnapTradeService {
             immediateRedirect: true,
         });
 
-        return (result.data as any).redirectURI;
+        return (result.data as { redirectURI: string }).redirectURI;
     }
 
     /**
@@ -192,11 +192,7 @@ export class SnapTradeService {
             // Filter only "trade" types (BUY/SELL)
             // SnapTrade "type" can be DIVIDEND, etc.
             // We are interested in BUY, SELL, maybe others.
-            // We will map them.
-
-            // Basic check for trade-like types.
-            const meaningfulTypes = ['BUY', 'SELL', 'SPLIT', 'ASSIGNMENT', 'EXERCISES']; // Adjust as needed
-            // Actually SnapTrade returns normalized types usually.
+            // Meaningful types: BUY, SELL, SPLIT, ASSIGNMENT, EXERCISES
 
             const action = trade.type?.toUpperCase();
             if (!action) {

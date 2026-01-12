@@ -11,8 +11,6 @@ import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { CalendarView } from "@/components/calendar-view";
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   XAxis,
@@ -248,9 +246,6 @@ export default function ReportsPage() {
       trades: data.trades,
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
-
-  // Last 30 days for charts
-  const recentDailyData = dailyData.slice(-30);
 
   // Calculate win/loss streaks
   let currentStreak = 0;

@@ -7,13 +7,12 @@ import { motion } from "framer-motion";
 import { Playfair_Display, Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 import {
-    TrendingUp,
     BarChart3,
     Target,
-    ShieldCheck,
     ArrowRight,
     CheckCircle2,
-    Zap
+    Zap,
+    LucideIcon
 } from "lucide-react";
 
 const playfair = Playfair_Display({ subsets: ["latin"] });
@@ -239,7 +238,7 @@ export default function LandingPage() {
     );
 }
 
-function FeatureCard({ icon: Icon, title, description }: { icon: any, title: string, description: string }) {
+function FeatureCard({ icon: Icon, title, description }: { icon: LucideIcon, title: string, description: string }) {
     return (
         <div className="p-8 rounded-2xl bg-[#FAFBF6] border border-[#2E4A3B]/5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
             <div className="w-12 h-12 rounded-full bg-[#E8EFE0] flex items-center justify-center mb-6 text-[#2E4A3B]">

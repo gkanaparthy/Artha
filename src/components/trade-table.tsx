@@ -12,7 +12,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Trash2 } from "lucide-react";
-import { format } from "date-fns"; // Need to install date-fns
 
 interface Trade {
     id: string;

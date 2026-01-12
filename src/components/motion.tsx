@@ -149,11 +149,9 @@ AnimatedCard.displayName = "AnimatedCard";
 // Animated number counter
 export function AnimatedNumber({
   value,
-  duration = 1,
   formatFn = (n: number) => n.toString(),
 }: {
   value: number;
-  duration?: number;
   formatFn?: (n: number) => string;
 }) {
   return (

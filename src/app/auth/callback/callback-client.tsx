@@ -12,6 +12,7 @@ export function CallbackClient() {
 
   useEffect(() => {
     // Check if this is a popup window
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsPopup(!!window.opener);
 
     const handleCallback = async () => {

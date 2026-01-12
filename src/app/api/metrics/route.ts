@@ -2,13 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
-interface Position {
-    quantity: number;
-    price: number;
-    timestamp: Date;
-    tradeId: string;
-}
-
 interface ClosedTrade {
     symbol: string;
     pnl: number;
@@ -475,12 +468,6 @@ export async function GET(req: NextRequest) {
                 { id: 'asc' } // Fallback
             ]
         });
-
-        // Map trades to include accountId at the top level
-        const tradesWithAccountId = trades.map(t => ({
-            ...t,
-            accountId: t.accountId
-        }));
 
         const filters: FilterOptions = {};
         if (startDate) filters.startDate = new Date(startDate);

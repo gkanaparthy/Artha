@@ -274,7 +274,7 @@ export default function JournalPage() {
         </AnimatedCard>
 
         <TradeDetailSheet
-          trade={selectedTrade as any}
+          trade={selectedTrade}
           open={sheetOpen}
           onOpenChange={setSheetOpen}
         />

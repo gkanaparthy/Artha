@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, formatCurrency } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -129,12 +129,6 @@ export function CalendarView({ data }: CalendarViewProps) {
     const today = new Date();
     setDirection(today > currentDate ? 1 : -1);
     setCurrentDate(today);
-  };
-
-  const getPnLColor = (pnl: number) => {
-    if (pnl > 0) return "bg-emerald-500/20 border-emerald-500/30 hover:bg-emerald-500/30";
-    if (pnl < 0) return "bg-red-500/20 border-red-500/30 hover:bg-red-500/30";
-    return "bg-muted/30 border-border hover:bg-muted/50";
   };
 
   const getPnLTextColor = (pnl: number) => {

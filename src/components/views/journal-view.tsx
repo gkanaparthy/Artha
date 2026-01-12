@@ -367,7 +367,7 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
         </AnimatedCard>
 
         <TradeDetailSheet
-          trade={selectedTrade as any}
+          trade={selectedTrade}
           open={sheetOpen}
           onOpenChange={setSheetOpen}
         />
