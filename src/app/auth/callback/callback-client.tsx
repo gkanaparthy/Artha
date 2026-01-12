@@ -26,22 +26,26 @@ export function CallbackClient() {
           return;
         }
 
-        // Wait a few seconds for SnapTrade to process the new connection
-        setMessage("Finalizing broker connection...");
-        await new Promise(resolve => setTimeout(resolve, 3000));
-
-        // Sync trades after successful connection
+        // Attempt initial sync - may return empty for newly connected accounts
         setMessage("Syncing your trades...");
         const syncRes = await fetch("/api/trades/sync", {
           method: "POST",
         });
 
-        if (!syncRes.ok) {
-          console.warn("Auto-sync failed, user can manually sync later");
+        let syncResult = null;
+        if (syncRes.ok) {
+          syncResult = await syncRes.json();
         }
 
         setStatus("success");
-        setMessage("Broker connected successfully!");
+
+        // Check if sync returned trades or was empty
+        if (syncResult && syncResult.synced > 0) {
+          setMessage(`Synced ${syncResult.synced} trades successfully!`);
+        } else {
+          // Empty result - broker data may still be processing
+          setMessage("Broker connected! If trades don't appear, click 'Sync Trades' in a few minutes.");
+        }
 
         // Notify parent window and close after delay
         if (window.opener) {
