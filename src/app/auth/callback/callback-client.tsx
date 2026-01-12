@@ -47,7 +47,7 @@ export function CallbackClient() {
         } else {
           // If not opened as popup, redirect to dashboard
           setTimeout(() => {
-            window.location.href = "/";
+            window.location.href = "/dashboard";
           }, 2000);
         }
       } catch (error) {

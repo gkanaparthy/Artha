@@ -71,17 +71,30 @@ export function ConnectBrokerButton() {
                     `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
                 );
 
+                // Check if popup was blocked
+                if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                    // Popup was blocked - redirect in same window instead
+                    window.location.href = data.redirectURI;
+                    return;
+                }
+
+                // Focus the popup to bring it to front
+                popup.focus();
+
                 // Monitor popup close
-                if (popup) {
-                    const checkClosed = setInterval(() => {
+                const checkClosed = setInterval(() => {
+                    try {
                         if (popup.closed) {
                             clearInterval(checkClosed);
                             setLoading(false);
                             // Refresh data in case connection was successful
                             window.location.reload();
                         }
-                    }, 500);
-                }
+                    } catch {
+                        // Cross-origin error - popup is on different domain
+                        clearInterval(checkClosed);
+                    }
+                }, 500);
             } else {
                 throw new Error("Failed to get connection link");
             }
