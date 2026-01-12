@@ -168,49 +168,10 @@ export class SnapTradeService {
                 // Response structure: { data: { data: [...activities], pagination: {...} } }
                 const activityList = activities.data?.data || [];
                 console.log('[SnapTrade Sync] Account', acc.id, 'returned', activityList.length, 'activities');
-
-                if (activityList.length === 0) {
-                    // Log full response for debugging when empty
-                    console.log('[SnapTrade Sync] Empty activities response. Pagination:', JSON.stringify(activities.data?.pagination));
-                    console.log('[SnapTrade Sync] Note: Activities are cached and refreshed once daily. For newly connected accounts, try again in 24 hours.');
-
-                    // Try holdings endpoint as fallback for recent orders
-                    console.log('[SnapTrade Sync] Trying holdings endpoint for recent orders...');
-                    try {
-                        const holdings = await snapTrade.accountInformation.getUserHoldings({
-                            accountId: acc.id,
-                            userId: snapTradeUserId,
-                            userSecret: snapTradeUserSecret,
-                        });
-                        const orders = holdings.data?.orders || [];
-                        console.log('[SnapTrade Sync] Holdings endpoint returned', orders.length, 'recent orders');
-
-                        // Convert executed orders to activity format
-                        for (const order of orders) {
-                            if (order.status === 'EXECUTED' || order.status === 'PARTIAL') {
-                                const activity = {
-                                    id: order.brokerage_order_id || `order_${order.symbol?.symbol}_${Date.now()}`,
-                                    type: order.action, // BUY or SELL
-                                    symbol: order.symbol,
-                                    units: order.filled_quantity || order.total_quantity,
-                                    price: order.execution_price || order.limit_price,
-                                    fee: 0,
-                                    trade_date: order.time_executed || order.time_placed,
-                                    currency: { code: 'USD' },
-                                    _accountId: acc.id,
-                                    _fromOrders: true, // Mark as coming from orders endpoint
-                                };
-                                allActivities.push(activity);
-                            }
-                        }
-                    } catch (holdingsErr) {
-                        console.log('[SnapTrade Sync] Holdings endpoint also returned no data:', holdingsErr);
-                    }
-                } else {
+                if (activityList.length > 0) {
                     // Log only safe identifiers, not full trade data
                     console.log('[SnapTrade Sync] First activity id:', activityList[0]?.id, 'type:', activityList[0]?.type);
                 }
-
                 // Attach account ID to each activity since it's not included in response
                 for (const activity of activityList) {
                     activity._accountId = acc.id;
