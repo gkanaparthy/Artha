@@ -107,7 +107,7 @@ export default function LandingPage() {
                                     </Button>
                                 </Link>
                                 <Link href="/demo">
-                                    <Button variant="outline" className="h-14 px-8 rounded-full border-[#E59889] text-[#E59889] hover:bg-[#E59889]/10 text-lg">
+                                    <Button variant="outline" className="h-14 px-8 rounded-full border-[#2E4A3B] text-[#2E4A3B] hover:bg-[#2E4A3B]/5 text-lg">
                                         Try Demo
                                     </Button>
                                 </Link>
