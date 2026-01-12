@@ -51,7 +51,7 @@ Unlike cloud-based solutions, Artha is self-hosted, giving you complete control 
 
 ### 🧮 Smart P&L Calculation
 - **FIFO lot matching** - Accurate cost basis calculation
-- **Options support** - Handles assignments, exercises, and options trades
+- **Options support** - Handles assignments, exercises, expirations, and accurate contract multipliers
 - **Fee tracking** - Includes commissions in P&L calculations
 
 ## Tech Stack
@@ -65,7 +65,7 @@ Unlike cloud-based solutions, Artha is self-hosted, giving you complete control 
 | **Components** | Radix UI, shadcn/ui |
 | **Animations** | Framer Motion |
 | **Charts** | Recharts |
-| **Database** | SQLite + Prisma ORM |
+| **Database** | PostgreSQL (Supabase) + Prisma ORM |
 | **Auth** | NextAuth.js v5 (Google OAuth) |
 | **Broker API** | SnapTrade SDK |
 
@@ -101,7 +101,7 @@ Unlike cloud-based solutions, Artha is self-hosted, giving you complete control 
 │  └───────────────────┬───────────────────────┘  └──────┬──────┘    │
 │                      │                                  │           │
 │  ┌───────────────────┴──────────────────────────────────┴────────┐ │
-│  │                     SQLite Database                            │ │
+│  │                 PostgreSQL Database (Supabase)                  │ │
 │  │  ┌─────────┐ ┌─────────┐ ┌─────────────┐ ┌─────────┐         │ │
 │  │  │  Users  │ │ Trades  │ │BrokerAccounts│ │Sessions │         │ │
 │  │  └─────────┘ └─────────┘ └─────────────┘ └─────────┘         │ │
@@ -128,7 +128,7 @@ Unlike cloud-based solutions, Artha is self-hosted, giving you complete control 
 - **FIFO Lot Engine** - Deterministic P&L calculation with proper cost basis tracking for both long and short positions
 - **Client-side filtering** - Instant filter updates for status/broker without API calls
 - **Server-side filtering** - Date and symbol filters query the database for performance
-- **Local-first** - SQLite database for simplicity and data ownership
+- **Type Safety** - Fully typed end-to-end with TypeScript and Prisma
 
 ## Getting Started
 
@@ -152,11 +152,15 @@ Unlike cloud-based solutions, Artha is self-hosted, giving you complete control 
 
 3. **Set up environment variables**
    ```bash
-   cp .env.example .env
+   cp .env.example .env.local
    ```
 
-   Configure the following in `.env`:
+   Configure the following in `.env.local`:
    ```env
+   # Database (Supabase)
+   DATABASE_URL=postgres://...
+   DIRECT_URL=postgres://...
+
    # NextAuth
    NEXTAUTH_URL=http://localhost:3000
    NEXTAUTH_SECRET=your-secret-key
@@ -172,7 +176,8 @@ Unlike cloud-based solutions, Artha is self-hosted, giving you complete control 
 
 4. **Initialize the database**
    ```bash
-   npx prisma migrate dev
+   npx prisma generate
+   npx prisma db push
    ```
 
 5. **Run the development server**
@@ -222,7 +227,7 @@ src/
 - [ ] Custom trade entry (manual trades)
 - [ ] Import from CSV/Excel
 - [ ] Multiple currency support
-- [ ] Dark/Light theme toggle
+- [x] Dark/Light theme toggle
 - [ ] Mobile responsive design improvements
 - [ ] Export reports to PDF
 - [ ] Trade replay and simulation
