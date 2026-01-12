@@ -133,8 +133,19 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
 
             if (quantity === 0) continue;
 
-            const isBuy = action === 'BUY' || action === 'BUY_TO_OPEN' || action === 'BUY_TO_CLOSE' || action === 'ASSIGNMENT';
-            const isSell = action === 'SELL' || action === 'SELL_TO_OPEN' || action === 'SELL_TO_CLOSE' || action === 'EXERCISES';
+            let isBuy = action === 'BUY' || action === 'BUY_TO_OPEN' || action === 'BUY_TO_CLOSE' || action === 'ASSIGNMENT';
+            let isSell = action === 'SELL' || action === 'SELL_TO_OPEN' || action === 'SELL_TO_CLOSE' || action === 'EXERCISES';
+
+            if (action === 'OPTIONEXPIRATION') {
+                // Check original quantity sign
+                // Negative quantity = Removing assets (Closing Long) -> Treat as Sell
+                // Positive quantity = Adding assets (Closing Short) -> Treat as Buy
+                if (trade.quantity < 0) {
+                    isSell = true;
+                } else {
+                    isBuy = true;
+                }
+            }
 
             if (!isBuy && !isSell) continue;
 
@@ -455,7 +466,7 @@ export async function GET(req: NextRequest) {
                 account: {
                     userId: session.user.id
                 },
-                action: { in: ['BUY', 'SELL', 'BUY_TO_OPEN', 'BUY_TO_CLOSE', 'SELL_TO_OPEN', 'SELL_TO_CLOSE', 'ASSIGNMENT', 'EXERCISES'] }
+                action: { in: ['BUY', 'SELL', 'BUY_TO_OPEN', 'BUY_TO_CLOSE', 'SELL_TO_OPEN', 'SELL_TO_CLOSE', 'ASSIGNMENT', 'EXERCISES', 'OPTIONEXPIRATION'] }
             },
             include: {
                 account: {
