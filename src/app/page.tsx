@@ -14,6 +14,7 @@ import {
     Zap,
     LucideIcon
 } from "lucide-react";
+import { CursorParticles } from "@/components/cursor-particles";
 
 const playfair = Playfair_Display({ subsets: ["latin"] });
 const inter = Inter({ subsets: ["latin"] });
@@ -21,6 +22,7 @@ const inter = Inter({ subsets: ["latin"] });
 export default function LandingPage() {
     return (
         <div className={cn("min-h-screen bg-[#FAFBF6] flex flex-col", inter.className)}>
+            <CursorParticles />
             {/* Navbar */}
             <header className="sticky top-0 z-50 w-full border-b border-[#2E4A3B]/5 bg-[#FAFBF6]/80 backdrop-blur-md">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-6xl">
