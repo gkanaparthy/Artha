@@ -361,18 +361,20 @@ export function DashboardView({
           <MetricCard
             title="Unrealized P&L"
             value={
-              liveLoading
-                ? "..."
-                : livePositions
-                  ? formatCurrency(livePositions.summary.totalUnrealizedPnl, true)
-                  : "—"
+              isDemo
+                ? formatCurrency(2847.50, true) // Demo value
+                : liveLoading
+                  ? "..."
+                  : livePositions
+                    ? formatCurrency(livePositions.summary.totalUnrealizedPnl, true)
+                    : "—"
             }
-            subtitle={livePositions ? "Live from broker" : "Connect broker"}
+            subtitle={isDemo ? "Sample data" : livePositions ? "Live from broker" : "Connect broker"}
             icon={Wallet}
-            iconColor={livePositions ? getPnLColor(livePositions.summary.totalUnrealizedPnl) : "text-muted-foreground"}
-            valueColor={livePositions ? getPnLColor(livePositions.summary.totalUnrealizedPnl) : ""}
+            iconColor={isDemo ? "text-gradient-green" : livePositions ? getPnLColor(livePositions.summary.totalUnrealizedPnl) : "text-muted-foreground"}
+            valueColor={isDemo ? "text-gradient-green" : livePositions ? getPnLColor(livePositions.summary.totalUnrealizedPnl) : ""}
             delay={0.8}
-            glowClass={livePositions && livePositions.summary.totalUnrealizedPnl >= 0 ? "glow-green" : "glow-red"}
+            glowClass={isDemo ? "glow-green" : livePositions && livePositions.summary.totalUnrealizedPnl >= 0 ? "glow-green" : "glow-red"}
           />
         </div>
 
