@@ -12,6 +12,7 @@ import {
   BarChart3,
   Activity,
   Sparkles,
+  Wallet,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
@@ -78,6 +79,29 @@ function MetricCard({
   );
 }
 
+interface LivePosition {
+  symbol: string;
+  units: number;
+  price: number | null;
+  averageCost: number | null;
+  openPnl: number | null;
+  marketValue: number | null;
+  type: 'STOCK' | 'OPTION';
+  accountId: string;
+  brokerName: string;
+}
+
+interface LivePositionsData {
+  positions: LivePosition[];
+  summary: {
+    totalPositions: number;
+    totalMarketValue: number;
+    totalUnrealizedPnl: number;
+    stockPositions: number;
+    optionPositions: number;
+  };
+}
+
 export function DashboardView({
   initialMetrics,
   initialPositions,
@@ -103,6 +127,8 @@ export function DashboardView({
     }
   );
   const [refreshKey, setRefreshKey] = useState(0);
+  const [livePositions, setLivePositions] = useState<LivePositionsData | null>(null);
+  const [liveLoading, setLiveLoading] = useState(false);
 
   // Fetch metrics whenever ANY filter changes (only in non-demo mode)
   const fetchMetrics = useCallback(async () => {
@@ -127,6 +153,24 @@ export function DashboardView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(filters), isDemo]);
 
+  // Fetch live positions with current market prices
+  const fetchLivePositions = useCallback(async () => {
+    if (isDemo) return;
+
+    try {
+      setLiveLoading(true);
+      const res = await fetch('/api/positions');
+      if (res.ok) {
+        const data: LivePositionsData = await res.json();
+        setLivePositions(data);
+      }
+    } catch (e) {
+      console.error('Failed to fetch live positions:', e);
+    } finally {
+      setLiveLoading(false);
+    }
+  }, [isDemo]);
+
   const handleSync = async () => {
     if (isDemo) return; // Don't sync in demo mode
 
@@ -136,6 +180,7 @@ export function DashboardView({
         method: "POST",
       });
       fetchMetrics();
+      fetchLivePositions();
       setRefreshKey((k) => k + 1);
     } catch (e) {
       console.error(e);
@@ -168,8 +213,9 @@ export function DashboardView({
   useEffect(() => {
     if (!isDemo) {
       fetchMetrics();
+      fetchLivePositions();
     }
-  }, [fetchMetrics, isDemo]);
+  }, [fetchMetrics, fetchLivePositions, isDemo]);
 
   const formatCurrency = (value: number, showSign = false) => {
     const formatted = Math.abs(value).toLocaleString("en-US", {
@@ -281,7 +327,7 @@ export function DashboardView({
         </div>
 
         {/* Secondary Metrics */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <MetricCard
             title="Total Trades"
             value={metrics.totalTrades}
@@ -292,11 +338,27 @@ export function DashboardView({
           />
           <MetricCard
             title="Open Positions"
-            value={metrics.openPositionsCount}
-            subtitle="Active trades"
+            value={livePositions?.summary.totalPositions ?? metrics.openPositionsCount}
+            subtitle={livePositions ? `$${livePositions.summary.totalMarketValue.toLocaleString()} value` : "Active trades"}
             icon={Activity}
             iconColor="text-amber-500"
             delay={0.5}
+          />
+          <MetricCard
+            title="Unrealized P&L"
+            value={
+              liveLoading
+                ? "..."
+                : livePositions
+                  ? formatCurrency(livePositions.summary.totalUnrealizedPnl, true)
+                  : "—"
+            }
+            subtitle={livePositions ? "Live from broker" : "Connect broker"}
+            icon={Wallet}
+            iconColor={livePositions ? getPnLColor(livePositions.summary.totalUnrealizedPnl) : "text-muted-foreground"}
+            valueColor={livePositions ? getPnLColor(livePositions.summary.totalUnrealizedPnl) : ""}
+            delay={0.55}
+            glowClass={livePositions && livePositions.summary.totalUnrealizedPnl >= 0 ? "glow-green" : "glow-red"}
           />
           <MetricCard
             title="Avg Trade"
@@ -341,6 +403,7 @@ export function DashboardView({
                 onMetricsUpdate={isDemo ? undefined : handleMetricsUpdate}
                 initialPositions={initialPositions}
                 isDemo={isDemo}
+                livePositions={livePositions?.positions}
               />
             </CardContent>
           </Card>

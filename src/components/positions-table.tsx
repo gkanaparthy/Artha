@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import {
     Table,
     TableBody,
@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Clock, TrendingUp, TrendingDown, Trash2 } from "lucide-react";
-import { cn, formatCurrency, formatDate, calculateReturn } from "@/lib/utils";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
@@ -20,10 +20,23 @@ import { useSort } from "@/hooks/use-sort";
 import type { DisplayPosition, Metrics } from "@/types/trading";
 import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "@/lib/export";
 
+interface LivePosition {
+    symbol: string;
+    units: number;
+    price: number | null;
+    averageCost: number | null;
+    openPnl: number | null;
+    marketValue: number | null;
+    type: 'STOCK' | 'OPTION';
+    accountId: string;
+    brokerName: string;
+}
+
 interface PositionsTableProps {
     onMetricsUpdate?: (metrics: Metrics) => void;
     initialPositions?: DisplayPosition[];
     isDemo?: boolean;
+    livePositions?: LivePosition[];
 }
 
 type SortField = "symbol" | "status" | "entryDate" | "exitDate" | "quantity" | "entryPrice" | "exitPrice" | "pnl" | "return" | "broker";
@@ -45,7 +58,7 @@ const getSortValue = (p: DisplayPosition, field: SortField): string | number => 
     }
 };
 
-export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = false }: PositionsTableProps) {
+export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = false, livePositions }: PositionsTableProps) {
     const { filters } = useFilters();
     const [allPositions, setAllPositions] = useState<DisplayPosition[]>(initialPositions || []);
     const [filteredPositions, setFilteredPositions] = useState<DisplayPosition[]>(initialPositions || []);
@@ -58,6 +71,39 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
         defaultDirection: "desc",
         getValueForField: getSortValue,
     });
+
+    // Merge live positions data with open positions
+    const positionsWithLiveData = useMemo(() => {
+        if (!livePositions || livePositions.length === 0) {
+            return sortedPositions;
+        }
+
+        // Create a lookup map for live positions by symbol
+        const liveMap = new Map<string, LivePosition>();
+        for (const live of livePositions) {
+            // Key by symbol (could also include accountId for more precision)
+            liveMap.set(live.symbol, live);
+        }
+
+        return sortedPositions.map(position => {
+            if (position.status !== 'open') {
+                return position;
+            }
+
+            // Try to find matching live position
+            const liveData = liveMap.get(position.symbol);
+            if (liveData) {
+                return {
+                    ...position,
+                    livePrice: liveData.price,
+                    unrealizedPnl: liveData.openPnl,
+                    marketValue: liveData.marketValue,
+                };
+            }
+
+            return position;
+        });
+    }, [sortedPositions, livePositions]);
 
     const applyFilters = useCallback((positions: DisplayPosition[], metrics: Metrics | null) => {
         let filtered = positions;
@@ -277,7 +323,7 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
                                     </div>
                                 </TableCell>
                             </TableRow>
-                        ) : sortedPositions.length === 0 ? (
+                        ) : positionsWithLiveData.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={11} className="text-center h-24 text-muted-foreground">
                                     {hasActiveFilters
@@ -288,10 +334,15 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            sortedPositions.map((position, idx) => {
-                                const returnPct = calculateReturn(position.entryPrice, position.exitPrice);
+                            positionsWithLiveData.map((position, idx) => {
                                 const isOpen = position.status === "open";
-                                const isProfit = !isOpen && (position.pnl ?? 0) >= 0;
+                                // For open positions with live data, use unrealizedPnl; otherwise use exitPrice for return calc
+                                const displayPnl = isOpen ? position.unrealizedPnl : position.pnl;
+                                const displayPrice = isOpen ? position.livePrice : position.exitPrice;
+                                const returnPct = displayPrice && position.entryPrice
+                                    ? ((displayPrice - position.entryPrice) / position.entryPrice) * 100
+                                    : null;
+                                const isProfit = (displayPnl ?? 0) >= 0;
 
                                 return (
                                     <motion.tr
@@ -336,17 +387,23 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
                                         <TableCell className="text-right">{position.quantity}</TableCell>
                                         <TableCell className="text-right">${formatCurrency(position.entryPrice)}</TableCell>
                                         <TableCell className="text-right">
-                                            {position.exitPrice !== null ? `$${formatCurrency(position.exitPrice)}` : "—"}
+                                            {displayPrice !== null && displayPrice !== undefined ? (
+                                                <span className={isOpen && position.livePrice ? "text-blue-500" : ""}>
+                                                    ${formatCurrency(displayPrice)}
+                                                    {isOpen && position.livePrice && <span className="text-xs ml-1">•</span>}
+                                                </span>
+                                            ) : "—"}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            {position.pnl !== null ? (
+                                            {displayPnl !== null && displayPnl !== undefined ? (
                                                 <span
                                                     className={cn(
                                                         "font-semibold",
                                                         isProfit ? "text-green-500" : "text-red-500"
                                                     )}
                                                 >
-                                                    {isProfit ? "+" : "-"}${formatCurrency(position.pnl)}
+                                                    {isProfit ? "+" : "-"}${formatCurrency(Math.abs(displayPnl))}
+                                                    {isOpen && <span className="text-xs ml-1 text-blue-500">•</span>}
                                                 </span>
                                             ) : (
                                                 <span className="text-muted-foreground">—</span>

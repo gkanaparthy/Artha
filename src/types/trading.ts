@@ -38,6 +38,10 @@ export interface DisplayPosition {
   status: "open" | "closed";
   tradeId?: string;
   type: string;
+  // Live data from broker (for open positions)
+  livePrice?: number | null;
+  unrealizedPnl?: number | null;
+  marketValue?: number | null;
 }
 
 export interface Trade {
