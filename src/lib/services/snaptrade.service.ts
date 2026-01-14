@@ -259,7 +259,27 @@ export class SnapTradeService {
 
             console.log('[SnapTrade Sync] Processing trade:', trade.id, 'Date:', tradeTimestamp.toISOString(), 'Symbol:', tradeSymbol, 'Type:', isOption ? 'OPTION' : 'STOCK', 'Multiplier:', contractMultiplier);
 
-            // Upsert Trade
+            // Content-based deduplication: Check if a trade with same content already exists
+            // SnapTrade sometimes returns the same trade with different IDs
+            const existingTrade = await prisma.trade.findFirst({
+                where: {
+                    accountId: account.id,
+                    symbol: tradeSymbol,
+                    action: action,
+                    quantity: trade.units || 0,
+                    price: trade.price || 0,
+                    timestamp: tradeTimestamp
+                }
+            });
+
+            if (existingTrade) {
+                // Trade with same content already exists, skip to avoid duplicate
+                console.log('[SnapTrade Sync] Skipping duplicate trade (same content exists):', trade.id);
+                skippedTrades++;
+                continue;
+            }
+
+            // Upsert Trade (only if not already existing with same content)
             await prisma.trade.upsert({
                 where: { snapTradeTradeId: trade.id },
                 update: {
