@@ -331,7 +331,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Secondary Metrics */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <MetricCard
                         title="Total Trades"
                         value={metrics.totalTrades}
