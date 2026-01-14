@@ -14,7 +14,7 @@ import {
     Sparkles,
     Wallet,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
 import { cn } from "@/lib/utils";
@@ -165,6 +165,39 @@ export default function DashboardPage() {
             setLiveLoading(false);
         }
     }, []);
+
+    // Filter live positions based on active UI filters
+    const filteredLiveMetrics = useMemo(() => {
+        if (!livePositions?.positions) return { totalUnrealizedPnl: 0 };
+
+        let filtered = livePositions.positions;
+
+        // Apply symbol filter (substring match like the rest of the app)
+        if (filters.symbol) {
+            const symbols = filters.symbol.split(',').map(s => s.trim().toLowerCase()).filter(s => s.length > 0);
+            if (symbols.length > 0) {
+                filtered = filtered.filter(p =>
+                    symbols.some(s => p.symbol.toLowerCase().includes(s))
+                );
+            }
+        }
+
+        // Apply account filter
+        if (filters.accountId && filters.accountId !== 'all') {
+            filtered = filtered.filter(p => p.accountId === filters.accountId);
+        }
+
+        // Apply asset type filter
+        if (filters.assetType && filters.assetType !== 'all') {
+            filtered = filtered.filter(p => p.type === filters.assetType);
+        }
+
+        const totalUnrealizedPnl = filtered.reduce((sum, p) => sum + (p.openPnl || 0), 0);
+
+        return {
+            totalUnrealizedPnl
+        };
+    }, [livePositions, filters.symbol, filters.accountId, filters.assetType]);
 
     const handleSync = async () => {
         try {
@@ -340,15 +373,15 @@ export default function DashboardPage() {
                             liveLoading
                                 ? "..."
                                 : livePositions
-                                    ? formatCurrency(livePositions.summary.totalUnrealizedPnl, true)
+                                    ? formatCurrency(filteredLiveMetrics.totalUnrealizedPnl, true)
                                     : "—"
                         }
                         subtitle={livePositions ? "Live from broker" : "Connect broker"}
                         icon={Wallet}
-                        iconColor={livePositions ? getPnLColor(livePositions.summary.totalUnrealizedPnl) : "text-muted-foreground"}
-                        valueColor={livePositions ? getPnLColor(livePositions.summary.totalUnrealizedPnl) : ""}
+                        iconColor={livePositions ? getPnLColor(filteredLiveMetrics.totalUnrealizedPnl) : "text-muted-foreground"}
+                        valueColor={livePositions ? getPnLColor(filteredLiveMetrics.totalUnrealizedPnl) : ""}
                         delay={0.8}
-                        glowClass={livePositions && livePositions.summary.totalUnrealizedPnl >= 0 ? "glow-green" : "glow-red"}
+                        glowClass={livePositions && filteredLiveMetrics.totalUnrealizedPnl >= 0 ? "glow-green" : "glow-red"}
                     />
                 </div>
 
