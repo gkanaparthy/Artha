@@ -153,11 +153,30 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                 tradeType = 'OPTION';
             }
 
-            if (trade.symbol.includes('ORCL')) {
-                console.log(`[Metrics Debug] ORCL trade: ${trade.symbol} | mult: ${multiplier} | type: ${tradeType}`);
-            }
-
             if (quantity === 0) continue;
+
+            // Handle Stock Splits
+            if (action === 'SPLIT') {
+                const rawQty = trade.quantity; // Use signed quantity (e.g. +200 for 2:1 split on 200 shares)
+                const currentLongQty = longLots.reduce((sum, l) => sum + l.quantity, 0);
+                const currentShortQty = shortLots.reduce((sum, l) => sum + l.quantity, 0);
+
+                if (currentLongQty > 0) {
+                    const ratio = (currentLongQty + rawQty) / currentLongQty;
+                    for (const lot of longLots) {
+                        lot.quantity *= ratio;
+                        lot.price /= ratio;
+                    }
+                }
+                if (currentShortQty > 0) {
+                    const ratio = (currentShortQty + rawQty) / currentShortQty;
+                    for (const lot of shortLots) {
+                        lot.quantity *= ratio;
+                        lot.price /= ratio;
+                    }
+                }
+                continue; // Splits adjust lots but don't count as standard trades
+            }
 
             let isBuy = action === 'BUY' || action === 'BUY_TO_OPEN' || action === 'BUY_TO_CLOSE' || action === 'ASSIGNMENT';
             let isSell = action === 'SELL' || action === 'SELL_TO_OPEN' || action === 'SELL_TO_CLOSE' || action === 'EXERCISES';
@@ -504,7 +523,7 @@ export async function GET(req: NextRequest) {
                 account: {
                     userId: session.user.id
                 },
-                action: { in: ['BUY', 'SELL', 'BUY_TO_OPEN', 'BUY_TO_CLOSE', 'SELL_TO_OPEN', 'SELL_TO_CLOSE', 'ASSIGNMENT', 'EXERCISES', 'OPTIONEXPIRATION'] }
+                action: { in: ['BUY', 'SELL', 'BUY_TO_OPEN', 'BUY_TO_CLOSE', 'SELL_TO_OPEN', 'SELL_TO_CLOSE', 'ASSIGNMENT', 'EXERCISES', 'OPTIONEXPIRATION', 'SPLIT'] }
             },
             include: {
                 account: {
