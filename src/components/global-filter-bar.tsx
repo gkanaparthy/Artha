@@ -20,9 +20,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 interface GlobalFilterBarProps {
     showStatusFilter?: boolean;
     className?: string;
+    onExport?: () => void;
+    exportLabel?: string;
 }
 
-export function GlobalFilterBar({ showStatusFilter = true, className }: GlobalFilterBarProps) {
+export function GlobalFilterBar({ showStatusFilter = true, className, onExport, exportLabel = "Export" }: GlobalFilterBarProps) {
     const { filters, setFilters, resetFilters, accounts } = useFilters();
     const [startDateOpen, setStartDateOpen] = useState(false);
     const [endDateOpen, setEndDateOpen] = useState(false);
@@ -184,6 +186,15 @@ export function GlobalFilterBar({ showStatusFilter = true, className }: GlobalFi
                         <SelectItem value="losers">Losers</SelectItem>
                     </SelectContent>
                 </Select>
+            )}
+
+            <div className="flex-1" />
+
+            {/* Export Button */}
+            {onExport && (
+                <Button variant="outline" size="sm" onClick={onExport} className="h-9">
+                    {exportLabel}
+                </Button>
             )}
 
             {/* Clear Button */}

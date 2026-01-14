@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Sparkles, Trash2, BookOpen, Download } from "lucide-react";
+import { Loader2, Sparkles, Trash2, BookOpen } from "lucide-react";
 import { format } from "date-fns";
 import { TradeDetailSheet } from "@/components/trade-detail-sheet";
 import { motion } from "framer-motion";
@@ -161,29 +161,20 @@ export default function JournalPage() {
 
         {/* Global Filter Bar with Export */}
         <AnimatedCard delay={0.1}>
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <GlobalFilterBar className="flex-1" />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => exportToExcel(
-                sortedTrades,
-                'journal',
-                [
-                  { key: 'timestamp', header: 'Date', formatter: formatDateForExport },
-                  { key: 'symbol', header: 'Symbol' },
-                  { key: 'action', header: 'Action' },
-                  { key: 'quantity', header: 'Quantity' },
-                  { key: 'price', header: 'Price', formatter: formatCurrencyForExport },
-                  { key: 'type', header: 'Type' },
-                ]
-              )}
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Export
-            </Button>
-          </div>
+          <GlobalFilterBar
+            onExport={() => exportToExcel(
+              sortedTrades,
+              'journal',
+              [
+                { key: 'timestamp', header: 'Date', formatter: formatDateForExport },
+                { key: 'symbol', header: 'Symbol' },
+                { key: 'action', header: 'Action' },
+                { key: 'quantity', header: 'Quantity' },
+                { key: 'price', header: 'Price', formatter: formatCurrencyForExport },
+                { key: 'type', header: 'Type' },
+              ]
+            )}
+          />
         </AnimatedCard>
 
         {/* Table Card */}
