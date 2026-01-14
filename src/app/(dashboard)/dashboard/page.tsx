@@ -12,6 +12,7 @@ import {
     BarChart3,
     Activity,
     Sparkles,
+    Wallet,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
@@ -25,6 +26,8 @@ interface Metrics {
     totalTrades: number;
     avgWin: number;
     avgLoss: number;
+    avgWinPct: number;
+    avgLossPct: number;
     profitFactor: number | null;
     winningTrades: number;
     losingTrades: number;
@@ -32,6 +35,29 @@ interface Metrics {
     largestLoss: number;
     avgTrade: number;
     openPositionsCount: number;
+}
+
+interface LivePosition {
+    symbol: string;
+    units: number;
+    price: number | null;
+    averageCost: number | null;
+    openPnl: number | null;
+    marketValue: number | null;
+    type: 'STOCK' | 'OPTION';
+    accountId: string;
+    brokerName: string;
+}
+
+interface LivePositionsData {
+    positions: LivePosition[];
+    summary: {
+        totalPositions: number;
+        totalMarketValue: number;
+        totalUnrealizedPnl: number;
+        stockPositions: number;
+        optionPositions: number;
+    };
 }
 
 function MetricCard({
@@ -91,6 +117,8 @@ export default function DashboardPage() {
         totalTrades: 0,
         avgWin: 0,
         avgLoss: 0,
+        avgWinPct: 0,
+        avgLossPct: 0,
         profitFactor: null,
         winningTrades: 0,
         losingTrades: 0,
@@ -100,6 +128,8 @@ export default function DashboardPage() {
         openPositionsCount: 0,
     });
     const [refreshKey, setRefreshKey] = useState(0);
+    const [livePositions, setLivePositions] = useState<LivePositionsData | null>(null);
+    const [liveLoading, setLiveLoading] = useState(false);
 
     // Fetch metrics whenever ANY filter changes
     const fetchMetrics = useCallback(async () => {
@@ -110,7 +140,6 @@ export default function DashboardPage() {
             if (filters.endDate) params.append("endDate", filters.endDate);
             if (filters.accountId && filters.accountId !== 'all') params.append("accountId", filters.accountId);
             if (filters.assetType && filters.assetType !== 'all') params.append("assetType", filters.assetType);
-            // Status filter is applied client-side after fetch
 
             const res = await fetch(`/api/metrics?${params.toString()}`);
             const data = await res.json();
@@ -119,7 +148,23 @@ export default function DashboardPage() {
             console.error(e);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [JSON.stringify(filters)]); // React to ALL filter changes
+    }, [JSON.stringify(filters)]);
+
+    // Fetch live positions with current market prices
+    const fetchLivePositions = useCallback(async () => {
+        try {
+            setLiveLoading(true);
+            const res = await fetch('/api/positions');
+            if (res.ok) {
+                const data: LivePositionsData = await res.json();
+                setLivePositions(data);
+            }
+        } catch (e) {
+            console.error('Failed to fetch live positions:', e);
+        } finally {
+            setLiveLoading(false);
+        }
+    }, []);
 
     const handleSync = async () => {
         try {
@@ -128,6 +173,7 @@ export default function DashboardPage() {
                 method: "POST",
             });
             fetchMetrics();
+            fetchLivePositions();
             setRefreshKey((k) => k + 1);
         } catch (e) {
             console.error(e);
@@ -141,7 +187,6 @@ export default function DashboardPage() {
     const handleMetricsUpdate = useCallback((newMetrics: Metrics) => {
         setMetrics(prev => ({
             ...prev,
-            // Only update the fields that are affected by status filter
             netPnL: newMetrics.netPnL,
             winRate: newMetrics.winRate,
             totalTrades: newMetrics.totalTrades,
@@ -156,7 +201,8 @@ export default function DashboardPage() {
     // Refetch when filters change
     useEffect(() => {
         fetchMetrics();
-    }, [fetchMetrics]);
+        fetchLivePositions();
+    }, [fetchMetrics, fetchLivePositions]);
 
     const formatCurrency = (value: number, showSign = false) => {
         const formatted = Math.abs(value).toLocaleString("en-US", {
@@ -178,13 +224,6 @@ export default function DashboardPage() {
     const getWinRateColor = (value: number) => {
         if (value >= 60) return "text-gradient-green";
         if (value >= 50) return "text-amber-500";
-        return "text-gradient-red";
-    };
-
-    const getProfitFactorColor = (value: number | null) => {
-        if (value === null) return "text-muted-foreground";
-        if (value >= 2) return "text-gradient-green";
-        if (value >= 1) return "text-amber-500";
         return "text-gradient-red";
     };
 
@@ -259,7 +298,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Secondary Metrics */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
                     <MetricCard
                         title="Total Trades"
                         value={metrics.totalTrades}
@@ -269,12 +308,22 @@ export default function DashboardPage() {
                         delay={0.4}
                     />
                     <MetricCard
-                        title="Open Positions"
-                        value={metrics.openPositionsCount}
-                        subtitle="Active trades"
-                        icon={Activity}
-                        iconColor="text-amber-500"
+                        title="Avg Win"
+                        value={formatCurrency(metrics.avgWin, true)}
+                        subtitle={`${metrics.avgWinPct}% avg return`}
+                        icon={TrendingUp}
+                        iconColor="text-gradient-green"
+                        valueColor="text-gradient-green"
                         delay={0.5}
+                    />
+                    <MetricCard
+                        title="Avg Loss"
+                        value={formatCurrency(-metrics.avgLoss, true)}
+                        subtitle={`-${metrics.avgLossPct}% avg return`}
+                        icon={TrendingDown}
+                        iconColor="text-gradient-red"
+                        valueColor="text-gradient-red"
+                        delay={0.6}
                     />
                     <MetricCard
                         title="Avg Trade"
@@ -283,16 +332,23 @@ export default function DashboardPage() {
                         icon={Target}
                         iconColor={getPnLColor(metrics.avgTrade)}
                         valueColor={getPnLColor(metrics.avgTrade)}
-                        delay={0.6}
+                        delay={0.7}
                     />
                     <MetricCard
-                        title="Profit Factor"
-                        value={metrics.profitFactor !== null ? metrics.profitFactor.toFixed(2) : "∞"}
-                        subtitle="Gross profit / Gross loss"
-                        icon={metrics.profitFactor !== null && metrics.profitFactor >= 1 ? TrendingUp : TrendingDown}
-                        iconColor={getProfitFactorColor(metrics.profitFactor)}
-                        valueColor={getProfitFactorColor(metrics.profitFactor)}
-                        delay={0.7}
+                        title="Unrealized P&L"
+                        value={
+                            liveLoading
+                                ? "..."
+                                : livePositions
+                                    ? formatCurrency(livePositions.summary.totalUnrealizedPnl, true)
+                                    : "—"
+                        }
+                        subtitle={livePositions ? "Live from broker" : "Connect broker"}
+                        icon={Wallet}
+                        iconColor={livePositions ? getPnLColor(livePositions.summary.totalUnrealizedPnl) : "text-muted-foreground"}
+                        valueColor={livePositions ? getPnLColor(livePositions.summary.totalUnrealizedPnl) : ""}
+                        delay={0.8}
+                        glowClass={livePositions && livePositions.summary.totalUnrealizedPnl >= 0 ? "glow-green" : "glow-red"}
                     />
                 </div>
 
@@ -309,6 +365,7 @@ export default function DashboardPage() {
                             <PositionsTable
                                 key={refreshKey}
                                 onMetricsUpdate={handleMetricsUpdate}
+                                livePositions={livePositions?.positions}
                             />
                         </CardContent>
                     </Card>
