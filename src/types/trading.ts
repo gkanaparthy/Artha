@@ -66,6 +66,8 @@ export interface Metrics {
   totalTrades: number;
   avgWin: number;
   avgLoss: number;
+  avgWinPct: number;
+  avgLossPct: number;
   profitFactor: number | null;
   winningTrades: number;
   losingTrades: number;

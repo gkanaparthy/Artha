@@ -10,9 +10,9 @@ import {
   Target,
   DollarSign,
   BarChart3,
-  Activity,
   Sparkles,
   Wallet,
+  Activity,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
@@ -116,6 +116,8 @@ export function DashboardView({
       totalTrades: 0,
       avgWin: 0,
       avgLoss: 0,
+      avgWinPct: 0,
+      avgLossPct: 0,
       profitFactor: null,
       winningTrades: 0,
       losingTrades: 0,
@@ -240,13 +242,6 @@ export function DashboardView({
     return "text-gradient-red";
   };
 
-  const getProfitFactorColor = (value: number | null) => {
-    if (value === null) return "text-muted-foreground";
-    if (value >= 2) return "text-gradient-green";
-    if (value >= 1) return "text-amber-500";
-    return "text-gradient-red";
-  };
-
   return (
     <PageTransition>
       <div className="space-y-8 p-4 md:p-8 pt-6">
@@ -337,12 +332,31 @@ export function DashboardView({
             delay={0.4}
           />
           <MetricCard
-            title="Open Positions"
-            value={livePositions?.summary.totalPositions ?? metrics.openPositionsCount}
-            subtitle={livePositions ? `$${livePositions.summary.totalMarketValue.toLocaleString()} value` : "Active trades"}
-            icon={Activity}
-            iconColor="text-amber-500"
+            title="Avg Win"
+            value={formatCurrency(metrics.avgWin, true)}
+            subtitle={`${metrics.avgWinPct}% avg return`}
+            icon={TrendingUp}
+            iconColor="text-gradient-green"
+            valueColor="text-gradient-green"
             delay={0.5}
+          />
+          <MetricCard
+            title="Avg Loss"
+            value={formatCurrency(-metrics.avgLoss, true)}
+            subtitle={`-${metrics.avgLossPct}% avg return`}
+            icon={TrendingDown}
+            iconColor="text-gradient-red"
+            valueColor="text-gradient-red"
+            delay={0.6}
+          />
+          <MetricCard
+            title="Avg Trade"
+            value={formatCurrency(metrics.avgTrade, true)}
+            subtitle="Expected per trade"
+            icon={Target}
+            iconColor={getPnLColor(metrics.avgTrade)}
+            valueColor={getPnLColor(metrics.avgTrade)}
+            delay={0.7}
           />
           <MetricCard
             title="Unrealized P&L"
@@ -357,34 +371,8 @@ export function DashboardView({
             icon={Wallet}
             iconColor={livePositions ? getPnLColor(livePositions.summary.totalUnrealizedPnl) : "text-muted-foreground"}
             valueColor={livePositions ? getPnLColor(livePositions.summary.totalUnrealizedPnl) : ""}
-            delay={0.55}
+            delay={0.8}
             glowClass={livePositions && livePositions.summary.totalUnrealizedPnl >= 0 ? "glow-green" : "glow-red"}
-          />
-          <MetricCard
-            title="Avg Trade"
-            value={formatCurrency(metrics.avgTrade, true)}
-            subtitle="Expected per trade"
-            icon={Target}
-            iconColor={getPnLColor(metrics.avgTrade)}
-            valueColor={getPnLColor(metrics.avgTrade)}
-            delay={0.6}
-          />
-          <MetricCard
-            title="Profit Factor"
-            value={
-              metrics.profitFactor !== null
-                ? metrics.profitFactor.toFixed(2)
-                : "∞"
-            }
-            subtitle="Gross profit / Gross loss"
-            icon={
-              metrics.profitFactor !== null && metrics.profitFactor >= 1
-                ? TrendingUp
-                : TrendingDown
-            }
-            iconColor={getProfitFactorColor(metrics.profitFactor)}
-            valueColor={getProfitFactorColor(metrics.profitFactor)}
-            delay={0.7}
           />
         </div>
 

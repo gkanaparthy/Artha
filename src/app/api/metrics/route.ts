@@ -382,6 +382,20 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
     const avgWin = winningTrades.length > 0 ? totalWins / winningTrades.length : 0;
     const avgLoss = losingTrades.length > 0 ? totalLosses / losingTrades.length : 0;
 
+    // Calculate average win/loss percentages
+    const avgWinPct = winningTrades.length > 0
+        ? winningTrades.reduce((sum, t) => {
+            const costBasis = t.entryPrice * t.quantity;
+            return sum + (costBasis > 0 ? (t.pnl / costBasis) * 100 : 0);
+        }, 0) / winningTrades.length
+        : 0;
+    const avgLossPct = losingTrades.length > 0
+        ? Math.abs(losingTrades.reduce((sum, t) => {
+            const costBasis = t.entryPrice * t.quantity;
+            return sum + (costBasis > 0 ? (t.pnl / costBasis) * 100 : 0);
+        }, 0) / losingTrades.length)
+        : 0;
+
     const netPnL = filteredTrades.reduce((sum, t) => sum + t.pnl, 0);
     const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0;
 
@@ -453,6 +467,8 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
         totalTrades: totalClosedTrades,
         avgWin: Math.round(avgWin * 100) / 100,
         avgLoss: Math.round(avgLoss * 100) / 100,
+        avgWinPct: Math.round(avgWinPct * 10) / 10,
+        avgLossPct: Math.round(avgLossPct * 10) / 10,
         profitFactor: profitFactor === Infinity ? null : Math.round(profitFactor * 100) / 100,
         winningTrades: winningTrades.length,
         losingTrades: losingTrades.length,
