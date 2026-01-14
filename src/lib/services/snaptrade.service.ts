@@ -328,6 +328,146 @@ export class SnapTradeService {
             skippedTrades,
         };
     }
+
+    /**
+     * Fetches current positions (holdings) with market prices for unrealized P&L.
+     * Returns both stock and option positions across all accounts.
+     */
+    async getPositions(localUserId: string): Promise<{
+        positions: Array<{
+            symbol: string;
+            units: number;
+            price: number | null;
+            averageCost: number | null;
+            openPnl: number | null;
+            marketValue: number | null;
+            type: 'STOCK' | 'OPTION';
+            accountId: string;
+            brokerName: string;
+            // Option-specific fields
+            optionType?: 'CALL' | 'PUT';
+            strikePrice?: number;
+            expirationDate?: string;
+            underlyingSymbol?: string;
+        }>;
+        error?: string;
+    }> {
+        const user = await prisma.user.findUnique({
+            where: { id: localUserId },
+            include: { brokerAccounts: true },
+        });
+
+        if (!user) {
+            return { positions: [], error: 'User not found' };
+        }
+
+        if (!user.snapTradeUserId || !user.snapTradeUserSecret) {
+            return { positions: [], error: 'No broker connected' };
+        }
+
+        const decryptedSecret = safeDecrypt(user.snapTradeUserSecret);
+        if (!decryptedSecret) {
+            return { positions: [], error: 'Failed to decrypt credentials' };
+        }
+
+        const snapTradeUserId = user.snapTradeUserId;
+        const snapTradeUserSecret = decryptedSecret;
+
+        // Get all accounts
+        const accounts = await snapTrade.accountInformation.listUserAccounts({
+            userId: snapTradeUserId,
+            userSecret: snapTradeUserSecret,
+        });
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const allPositions: any[] = [];
+
+        for (const acc of accounts.data || []) {
+            const brokerName = acc.institution_name || 'Unknown';
+
+            try {
+                // Fetch stock/ETF positions
+                const stockPositions = await snapTrade.accountInformation.getUserAccountPositions({
+                    accountId: acc.id,
+                    userId: snapTradeUserId,
+                    userSecret: snapTradeUserSecret,
+                });
+
+                for (const pos of stockPositions.data || []) {
+                    const units = pos.units || 0;
+                    const price = pos.price ?? null;
+                    const avgCost = pos.average_purchase_price ?? null;
+
+                    allPositions.push({
+                        symbol: pos.symbol?.symbol?.symbol || pos.symbol?.symbol?.raw_symbol || 'UNKNOWN',
+                        units,
+                        price,
+                        averageCost: avgCost,
+                        openPnl: pos.open_pnl ?? null,
+                        marketValue: price && units ? price * units : null,
+                        type: 'STOCK' as const,
+                        accountId: acc.id,
+                        brokerName,
+                    });
+                }
+            } catch (err) {
+                console.error('[SnapTrade Positions] Error fetching stock positions for', acc.id, err);
+            }
+
+            try {
+                // Fetch option positions
+                const optionPositions = await snapTrade.options.listOptionHoldings({
+                    accountId: acc.id,
+                    userId: snapTradeUserId,
+                    userSecret: snapTradeUserSecret,
+                });
+
+                for (const pos of optionPositions.data || []) {
+                    const optionSymbol = pos.symbol?.option_symbol;
+                    const units = pos.units || 0;
+                    const price = pos.price ?? null;
+                    // average_purchase_price for options is per CONTRACT
+                    const avgCostPerContract = pos.average_purchase_price ?? null;
+                    const multiplier = optionSymbol?.is_mini_option ? 10 : 100;
+
+                    // Calculate market value: price per share * units * multiplier
+                    const marketValue = price && units ? price * Math.abs(units) * multiplier : null;
+
+                    // Calculate open P&L for options
+                    let openPnl: number | null = null;
+                    if (price !== null && avgCostPerContract !== null && units !== 0) {
+                        // Current value - cost basis
+                        // avgCostPerContract is per contract, price is per share
+                        const currentValue = price * Math.abs(units) * multiplier;
+                        const costBasis = avgCostPerContract * Math.abs(units);
+                        openPnl = units > 0
+                            ? currentValue - costBasis  // Long position
+                            : costBasis - currentValue; // Short position
+                    }
+
+                    allPositions.push({
+                        symbol: optionSymbol?.ticker || 'UNKNOWN',
+                        units,
+                        price,
+                        averageCost: avgCostPerContract,
+                        openPnl,
+                        marketValue,
+                        type: 'OPTION' as const,
+                        accountId: acc.id,
+                        brokerName,
+                        optionType: optionSymbol?.option_type,
+                        strikePrice: optionSymbol?.strike_price,
+                        expirationDate: optionSymbol?.expiration_date,
+                        underlyingSymbol: optionSymbol?.underlying_symbol?.symbol,
+                    });
+                }
+            } catch (err) {
+                console.error('[SnapTrade Positions] Error fetching option positions for', acc.id, err);
+            }
+        }
+
+        return { positions: allPositions };
+    }
 }
 
 export const snapTradeService = new SnapTradeService();
