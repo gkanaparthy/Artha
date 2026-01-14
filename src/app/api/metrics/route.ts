@@ -468,12 +468,28 @@ export async function GET(req: NextRequest) {
         const accountId = searchParams.get('accountId');
         const assetType = searchParams.get('assetType');
 
+        // Apply date filters at database level when provided by user
+        // This ensures FIFO lot matching only processes trades within the selected date range
+        const effectiveStartDate = startDate ? new Date(startDate) : undefined;
+        const effectiveEndDate = endDate ? (() => {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            return end;
+        })() : undefined;
+
         const trades = await prisma.trade.findMany({
             where: {
                 account: {
                     userId: session.user.id
                 },
-                action: { in: ['BUY', 'SELL', 'BUY_TO_OPEN', 'BUY_TO_CLOSE', 'SELL_TO_OPEN', 'SELL_TO_CLOSE', 'ASSIGNMENT', 'EXERCISES', 'OPTIONEXPIRATION'] }
+                action: { in: ['BUY', 'SELL', 'BUY_TO_OPEN', 'BUY_TO_CLOSE', 'SELL_TO_OPEN', 'SELL_TO_CLOSE', 'ASSIGNMENT', 'EXERCISES', 'OPTIONEXPIRATION'] },
+                // Filter at database level to ensure correct FIFO matching within selected time period
+                ...(effectiveStartDate || effectiveEndDate ? {
+                    timestamp: {
+                        ...(effectiveStartDate ? { gte: effectiveStartDate } : {}),
+                        ...(effectiveEndDate ? { lte: effectiveEndDate } : {})
+                    }
+                } : {})
             },
             include: {
                 account: {
