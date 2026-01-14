@@ -91,12 +91,22 @@ interface Lot {
 }
 
 function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOptions) {
+    // 0. Deduplicate trades (same symbol, action, quantity, price, timestamp)
+    // This handles cases where SnapTrade sync runs multiple times
+    const seen = new Set<string>();
+    const uniqueTrades = trades.filter(trade => {
+        const key = `${trade.symbol}|${trade.action}|${trade.quantity}|${trade.price}|${trade.timestamp.toISOString()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+
     // 1. Group by Canonical Key
     const tradesByKey = new Map<string, TradeInput[]>();
     // We also need a map to lookup Symbol/Name details from the Key later for display
     const keyDetails = new Map<string, { symbol: string, type: string }>();
 
-    for (const trade of trades) {
+    for (const trade of uniqueTrades) {
         const key = getCanonicalKey(trade);
         if (!tradesByKey.has(key)) tradesByKey.set(key, []);
         tradesByKey.get(key)!.push(trade);
