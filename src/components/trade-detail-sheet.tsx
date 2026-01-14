@@ -116,8 +116,8 @@ export function TradeDetailSheet({
               <div className="grid gap-4">
                 <DetailRow
                   icon={<Calendar className="h-4 w-4" />}
-                  label="Date & Time"
-                  value={format(new Date(trade.timestamp), "MMM dd, yyyy 'at' HH:mm")}
+                  label="Date"
+                  value={format(new Date(trade.timestamp), "MMM dd, yyyy")}
                 />
 
                 <DetailRow

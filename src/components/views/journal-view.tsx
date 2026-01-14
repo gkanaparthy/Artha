@@ -228,7 +228,7 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
                         onClick={() => handleSort("timestamp")}
                       >
                         <div className="flex items-center gap-2">
-                          Date & Time {getSortIcon("timestamp")}
+                          Date {getSortIcon("timestamp")}
                         </div>
                       </TableHead>
                       <TableHead
@@ -310,7 +310,7 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
                           <TableCell className="font-medium text-muted-foreground whitespace-nowrap">
                             {format(
                               new Date(trade.timestamp),
-                              "MMM d, yyyy HH:mm"
+                              "MMM d, yyyy"
                             )}
                           </TableCell>
                           <TableCell className="font-semibold">

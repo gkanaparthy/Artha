@@ -192,7 +192,7 @@ export default function JournalPage() {
                   <TableHeader>
                     <TableRow className="bg-muted/50">
                       <TableHead className="w-[180px] cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("timestamp")}>
-                        <div className="flex items-center gap-2">Date & Time {getSortIcon("timestamp")}</div>
+                        <div className="flex items-center gap-2">Date {getSortIcon("timestamp")}</div>
                       </TableHead>
                       <TableHead className="cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("symbol")}>
                         <div className="flex items-center gap-2">Symbol {getSortIcon("symbol")}</div>
@@ -241,7 +241,7 @@ export default function JournalPage() {
                           transition={{ duration: 0.2, delay: i * 0.05 }}
                         >
                           <TableCell className="font-medium text-muted-foreground whitespace-nowrap">
-                            {format(new Date(trade.timestamp), "MMM d, yyyy HH:mm")}
+                            {format(new Date(trade.timestamp), "MMM d, yyyy")}
                           </TableCell>
                           <TableCell className="font-semibold">
                             {trade.symbol}
