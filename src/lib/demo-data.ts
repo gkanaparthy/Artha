@@ -833,7 +833,9 @@ export const DEMO_METRICS: Metrics = {
   winRate: 70.83, // 17 wins / 24 total trades
   totalTrades: 24,
   avgWin: 1519.68, // Average of winning trades
-  avgLoss: -650.75, // Average of losing trades
+  avgLoss: 650.75, // Average of losing trades (absolute value)
+  avgWinPct: 12.5, // Average win percentage
+  avgLossPct: 4.2, // Average loss percentage
   profitFactor: 3.25, // Gross profit / Gross loss
   winningTrades: 17,
   losingTrades: 7,
