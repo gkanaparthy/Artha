@@ -297,12 +297,14 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
 
     if (filters) {
         if (filters.startDate) {
-            // For a Trading Journal, we often care about when the trade was Initiated (Entry)
-            filteredTrades = filteredTrades.filter(t => t.openedAt >= filters.startDate!);
+            // Filter closed trades by when they were CLOSED (realized P&L date)
+            filteredTrades = filteredTrades.filter(t => t.closedAt >= filters.startDate!);
+            // Filter open positions by when they were opened (still relevant for open positions)
             filteredOpenPositions = filteredOpenPositions.filter(p => p.openedAt >= filters.startDate!);
         }
         if (filters.endDate) {
-            filteredTrades = filteredTrades.filter(t => t.openedAt <= filters.endDate!);
+            // Filter closed trades by closedAt date
+            filteredTrades = filteredTrades.filter(t => t.closedAt <= filters.endDate!);
             filteredOpenPositions = filteredOpenPositions.filter(p => p.openedAt <= filters.endDate!);
         }
         if (filters.symbol) {
@@ -473,28 +475,15 @@ export async function GET(req: NextRequest) {
         const accountId = searchParams.get('accountId');
         const assetType = searchParams.get('assetType');
 
-        // Apply date filters at database level when provided by user
-        // This ensures FIFO lot matching only processes trades within the selected date range
-        const effectiveStartDate = startDate ? new Date(startDate) : undefined;
-        const effectiveEndDate = endDate ? (() => {
-            const end = new Date(endDate);
-            end.setHours(23, 59, 59, 999);
-            return end;
-        })() : undefined;
-
+        // IMPORTANT: Fetch ALL trades for FIFO lot matching
+        // Date filters are applied AFTER FIFO processing on the closedTrades output
+        // This ensures positions that span date boundaries are correctly matched
         const trades = await prisma.trade.findMany({
             where: {
                 account: {
                     userId: session.user.id
                 },
-                action: { in: ['BUY', 'SELL', 'BUY_TO_OPEN', 'BUY_TO_CLOSE', 'SELL_TO_OPEN', 'SELL_TO_CLOSE', 'ASSIGNMENT', 'EXERCISES', 'OPTIONEXPIRATION'] },
-                // Filter at database level to ensure correct FIFO matching within selected time period
-                ...(effectiveStartDate || effectiveEndDate ? {
-                    timestamp: {
-                        ...(effectiveStartDate ? { gte: effectiveStartDate } : {}),
-                        ...(effectiveEndDate ? { lte: effectiveEndDate } : {})
-                    }
-                } : {})
+                action: { in: ['BUY', 'SELL', 'BUY_TO_OPEN', 'BUY_TO_CLOSE', 'SELL_TO_OPEN', 'SELL_TO_CLOSE', 'ASSIGNMENT', 'EXERCISES', 'OPTIONEXPIRATION'] }
             },
             include: {
                 account: {
