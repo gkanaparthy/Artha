@@ -11,13 +11,14 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Clock, TrendingUp, TrendingDown, Trash2 } from "lucide-react";
+import { Loader2, Clock, TrendingUp, TrendingDown, Trash2, Download } from "lucide-react";
 import { cn, formatCurrency, formatDate, calculateReturn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { useSort } from "@/hooks/use-sort";
 import type { DisplayPosition, Metrics } from "@/types/trading";
+import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "@/lib/export";
 
 interface PositionsTableProps {
     onMetricsUpdate?: (metrics: Metrics) => void;
@@ -209,8 +210,34 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
 
     return (
         <div className="space-y-4">
-            {/* Global Filter Bar */}
-            <GlobalFilterBar />
+            {/* Global Filter Bar with Export */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+                <GlobalFilterBar className="flex-1" />
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => exportToExcel(
+                        sortedPositions,
+                        'positions',
+                        [
+                            { key: 'symbol', header: 'Symbol' },
+                            { key: 'status', header: 'Status' },
+                            { key: 'type', header: 'Type' },
+                            { key: 'broker', header: 'Broker' },
+                            { key: 'quantity', header: 'Quantity' },
+                            { key: 'entryPrice', header: 'Entry Price', formatter: formatCurrencyForExport },
+                            { key: 'exitPrice', header: 'Exit Price', formatter: formatCurrencyForExport },
+                            { key: 'pnl', header: 'P&L', formatter: formatCurrencyForExport },
+                            { key: 'openedAt', header: 'Entry Date', formatter: formatDateForExport },
+                            { key: 'closedAt', header: 'Exit Date', formatter: formatDateForExport },
+                        ]
+                    )}
+                    className="flex items-center gap-2"
+                >
+                    <Download className="h-4 w-4" />
+                    Export
+                </Button>
+            </div>
 
             {/* Table */}
             <div className="rounded-xl border-0 px-2">

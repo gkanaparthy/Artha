@@ -34,7 +34,7 @@ interface FilterContextType {
 const defaultFilters: FilterState = {
     symbol: "",
     startDate: "",
-    endDate: "",
+    endDate: new Date().toISOString().split('T')[0], // Default to today
     status: "all",
     action: "ALL",
     accountId: "all",

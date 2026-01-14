@@ -308,8 +308,13 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
         if (filters.symbol) {
             const symbols = filters.symbol.split(',').map(s => s.trim().toLowerCase()).filter(s => s.length > 0);
             if (symbols.length > 0) {
-                filteredTrades = filteredTrades.filter(t => symbols.includes(t.symbol.toLowerCase()));
-                filteredOpenPositions = filteredOpenPositions.filter(p => symbols.includes(p.symbol.toLowerCase()));
+                // Use startsWith for prefix matching (e.g., "AA" matches "AAPL" and "AA")
+                filteredTrades = filteredTrades.filter(t =>
+                    symbols.some(s => t.symbol.toLowerCase().startsWith(s))
+                );
+                filteredOpenPositions = filteredOpenPositions.filter(p =>
+                    symbols.some(s => p.symbol.toLowerCase().startsWith(s))
+                );
             }
         }
         if (filters.accountId && filters.accountId !== 'all') {
