@@ -25,6 +25,7 @@ pnpm prisma studio          # Open visual database editor
 ### Route Structure
 - `/` - Public landing page
 - `/login` - OAuth sign-in (Google/Apple)
+- `/demo/*` - Public demo mode (no auth required)
 - `/privacy`, `/terms`, `/contact` - Public legal pages
 - `/(dashboard)/*` - Protected routes (dashboard, journal, reports, settings)
 - `/api/*` - REST API endpoints
@@ -32,7 +33,7 @@ pnpm prisma studio          # Open visual database editor
 
 ### Middleware (`src/middleware.ts`)
 Protects all routes except:
-- `/`, `/login`, `/privacy`, `/terms`, `/contact` (public pages)
+- `/`, `/login`, `/privacy`, `/terms`, `/contact`, `/demo/*` (public pages)
 - `/api/auth/*` (auth callbacks)
 - `/api/cron/*` (cron jobs - use Bearer token)
 - `/api/health` (health check)
@@ -45,15 +46,16 @@ Protects all routes except:
 - `syncTrades()` - Pull trades from all connected accounts
 
 **FIFO P&L Engine** (`src/app/api/metrics/route.ts`)
-- Groups trades by canonical key (universalSymbolId or symbol)
-- Matches BUY with SELL orders using FIFO
-- Supports long/short positions, options, fee tracking
+- Groups trades by canonical key: `{accountId}:{universalSymbolId or symbol}`
+- Matches BUY with SELL orders using FIFO within each account
+- Supports long/short positions, options (standard + mini), fee tracking
 - Uses `contractMultiplier` for options (100 for standard, 10 for mini)
+- Date filters applied AFTER FIFO matching (not on raw trades) for accurate cross-period P&L
 
 ### Data Flow
 1. User authenticates via NextAuth (Google/Apple OAuth)
 2. User connects broker via SnapTrade (`connect-broker-button.tsx`)
-3. `/api/trades/sync` pulls trades, stores in PostgreSQL
+3. `/api/trades/sync` pulls trades, stores in PostgreSQL (25s timeout for Vercel)
 4. `/api/metrics` calculates P&L and returns analytics
 5. Cron job (`/api/cron/sync-all`) syncs all users on schedule
 
@@ -117,3 +119,11 @@ NEXT_PUBLIC_APP_URL
 - Animations: Framer Motion (`src/components/motion.tsx`)
 - Global state: Filter Context (`src/contexts/filter-context.tsx`) with localStorage persistence
 - Brand colors: `#2E4A3B` (dark green), `#FAFBF6` (cream), `#E59889` (coral)
+
+## P&L Calculation Details
+
+The FIFO engine handles several edge cases:
+- **Account isolation**: Trades are matched only within the same brokerage account
+- **Option expiration**: `OPTIONEXPIRATION` action - negative quantity = closing long, positive = closing short
+- **OCC symbol fallback**: Raw symbols like `SPXW  260105C06920000` auto-detected as options with 100x multiplier
+- **Trade deduplication**: Prevents duplicate syncs by matching on snapTradeTradeId and content hash
