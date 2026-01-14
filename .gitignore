@@ -48,3 +48,6 @@ next-env.d.ts
 
 # planning docs (local only)
 pravaha_plan/
+
+# data exports
+*.csv
