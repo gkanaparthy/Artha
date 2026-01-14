@@ -72,6 +72,7 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
         getValueForField: getSortValue,
     });
 
+    /* 
     // Merge live positions data with open positions
     const positionsWithLiveData = useMemo(() => {
         if (!livePositions || livePositions.length === 0) {
@@ -104,6 +105,8 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
             return position;
         });
     }, [sortedPositions, livePositions]);
+    */
+    const positionsWithLiveData = sortedPositions;
 
     const applyFilters = useCallback((positions: DisplayPosition[], metrics: Metrics | null) => {
         let filtered = positions;
@@ -336,10 +339,10 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
                         ) : (
                             positionsWithLiveData.map((position, idx) => {
                                 const isOpen = position.status === "open";
-                                // For open positions with live data, use unrealizedPnl; otherwise use exitPrice for return calc
-                                const displayPnl = isOpen ? position.unrealizedPnl : position.pnl;
-                                const displayPrice = isOpen ? position.livePrice : position.exitPrice;
-                                const returnPct = displayPrice && position.entryPrice
+                                // For open positions, we don't show P&L anymore as requested
+                                const displayPnl = isOpen ? null : position.pnl;
+                                const displayPrice = isOpen ? null : position.exitPrice;
+                                const returnPct = !isOpen && displayPrice && position.entryPrice
                                     ? ((displayPrice - position.entryPrice) / position.entryPrice) * 100
                                     : null;
                                 const isProfit = (displayPnl ?? 0) >= 0;
@@ -388,9 +391,8 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
                                         <TableCell className="text-right">${formatCurrency(position.entryPrice)}</TableCell>
                                         <TableCell className="text-right">
                                             {displayPrice !== null && displayPrice !== undefined ? (
-                                                <span className={isOpen && position.livePrice ? "text-blue-500" : ""}>
+                                                <span>
                                                     ${formatCurrency(displayPrice)}
-                                                    {isOpen && position.livePrice && <span className="text-xs ml-1">•</span>}
                                                 </span>
                                             ) : "—"}
                                         </TableCell>
@@ -403,7 +405,6 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
                                                     )}
                                                 >
                                                     {isProfit ? "+" : "-"}${formatCurrency(Math.abs(displayPnl))}
-                                                    {isOpen && <span className="text-xs ml-1 text-blue-500">•</span>}
                                                 </span>
                                             ) : (
                                                 <span className="text-muted-foreground">—</span>

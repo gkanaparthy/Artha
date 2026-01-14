@@ -367,6 +367,7 @@ export default function DashboardPage() {
                         valueColor={getPnLColor(metrics.avgTrade)}
                         delay={0.7}
                     />
+                    {/* 
                     <MetricCard
                         title="Unrealized P&L"
                         value={
@@ -383,6 +384,7 @@ export default function DashboardPage() {
                         delay={0.8}
                         glowClass={livePositions && filteredLiveMetrics.totalUnrealizedPnl >= 0 ? "glow-green" : "glow-red"}
                     />
+                    */}
                 </div>
 
                 {/* Positions Table */}
