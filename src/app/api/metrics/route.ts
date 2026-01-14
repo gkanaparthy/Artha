@@ -78,6 +78,7 @@ interface TradeInput {
     strikePrice?: number | null;
     expiryDate?: Date | null;
     contractMultiplier?: number;
+    snapTradeTradeId?: string | null;
 }
 
 interface Lot {
@@ -93,11 +94,13 @@ interface Lot {
 }
 
 function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOptions) {
-    // 0. Deduplicate trades (same symbol, action, quantity, price, timestamp)
-    // This handles cases where SnapTrade sync runs multiple times
+    // 0. Deduplicate trades (same symbol, action, quantity, price, and SAME DAY)
+    // This handles cases where SnapTrade returns the same trade with different timestamps (seconds/minutes apart)
     const seen = new Set<string>();
     const uniqueTrades = trades.filter(trade => {
-        const key = `${trade.symbol}|${trade.action}|${trade.quantity}|${trade.price}|${trade.timestamp.toISOString()}`;
+        // Safe deduplication: Only treat as duplicate if ALL fields (including timestamp and ID) match
+        // Or if SnapTradeTradeId is identical
+        const key = `${trade.snapTradeTradeId || trade.id}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -150,6 +153,10 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                 tradeType = 'OPTION';
             }
 
+            if (trade.symbol.includes('ORCL')) {
+                console.log(`[Metrics Debug] ORCL trade: ${trade.symbol} | mult: ${multiplier} | type: ${tradeType}`);
+            }
+
             if (quantity === 0) continue;
 
             let isBuy = action === 'BUY' || action === 'BUY_TO_OPEN' || action === 'BUY_TO_CLOSE' || action === 'ASSIGNMENT';
@@ -181,8 +188,9 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                     // Use the lot's multiplier for P&L calculation (for options: qty * multiplier * price diff)
                     const lotMultiplier = matchLot.multiplier;
 
-                    // Matched Close - multiply by contract multiplier for correct P&L
-                    const pnl = (matchLot.price - price) * matchQty * lotMultiplier - (feePerUnit * matchQty * lotMultiplier);
+                    // Matched Close - multiply by contract multiplier for price diff, 
+                    // but NOT for fees because feePerUnit is already relative to quantity
+                    const pnl = (matchLot.price - price) * matchQty * lotMultiplier - (feePerUnit * matchQty);
 
                     closedTrades.push({
                         symbol: keyDetails.get(key)?.symbol || trade.symbol,
@@ -228,8 +236,9 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                     // Use the lot's multiplier for P&L calculation (for options: qty * multiplier * price diff)
                     const lotMultiplier = matchLot.multiplier;
 
-                    // Matched Close - multiply by contract multiplier for correct P&L
-                    const pnl = (price - matchLot.price) * matchQty * lotMultiplier - (feePerUnit * matchQty * lotMultiplier);
+                    // Matched Close - multiply by contract multiplier for price diff,
+                    // but NOT for fees because feePerUnit is already relative to quantity
+                    const pnl = (price - matchLot.price) * matchQty * lotMultiplier - (feePerUnit * matchQty);
 
                     closedTrades.push({
                         symbol: keyDetails.get(key)?.symbol || trade.symbol,
