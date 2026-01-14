@@ -89,7 +89,10 @@ export default function JournalPage() {
     if (filters.symbol) {
       const symbols = filters.symbol.split(',').map((s) => s.trim().toLowerCase()).filter((s) => s.length > 0);
       if (symbols.length > 0) {
-        result = result.filter((t) => symbols.includes(t.symbol.toLowerCase()));
+        // Use includes for substring matching to support options and partial tickers
+        result = result.filter((t) =>
+          symbols.some(s => t.symbol.toLowerCase().includes(s))
+        );
       }
     }
 

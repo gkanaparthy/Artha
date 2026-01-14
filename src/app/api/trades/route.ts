@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
-export async function GET() {
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: Request) {
     try {
         const session = await auth();
 
@@ -10,12 +12,29 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        const { searchParams } = new URL(req.url);
+        const symbolFilter = searchParams.get('symbol');
+
+        const whereClause: any = {
+            account: {
+                userId: session.user.id
+            }
+        };
+
+        if (symbolFilter) {
+            const symbols = symbolFilter.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+            if (symbols.length > 0) {
+                whereClause.OR = symbols.map(s => ({
+                    symbol: {
+                        contains: s,
+                        mode: 'insensitive'
+                    }
+                }));
+            }
+        }
+
         const trades = await prisma.trade.findMany({
-            where: {
-                account: {
-                    userId: session.user.id
-                }
-            },
+            where: whereClause,
             orderBy: {
                 timestamp: 'desc'
             },
