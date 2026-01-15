@@ -413,3 +413,16 @@ select:focus {
 .dark .metric-icon-bg {
   background: linear-gradient(135deg, oklch(0.7 0.18 45 / 30%), oklch(0.6 0.15 60 / 15%));
 }
+
+/* Export styles */
+.show-on-export {
+  display: none !important;
+}
+
+.is-exporting .show-on-export {
+  display: block !important;
+}
+
+.no-export {
+  display: block;
+}

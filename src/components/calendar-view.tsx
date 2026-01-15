@@ -22,6 +22,8 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December"
 ];
 
+import { ShareReport } from "@/components/share-report";
+
 export function CalendarView({ data }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [direction, setDirection] = useState(0);
@@ -160,7 +162,8 @@ export function CalendarView({ data }: CalendarViewProps) {
             Today
           </Button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 no-export">
+          <ShareReport elementId="share-calendar-capture" title={`${MONTHS[currentDate.getMonth()]} Performance`} />
           <Button variant="outline" size="icon" onClick={() => navigateMonth(-1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -170,136 +173,144 @@ export function CalendarView({ data }: CalendarViewProps) {
         </div>
       </div>
 
-      {/* Monthly Summary Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="rounded-xl bg-card/50 border p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Monthly P&L</p>
-          <p className={cn("text-2xl font-bold mt-1", getPnLTextColor(monthlySummary.totalPnL))}>
-            {monthlySummary.totalPnL >= 0 ? "+" : "-"}${formatCurrency(monthlySummary.totalPnL)}
-          </p>
+      {/* Shareable Area */}
+      <div id="share-calendar-capture" className="space-y-4 p-4 -m-4 rounded-2xl bg-background">
+        <div className="hidden show-on-export mb-4">
+          <h2 className="text-2xl font-bold text-primary">Artha Trading Journal</h2>
+          <p className="text-sm text-muted-foreground">{MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}</p>
         </div>
-        <div className="rounded-xl bg-card/50 border p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Trades</p>
-          <p className="text-2xl font-bold mt-1">{monthlySummary.totalTrades}</p>
-        </div>
-        <div className="rounded-xl bg-card/50 border p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Profit Days</p>
-          <p className="text-2xl font-bold mt-1 text-emerald-500">{monthlySummary.profitDays}</p>
-        </div>
-        <div className="rounded-xl bg-card/50 border p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Loss Days</p>
-          <p className="text-2xl font-bold mt-1 text-red-500">{monthlySummary.lossDays}</p>
-        </div>
-      </div>
 
-      {/* Calendar Grid */}
-      <div className="rounded-xl border bg-card/30 overflow-hidden">
-        {/* Day Headers */}
-        <div className="grid grid-cols-8 border-b bg-muted/30">
-          {DAYS.map(day => (
-            <div key={day} className="p-3 text-center text-sm font-medium text-muted-foreground">
-              {day}
-            </div>
-          ))}
-          <div className="p-3 text-center text-sm font-medium text-muted-foreground border-l">
-            Week
+        {/* Monthly Summary Cards */}
+        <div className="grid grid-cols-4 gap-4">
+          <div className="rounded-xl bg-card/50 border p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Monthly P&L</p>
+            <p className={cn("text-2xl font-bold mt-1", getPnLTextColor(monthlySummary.totalPnL))}>
+              {monthlySummary.totalPnL >= 0 ? "+" : "-"}${formatCurrency(monthlySummary.totalPnL)}
+            </p>
+          </div>
+          <div className="rounded-xl bg-card/50 border p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Trades</p>
+            <p className="text-2xl font-bold mt-1">{monthlySummary.totalTrades}</p>
+          </div>
+          <div className="rounded-xl bg-card/50 border p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Profit Days</p>
+            <p className="text-2xl font-bold mt-1 text-emerald-500">{monthlySummary.profitDays}</p>
+          </div>
+          <div className="rounded-xl bg-card/50 border p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Loss Days</p>
+            <p className="text-2xl font-bold mt-1 text-red-500">{monthlySummary.lossDays}</p>
           </div>
         </div>
 
-        {/* Calendar Body */}
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={currentDate.toISOString()}
-            initial={{ opacity: 0, x: direction * 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -50 }}
-            transition={{ duration: 0.2 }}
-          >
-            {calendarData.map((week, weekIdx) => (
-              <div key={weekIdx} className="grid grid-cols-8 border-b last:border-b-0">
-                {week.map((dayInfo, dayIdx) => {
-                  const intensity = dayInfo.data ? getIntensity(dayInfo.data.pnl, maxAbsPnL) : 0;
-                  const bgColor = dayInfo.data
-                    ? dayInfo.data.pnl > 0
-                      ? `rgba(16, 185, 129, ${intensity})`
-                      : dayInfo.data.pnl < 0
-                        ? `rgba(239, 68, 68, ${intensity})`
-                        : undefined
-                    : undefined;
-
-                  return (
-                    <div
-                      key={dayIdx}
-                      className={cn(
-                        "min-h-[100px] p-2 border-r last:border-r-0 transition-all duration-200",
-                        !dayInfo.isCurrentMonth && "opacity-40",
-                        dayInfo.data && "cursor-pointer hover:brightness-110"
-                      )}
-                      style={{ backgroundColor: bgColor }}
-                    >
-                      <div className={cn(
-                        "text-sm font-medium mb-1",
-                        !dayInfo.isCurrentMonth && "text-muted-foreground"
-                      )}>
-                        {dayInfo.day}
-                      </div>
-                      {dayInfo.data && (
-                        <div className="space-y-1">
-                          <div className={cn(
-                            "text-lg font-bold",
-                            getPnLTextColor(dayInfo.data.pnl)
-                          )}>
-                            {dayInfo.data.pnl >= 0 ? "+" : ""}${formatCurrency(dayInfo.data.pnl)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {dayInfo.data.trades} trade{dayInfo.data.trades !== 1 ? "s" : ""}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {/* Weekly Summary */}
-                <div className={cn(
-                  "min-h-[100px] p-2 border-l flex flex-col justify-center items-center",
-                  weeklySummaries[weekIdx].pnl > 0 && "bg-emerald-500/10",
-                  weeklySummaries[weekIdx].pnl < 0 && "bg-red-500/10"
-                )}>
-                  {weeklySummaries[weekIdx].trades > 0 ? (
-                    <>
-                      <div className={cn(
-                        "text-lg font-bold",
-                        getPnLTextColor(weeklySummaries[weekIdx].pnl)
-                      )}>
-                        {weeklySummaries[weekIdx].pnl >= 0 ? "+" : ""}${formatCurrency(weeklySummaries[weekIdx].pnl)}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {weeklySummaries[weekIdx].trades} trades
-                      </div>
-                    </>
-                  ) : (
-                    <span className="text-muted-foreground/50 text-sm">—</span>
-                  )}
-                </div>
+        {/* Calendar Grid */}
+        <div className="rounded-xl border bg-card/30 overflow-hidden">
+          {/* Day Headers */}
+          <div className="grid grid-cols-8 border-b bg-muted/30">
+            {DAYS.map(day => (
+              <div key={day} className="p-3 text-center text-sm font-medium text-muted-foreground">
+                {day}
               </div>
             ))}
-          </motion.div>
-        </AnimatePresence>
-      </div>
+            <div className="p-3 text-center text-sm font-medium text-muted-foreground border-l">
+              Week
+            </div>
+          </div>
 
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-emerald-500/30 border border-emerald-500/50" />
-          <span>Profit Day</span>
+          {/* Calendar Body */}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={currentDate.toISOString()}
+              initial={{ opacity: 0, x: direction * 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction * -50 }}
+              transition={{ duration: 0.2 }}
+            >
+              {calendarData.map((week, weekIdx) => (
+                <div key={weekIdx} className="grid grid-cols-8 border-b last:border-b-0">
+                  {week.map((dayInfo, dayIdx) => {
+                    const intensity = dayInfo.data ? getIntensity(dayInfo.data.pnl, maxAbsPnL) : 0;
+                    const bgColor = dayInfo.data
+                      ? dayInfo.data.pnl > 0
+                        ? `rgba(16, 185, 129, ${intensity})`
+                        : dayInfo.data.pnl < 0
+                          ? `rgba(239, 68, 68, ${intensity})`
+                          : undefined
+                      : undefined;
+
+                    return (
+                      <div
+                        key={dayIdx}
+                        className={cn(
+                          "min-h-[100px] p-2 border-r last:border-r-0 transition-all duration-200",
+                          !dayInfo.isCurrentMonth && "opacity-40",
+                          dayInfo.data && "cursor-pointer hover:brightness-110"
+                        )}
+                        style={{ backgroundColor: bgColor }}
+                      >
+                        <div className={cn(
+                          "text-sm font-medium mb-1",
+                          !dayInfo.isCurrentMonth && "text-muted-foreground"
+                        )}>
+                          {dayInfo.day}
+                        </div>
+                        {dayInfo.data && (
+                          <div className="space-y-1">
+                            <div className={cn(
+                              "text-lg font-bold",
+                              getPnLTextColor(dayInfo.data.pnl)
+                            )}>
+                              {dayInfo.data.pnl >= 0 ? "+" : ""}${formatCurrency(dayInfo.data.pnl)}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {dayInfo.data.trades} trade{dayInfo.data.trades !== 1 ? "s" : ""}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {/* Weekly Summary */}
+                  <div className={cn(
+                    "min-h-[100px] p-2 border-l flex flex-col justify-center items-center",
+                    weeklySummaries[weekIdx].pnl > 0 && "bg-emerald-500/10",
+                    weeklySummaries[weekIdx].pnl < 0 && "bg-red-500/10"
+                  )}>
+                    {weeklySummaries[weekIdx].trades > 0 ? (
+                      <>
+                        <div className={cn(
+                          "text-lg font-bold",
+                          getPnLTextColor(weeklySummaries[weekIdx].pnl)
+                        )}>
+                          {weeklySummaries[weekIdx].pnl >= 0 ? "+" : ""}${formatCurrency(weeklySummaries[weekIdx].pnl)}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {weeklySummaries[weekIdx].trades} trades
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground/50 text-sm">—</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          </AnimatePresence>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-red-500/30 border border-red-500/50" />
-          <span>Loss Day</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <TrendingUp className="h-4 w-4 text-emerald-500" />
-          <span>Higher intensity = larger P&L</span>
+
+        {/* Legend */}
+        <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-emerald-500/30 border border-emerald-500/50" />
+            <span>Profit Day</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-red-500/30 border border-red-500/50" />
+            <span>Loss Day</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-emerald-500" />
+            <span>Higher intensity = larger P&L</span>
+          </div>
         </div>
       </div>
     </div>
