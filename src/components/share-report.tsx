@@ -51,11 +51,12 @@ export function ShareReport({ elementId, title = "Trading Performance" }: ShareR
             setPreviewImage(dataUrl);
 
             // Check if Web Share API with files is supported
-            if (typeof navigator !== 'undefined' && navigator.share && typeof navigator.canShare === 'function') {
+            const nav = typeof navigator !== 'undefined' ? navigator as any : null;
+            if (nav?.share && nav?.canShare) {
                 try {
                     const blob = await (await fetch(dataUrl)).blob();
                     const file = new File([blob], `artha-performance.png`, { type: 'image/png' });
-                    setCanShare(navigator.canShare({ files: [file] }));
+                    setCanShare(nav.canShare({ files: [file] }));
                 } catch (e) {
                     setCanShare(false);
                 }
@@ -78,8 +79,9 @@ export function ShareReport({ elementId, title = "Trading Performance" }: ShareR
             const blob = await (await fetch(dataUrl)).blob();
             const file = new File([blob], `artha-${new Date().toISOString().split('T')[0]}.png`, { type: 'image/png' });
 
-            if (navigator.share && navigator.canShare({ files: [file] })) {
-                await navigator.share({
+            const nav = navigator as any;
+            if (nav.share && nav.canShare && nav.canShare({ files: [file] })) {
+                await nav.share({
                     files: [file],
                     title: 'Artha Trading Performance',
                     text: 'Check out my trading performance on Artha! 📈 Track your trades at arthatrades.com',
