@@ -231,7 +231,10 @@ export default function JournalPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      sortedTrades.map((trade, i) => (
+                      sortedTrades.map((trade, i) => {
+                        // Limit animations to first 10 rows for performance
+                        const shouldAnimate = i < 10;
+                        return (
                         <motion.tr
                           key={trade.id}
                           className="table-row-hover cursor-pointer"
@@ -239,9 +242,9 @@ export default function JournalPage() {
                             setSelectedTrade(trade);
                             setSheetOpen(true);
                           }}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.2, delay: i * 0.05 }}
+                          initial={shouldAnimate ? { opacity: 0, y: 10 } : false}
+                          animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
+                          transition={shouldAnimate ? { duration: 0.2, delay: i * 0.03 } : undefined}
                         >
                           <TableCell className="font-medium text-muted-foreground whitespace-nowrap">
                             {format(new Date(trade.timestamp), "MMM d, yyyy")}
@@ -281,7 +284,8 @@ export default function JournalPage() {
                             </Button>
                           </TableCell>
                         </motion.tr>
-                      ))
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>

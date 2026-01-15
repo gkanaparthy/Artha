@@ -152,8 +152,7 @@ export function DashboardView({
     } catch (e) {
       console.error(e);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(filters), isDemo]);
+  }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType, isDemo]);
 
   // Fetch live positions with current market prices
   const fetchLivePositions = useCallback(async () => {

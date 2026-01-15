@@ -147,8 +147,7 @@ export default function DashboardPage() {
         } catch (e) {
             console.error(e);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [JSON.stringify(filters)]);
+    }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType]);
 
     // Fetch live positions with current market prices
     const fetchLivePositions = useCallback(async () => {
@@ -205,8 +204,8 @@ export default function DashboardPage() {
             await fetch("/api/trades/sync", {
                 method: "POST",
             });
-            fetchMetrics();
-            fetchLivePositions();
+            // Fetch in parallel after sync completes
+            await Promise.all([fetchMetrics(), fetchLivePositions()]);
             setRefreshKey((k) => k + 1);
         } catch (e) {
             console.error(e);
@@ -231,10 +230,9 @@ export default function DashboardPage() {
         }));
     }, []);
 
-    // Refetch when filters change
+    // Refetch when filters change - parallel fetches for better performance
     useEffect(() => {
-        fetchMetrics();
-        fetchLivePositions();
+        Promise.all([fetchMetrics(), fetchLivePositions()]);
     }, [fetchMetrics, fetchLivePositions]);
 
     const formatCurrency = (value: number, showSign = false) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
     Table,
     TableBody,
@@ -152,8 +152,7 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
                 profitFactor: totalLosses > 0 ? Math.round((totalWins / totalLosses) * 100) / 100 : totalWins > 0 ? null : 0,
             });
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [JSON.stringify(filters), onMetricsUpdate]); // React to ALL filter changes
+    }, [filters.status, filters.accountId, filters.assetType, onMetricsUpdate]);
 
     const fetchPositions = useCallback(async () => {
         // In demo mode, just apply filters to initial positions
@@ -218,8 +217,7 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
         } finally {
             setLoading(false);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [JSON.stringify(filters), applyFilters, isDemo, initialPositions]); // React to ALL filter changes
+    }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType, applyFilters, isDemo, initialPositions]);
 
     // Refetch when any filter changes
     useEffect(() => {
@@ -230,8 +228,7 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
         if (allPositions.length > 0 || rawMetrics) {
             applyFilters(allPositions, rawMetrics);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [JSON.stringify(filters), allPositions, rawMetrics, applyFilters]); // React to ALL filter changes
+    }, [filters.status, filters.accountId, filters.assetType, allPositions, rawMetrics, applyFilters]);
 
     // Handle Delete (disabled in demo mode)
     const handleDelete = async (tradeId: string) => {
@@ -347,12 +344,15 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
                                     : null;
                                 const isProfit = (displayPnl ?? 0) >= 0;
 
+                                // Limit animations to first 10 rows for performance
+                                const shouldAnimate = idx < 10;
+
                                 return (
                                     <motion.tr
                                         key={`${position.symbol}-${position.openedAt}-${idx}`}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 0.2, delay: idx * 0.02 }}
+                                        initial={shouldAnimate ? { opacity: 0, y: 10 } : false}
+                                        animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
+                                        transition={shouldAnimate ? { duration: 0.2, delay: idx * 0.02 } : undefined}
                                         className="group transition-all hover:translate-y-[-2px] hover:shadow-lg bg-card/40 hover:bg-card border-0 [&_td:first-child]:rounded-l-xl [&_td:last-child]:rounded-r-xl"
                                     >
                                         <TableCell className="font-medium">

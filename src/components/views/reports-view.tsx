@@ -171,8 +171,7 @@ export function ReportsView({
     } finally {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(filters), isDemo]);
+  }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType, isDemo]);
 
   useEffect(() => {
     if (!isDemo) {
