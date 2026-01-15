@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { toPng } from "html-to-image";
-import { Share2, Twitter, Linkedin, Copy, Download, Loader2, Check } from "lucide-react";
+import { Share2, Twitter, MessageCircle, MessageSquare, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -13,7 +13,6 @@ import {
     DialogTrigger,
     DialogFooter,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
 
 interface ShareReportProps {
     elementId: string;
@@ -22,7 +21,6 @@ interface ShareReportProps {
 
 export function ShareReport({ elementId, title = "Trading Performance" }: ShareReportProps) {
     const [isGenerating, setIsGenerating] = useState(false);
-    const [isCopied, setIsCopied] = useState(false);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [isOpen, setIsOpen] = useState(false);
 
@@ -67,26 +65,14 @@ export function ShareReport({ elementId, title = "Trading Performance" }: ShareR
         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank");
     };
 
-    const shareToLinkedin = () => {
-        const url = window.location.href;
-        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, "_blank");
+    const shareToWhatsApp = () => {
+        const text = `Check out my trading performance on Artha! 📈 ${window.location.href}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
     };
 
-    const copyToClipboard = async () => {
-        try {
-            if (!previewImage) {
-                const img = await generateImage();
-                if (!img) return;
-            }
-
-            // In a real app, you might want to copy the actual image blob
-            // For now, let's copy the URL or a success message
-            await navigator.clipboard.writeText(`Check out my trading performance: ${window.location.href}`);
-            setIsCopied(true);
-            setTimeout(() => setIsCopied(false), 2000);
-        } catch (err) {
-            console.error("Failed to copy:", err);
-        }
+    const shareToSMS = () => {
+        const text = `Check out my trading performance on Artha! 📈 ${window.location.href}`;
+        window.location.href = `sms:?&body=${encodeURIComponent(text)}`;
     };
 
     const downloadImage = async () => {
@@ -140,13 +126,13 @@ export function ShareReport({ elementId, title = "Trading Performance" }: ShareR
                             <Twitter className="h-4 w-4 text-[#1DA1F2]" />
                             X (Twitter)
                         </Button>
-                        <Button variant="outline" className="gap-2" onClick={shareToLinkedin}>
-                            <Linkedin className="h-4 w-4 text-[#0A66C2]" />
-                            LinkedIn
+                        <Button variant="outline" className="gap-2" onClick={shareToWhatsApp}>
+                            <MessageCircle className="h-4 w-4 text-[#25D366]" />
+                            WhatsApp
                         </Button>
-                        <Button variant="outline" className="gap-2" onClick={copyToClipboard}>
-                            {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                            {isCopied ? "Copied!" : "Copy Link"}
+                        <Button variant="outline" className="gap-2" onClick={shareToSMS}>
+                            <MessageSquare className="h-4 w-4 text-[#34B7F1]" />
+                            Messages
                         </Button>
                         <Button variant="outline" className="gap-2" onClick={downloadImage}>
                             <Download className="h-4 w-4" />
