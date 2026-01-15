@@ -82,7 +82,7 @@ export function ShareReport({ elementId, title = "Trading Performance" }: ShareR
                 await navigator.share({
                     files: [file],
                     title: 'Artha Trading Performance',
-                    text: 'Check out my trading performance on Artha! 📈',
+                    text: 'Check out my trading performance on Artha! 📈 Track your trades at arthatrades.com',
                 });
             } else {
                 // Fallback to download if sharing fails or is unsupported
