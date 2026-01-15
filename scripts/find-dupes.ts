@@ -12,7 +12,7 @@ async function findDupes() {
         orderBy: { timestamp: 'asc' }
     });
 
-    const seen = new Map();
+    const seen = new Map<string, any>();
     let totalDupes = 0;
 
     for (const t of dbTrades) {

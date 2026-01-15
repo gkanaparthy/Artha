@@ -45,7 +45,7 @@ async function compareCsvToDb() {
 
     // Match them up
     const unmatchedCsv = [];
-    const matchedDbIds = new Set();
+    const matchedDbIds = new Set<string>();
 
     for (const ct of csvTrades) {
         const match = dbTrades.find(dt =>

@@ -18,7 +18,7 @@ async function checkTqqq() {
 
     console.log(`Total TQQQ trades: ${dbTrades.length}`);
 
-    let longLots = [];
+    let longLots: { qty: number, price: number }[] = [];
     let closedPnL = 0;
 
     for (const trade of dbTrades) {

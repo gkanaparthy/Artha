@@ -10,13 +10,13 @@ async function analyzeSymbols() {
     const csvContent = fs.readFileSync(csvPath, 'utf-8');
     const lines = csvContent.trim().split('\n');
 
-    const csvSymbols = new Set();
+    const csvSymbols = new Set<string>();
     for (let i = 1; i < lines.length; i++) {
         const parts = lines[i].split(',');
         if (parts.length < 9) continue;
         const ts = new Date(parts[12]);
         if (ts.getFullYear() === 2026) {
-            csvSymbols.add(parts[8]);
+            csvSymbols.add(parts[8].trim());
         }
     }
 
@@ -30,7 +30,7 @@ async function analyzeSymbols() {
         },
         select: { symbol: true }
     });
-    const dbSymbols = new Set(dbTrades.map(t => t.symbol));
+    const dbSymbols = new Set<string>(dbTrades.map(t => t.symbol));
 
     console.log('--- SYMBOLS IN JAN 2026 ---');
     console.log(`CSV Symbols Count: ${csvSymbols.size}`);
