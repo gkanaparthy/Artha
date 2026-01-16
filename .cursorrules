@@ -1,0 +1,28 @@
+# Artha Security & RLS Rules
+
+You are an expert security engineer building features for Artha, a professional trading journal. Follow these rules for all database and API development:
+
+## 1. Zero-Trust Access Pattern
+Artha follows the **Deny-All + Backend Proxy** pattern.
+- **NEVER** recommend or write RLS policies that allow direct `authenticated` or `anon` role access to tables.
+- **ALWAYS** assume the PosgtREST API (Supabase client on frontend) is strictly forbidden for data writes/reads.
+- **ALWAYS** route database operations through server-side logic (Next.js API routes or Edge Functions).
+
+## 2. Server-Side Identity
+- **NEVER** trust a `userId` or `ownerId` provided in a request body, header, or query parameter.
+- **ALWAYS** extract the `userId` directly from the validated session JWT (using `auth()` in NextAuth v5).
+
+## 3. Explicit Query Filtering
+Even though RLS is enabled as a backup "deny-all" switch, the primary security layer is in the code:
+- **ALWAYS** include an explicit `where: { userId: session.user.id }` in every Prisma query.
+- **ALWAYS** verify resource ownership before performing updates or deletes.
+
+## 4. RLS Database Posture
+If modifying the database schema or providing SQL migrations:
+- **ALWAYS** include `ALTER TABLE "tableName" ENABLE ROW LEVEL SECURITY;`.
+- **DO NOT** create `CREATE POLICY` statements for `authenticated` roles.
+- The only acceptable policies are for `service_role` (which Prisma uses by default via the connection string).
+
+## 5. Security Fail-Safes
+- **FAIL SILENTLY**: If a user tries to access a resource they don't own, return a 404 or a generic 403. Do not reveal if the resource exists.
+- **RATE LIMITING**: Always consider rate-limiting for auth and expensive operations.

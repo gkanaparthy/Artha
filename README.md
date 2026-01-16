@@ -66,7 +66,7 @@ Unlike cloud-based solutions, Artha is self-hosted, giving you complete control 
 | **Animations** | Framer Motion |
 | **Charts** | Recharts |
 | **Database** | PostgreSQL (Supabase) + Prisma ORM |
-| **Auth** | NextAuth.js v5 (Google OAuth) |
+| **Auth** | NextAuth.js v5 (Google OAuth, Email Magic Links) |
 | **Broker API** | SnapTrade SDK |
 
 ## Architecture
@@ -129,6 +129,16 @@ Unlike cloud-based solutions, Artha is self-hosted, giving you complete control 
 - **Client-side filtering** - Instant filter updates for status/broker without API calls
 - **Server-side filtering** - Date and symbol filters query the database for performance
 - **Type Safety** - Fully typed end-to-end with TypeScript and Prisma
+
+### Security Architecture
+
+Artha follows a strict **Zero-Trust (Deny-All + Backend Proxy)** security model to protect sensitive financial data:
+
+1.  **Deny-All RLS (Kill-Switch)**: Row-Level Security (RLS) is enabled on all user-data tables (Users, Trades, Accounts) with **no public policies**. This effectively "bricks" the database for any direct client-side access (PostgREST/Supabase API), protecting against mass scraping or row injection attacks.
+2.  **Backend Proxy**: All data access is strictly proxied through Next.js API routes. The frontend never talks to the database directly.
+3.  **Service-Role Bypass**: The backend uses the `service_role` key (via Prisma) to bypass RLS *only* after rigorous server-side session validation (`auth()`).
+4.  **Identity Isolation**: Every database query is explicitly scoped to the authenticated user's ID (`where: { userId }`), providing an immutable audit trail in the codebase.
+
 
 ## Getting Started
 

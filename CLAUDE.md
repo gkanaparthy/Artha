@@ -127,3 +127,17 @@ The FIFO engine handles several edge cases:
 - **Option expiration**: `OPTIONEXPIRATION` action - negative quantity = closing long, positive = closing short
 - **OCC symbol fallback**: Raw symbols like `SPXW  260105C06920000` auto-detected as options with 100x multiplier
 - **Trade deduplication**: Prevents duplicate syncs by matching on snapTradeTradeId and content hash
+## Security & RLS
+
+**Strict "Deny-All" RLS + Backend Proxy Pattern:**
+Artha uses a strict zero-trust posture for database access. Row Level Security (RLS) is used as a kill-switch for direct client access.
+
+- **Enable RLS on all tables**: Every table (`User`, `Trade`, `BrokerAccount`, etc.) MUST have RLS enabled.
+- **Default Deny**: Do NOT create permissive public policies. The Supabase/PostgREST API should return 0 rows for any unauthenticated or standard authenticated direct client request.
+- **Backend Gatekeeper**: All database interactions MUST go through Next.js API routes or Edge Functions.
+- **Service Role Secret**: The backend uses the `service_role` key (via Prisma) to bypass RLS after validating the user's identity.
+- **Strict Authorization**: 
+  - Every API route MUST verify the session JWT via `auth()`.
+  - Every Prisma query MUST include an explicit `{ where: { userId: session.user.id } }` filter.
+  - Never trust a `userId` passed in a request body or URL parameter.
+- **Error Handling**: Fail silently or with generic 403 Forbidden errors to prevent account/data enumeration.
