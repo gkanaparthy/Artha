@@ -36,8 +36,20 @@ export default function LoginPage() {
 
     setLoading("email");
     try {
-      await signIn("resend", { email, callbackUrl: "/dashboard" });
-      setEmailSent(true);
+      // Use redirect: false to prevent NextAuth from redirecting to its default verify-request page
+      // This keeps the user on our nicely designed login page with the "Check your email" message
+      const result = await signIn("resend", {
+        email,
+        redirect: false,
+        callbackUrl: "/dashboard"
+      });
+
+      // If no error, show the email sent confirmation
+      if (!result?.error) {
+        setEmailSent(true);
+      } else {
+        console.error("Email sign in error:", result.error);
+      }
     } catch (error) {
       console.error("Email sign in error:", error);
     } finally {
