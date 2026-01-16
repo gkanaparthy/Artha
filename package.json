@@ -33,6 +33,7 @@
     "react-day-picker": "^9.13.0",
     "react-dom": "19.2.3",
     "recharts": "^3.6.0",
+    "resend": "^6.7.0",
     "snaptrade-typescript-sdk": "^9.0.158",
     "tailwind-merge": "^3.4.0"
   },

@@ -6,7 +6,7 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Chrome, Apple, Loader2, Info } from "lucide-react";
+import { Chrome, Apple, Loader2, Info, Mail, ArrowRight, CheckCircle } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Playfair_Display, Inter } from "next/font/google";
@@ -15,7 +15,9 @@ const playfair = Playfair_Display({ subsets: ["latin"] });
 const inter = Inter({ subsets: ["latin"] });
 
 export default function LoginPage() {
-  const [loading, setLoading] = useState<"google" | "apple" | null>(null);
+  const [loading, setLoading] = useState<"google" | "apple" | "email" | null>(null);
+  const [email, setEmail] = useState("");
+  const [emailSent, setEmailSent] = useState(false);
 
   const handleSignIn = async (provider: "google" | "apple") => {
     setLoading(provider);
@@ -23,6 +25,21 @@ export default function LoginPage() {
       await signIn(provider, { callbackUrl: "/dashboard" });
     } catch (error) {
       console.error("Sign in error:", error);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !email.includes("@")) return;
+
+    setLoading("email");
+    try {
+      await signIn("resend", { email, callbackUrl: "/dashboard" });
+      setEmailSent(true);
+    } catch (error) {
+      console.error("Email sign in error:", error);
     } finally {
       setLoading(null);
     }
@@ -57,7 +74,7 @@ export default function LoginPage() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className={cn("text-5xl font-bold text-[#2E4A3B] leading-tight mb-6", playfair.className)}
           >
-            Where your trading <br /> journey grows.
+            Where your trading <br />journey grows.
           </motion.h2>
           <motion.p
             initial={{ opacity: 0 }}
@@ -113,7 +130,7 @@ export default function LoginPage() {
           {/* Mobile Logo */}
           <div className="lg:hidden flex justify-center mb-8">
             <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-               <div className="w-12 h-12 relative flex items-center justify-center"> <Image src="/logo.png" alt="Artha Logo" fill className="object-contain" /> </div> <span className={cn("text-[#2E4A3B] text-3xl font-bold", playfair.className)}>Artha</span>
+              <div className="w-12 h-12 relative flex items-center justify-center"> <Image src="/logo.png" alt="Artha Logo" fill className="object-contain" /> </div> <span className={cn("text-[#2E4A3B] text-3xl font-bold", playfair.className)}>Artha</span>
             </Link>
           </div>
 
@@ -127,6 +144,64 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-4 pt-4">
+            {/* Email Magic Link Form */}
+            {emailSent ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-6 rounded-xl bg-[#2E4A3B]/5 border border-[#2E4A3B]/10 text-center space-y-3"
+              >
+                <CheckCircle className="h-12 w-12 text-[#2E4A3B] mx-auto" />
+                <h3 className="text-lg font-semibold text-[#2E4A3B]">Check your email</h3>
+                <p className="text-sm text-[#2E4A3B]/70">
+                  We sent a magic link to <strong>{email}</strong>. Click the link to sign in.
+                </p>
+                <Button
+                  variant="ghost"
+                  className="text-[#2E4A3B] hover:bg-[#2E4A3B]/10"
+                  onClick={() => setEmailSent(false)}
+                >
+                  Use a different email
+                </Button>
+              </motion.div>
+            ) : (
+              <form onSubmit={handleEmailSignIn} className="space-y-3">
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#2E4A3B]/40" />
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full h-14 pl-12 pr-4 bg-white border border-[#2E4A3B]/10 rounded-xl text-[#2E4A3B] placeholder:text-[#2E4A3B]/40 focus:outline-none focus:ring-2 focus:ring-[#2E4A3B]/20 focus:border-transparent transition-all"
+                    required
+                  />
+                </div>
+                <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                  <Button
+                    type="submit"
+                    className="w-full h-14 bg-[#2E4A3B] hover:bg-[#2E4A3B]/90 text-white rounded-xl text-base font-medium shadow-lg shadow-[#2E4A3B]/20 hover:shadow-xl transition-all flex items-center justify-center gap-3"
+                    disabled={loading !== null || !email}
+                  >
+                    {loading === "email" ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <>
+                        Continue with Email
+                        <ArrowRight className="h-5 w-5" />
+                      </>
+                    )}
+                  </Button>
+                </motion.div>
+              </form>
+            )}
+
+            <div className="flex items-center gap-3 my-6">
+              <div className="h-[1px] flex-1 bg-[#2E4A3B]/10"></div>
+              <span className="text-xs text-[#2E4A3B]/40 font-medium uppercase tracking-wider">or continue with</span>
+              <div className="h-[1px] flex-1 bg-[#2E4A3B]/10"></div>
+            </div>
+
             {/* Google Button */}
             <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
               <Button
@@ -146,24 +221,18 @@ export default function LoginPage() {
             {/* Apple Button */}
             <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
               <Button
-                className="w-full h-14 bg-[#2E4A3B] hover:bg-[#2E4A3B]/90 text-white rounded-xl text-base font-medium shadow-lg shadow-[#2E4A3B]/20 hover:shadow-xl transition-all flex items-center justify-center gap-3"
+                className="w-full h-14 bg-white hover:bg-white/80 text-[#2E4A3B] border border-[#2E4A3B]/10 rounded-xl text-base font-medium shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-3"
                 onClick={() => handleSignIn("apple")}
                 disabled={loading !== null}
               >
                 {loading === "apple" ? (
-                  <Loader2 className="h-5 w-5 animate-spin text-white" />
+                  <Loader2 className="h-5 w-5 animate-spin text-[#2E4A3B]" />
                 ) : (
                   <Apple className="h-5 w-5 fill-current" />
                 )}
                 Continue with Apple
               </Button>
             </motion.div>
-
-            <div className="flex items-center gap-3 my-6">
-              <div className="h-[1px] flex-1 bg-[#2E4A3B]/10"></div>
-              <span className="text-xs text-[#2E4A3B]/40 font-medium uppercase tracking-wider">Secure secured</span>
-              <div className="h-[1px] flex-1 bg-[#2E4A3B]/10"></div>
-            </div>
           </div>
 
           {/* Footer Links */}

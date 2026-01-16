@@ -1,8 +1,10 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
+import Resend from "next-auth/providers/resend";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
+import { sendVerificationRequest } from "./email";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma) as ReturnType<typeof PrismaAdapter>,
@@ -17,6 +19,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Apple({
       clientId: process.env.APPLE_CLIENT_ID ?? "",
       clientSecret: process.env.APPLE_CLIENT_SECRET ?? "",
+    }),
+    Resend({
+      apiKey: process.env.RESEND_API_KEY,
+      from: process.env.RESEND_FROM_EMAIL || "Artha <login@arthatrades.com>",
+      sendVerificationRequest,
+      maxAge: 60 * 60, // 1 hour instead of default 24 hours
     }),
   ],
   pages: {
