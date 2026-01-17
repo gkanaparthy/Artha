@@ -328,8 +328,9 @@ export default function DashboardPage() {
                     />
                 </div>
 
+
                 {/* Secondary Metrics */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <MetricCard
                         title="Total Trades"
                         value={metrics.totalTrades}
@@ -365,23 +366,8 @@ export default function DashboardPage() {
                         valueColor={getPnLColor(metrics.avgTrade)}
                         delay={0.7}
                     />
-                    <MetricCard
-                        title="Unrealized P&L"
-                        value={
-                            liveLoading
-                                ? "..."
-                                : livePositions
-                                    ? formatCurrency(filteredLiveMetrics.totalUnrealizedPnl, true)
-                                    : "—"
-                        }
-                        subtitle={livePositions ? "Live from broker" : "Connect broker"}
-                        icon={Wallet}
-                        iconColor={livePositions ? getPnLColor(filteredLiveMetrics.totalUnrealizedPnl) : "text-muted-foreground"}
-                        valueColor={livePositions ? getPnLColor(filteredLiveMetrics.totalUnrealizedPnl) : ""}
-                        delay={0.8}
-                        glowClass={livePositions && filteredLiveMetrics.totalUnrealizedPnl >= 0 ? "glow-green" : "glow-red"}
-                    />
                 </div>
+
 
                 {/* Positions Table */}
                 <AnimatedCard delay={0.7}>
