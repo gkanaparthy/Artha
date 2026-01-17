@@ -37,6 +37,19 @@ interface FilterOptions {
     assetType?: string;
 }
 
+// Parse option expiration date from symbol (format: SYM  YYMMDD[CP]STRIKE)
+function getOptionExpiration(symbol: string): Date | null {
+    const match = symbol.match(/(\d{6})[CP]/);
+    if (match) {
+        const expStr = match[1];
+        const year = 2000 + parseInt(expStr.slice(0, 2));
+        const month = parseInt(expStr.slice(2, 4)) - 1; // 0-indexed
+        const day = parseInt(expStr.slice(4, 6));
+        return new Date(year, month, day, 23, 59, 59); // End of expiration day
+    }
+    return null;
+}
+
 function getCanonicalKey(trade: {
     symbol: string;
     universalSymbolId?: string | null;
@@ -302,6 +315,56 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                     });
                 }
             }
+        }
+
+        // Auto-close expired options that don't have OPTIONEXPIRATION records
+        // This handles cases where SnapTrade doesn't send expiration events
+        const now = new Date();
+        const symbol = keyDetails.get(key)?.symbol || '';
+        const expDate = getOptionExpiration(symbol);
+
+        if (expDate && expDate < now) {
+            // This is an expired option - close all remaining lots at $0
+
+            // Close expired long positions (loss = cost basis)
+            for (const lot of longLots) {
+                if (lot.quantity > 0.000001) {
+                    const pnl = (0 - lot.price) * lot.quantity * lot.multiplier;
+                    closedTrades.push({
+                        symbol: symbol,
+                        pnl: pnl,
+                        entryPrice: lot.price,
+                        exitPrice: 0,
+                        quantity: lot.quantity,
+                        closedAt: expDate,
+                        openedAt: lot.date,
+                        broker: lot.broker,
+                        accountId: lot.accountId,
+                        type: lot.type
+                    });
+                }
+            }
+            longLots.length = 0; // Clear all long lots
+
+            // Close expired short positions (profit = premium received)
+            for (const lot of shortLots) {
+                if (lot.quantity > 0.000001) {
+                    const pnl = lot.price * lot.quantity * lot.multiplier;
+                    closedTrades.push({
+                        symbol: symbol,
+                        pnl: pnl,
+                        entryPrice: lot.price,
+                        exitPrice: 0,
+                        quantity: lot.quantity,
+                        closedAt: expDate,
+                        openedAt: lot.date,
+                        broker: lot.broker,
+                        accountId: lot.accountId,
+                        type: lot.type
+                    });
+                }
+            }
+            shortLots.length = 0; // Clear all short lots
         }
 
         // Collect Open Positions from Lots
