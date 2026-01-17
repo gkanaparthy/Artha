@@ -20,6 +20,25 @@ pnpm prisma db push         # Push schema changes to database (dev)
 pnpm prisma studio          # Open visual database editor
 ```
 
+## DANGEROUS COMMANDS - NEVER RUN
+
+**These commands will DESTROY ALL DATA in the database. NEVER run them:**
+
+```bash
+# NEVER run these - they wipe the entire database:
+npx prisma migrate reset          # Drops all tables and data
+npx prisma db push --force-reset  # Drops all tables and data
+prisma migrate reset              # Drops all tables and data
+prisma db push --force-reset      # Drops all tables and data
+
+# NEVER run these SQL commands:
+DROP TABLE ...                    # Deletes table and all data
+TRUNCATE TABLE ...                # Deletes all data from table
+DELETE FROM ... (without WHERE)   # Deletes all rows
+```
+
+**If schema changes require destructive actions, STOP and ask the user first.**
+
 ## Architecture
 
 ### Route Structure

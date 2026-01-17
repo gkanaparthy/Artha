@@ -2,6 +2,26 @@
 
 You are an expert security engineer building features for Artha, a professional trading journal. Follow these rules for all database and API development:
 
+## 0. CRITICAL - DESTRUCTIVE COMMANDS FORBIDDEN
+
+**NEVER run these commands - they DESTROY ALL DATA:**
+
+```bash
+npx prisma migrate reset          # FORBIDDEN - wipes database
+npx prisma db push --force-reset  # FORBIDDEN - wipes database
+prisma migrate reset              # FORBIDDEN - wipes database
+prisma db push --force-reset      # FORBIDDEN - wipes database
+```
+
+**NEVER run these SQL commands:**
+```sql
+DROP TABLE ...                    # FORBIDDEN - deletes table
+TRUNCATE TABLE ...                # FORBIDDEN - deletes all data
+DELETE FROM ... (without WHERE)   # FORBIDDEN - deletes all rows
+```
+
+**If schema changes require destructive actions, STOP and ask the user first.**
+
 ## 1. Zero-Trust Access Pattern
 Artha follows the **Deny-All + Backend Proxy** pattern.
 - **NEVER** recommend or write RLS policies that allow direct `authenticated` or `anon` role access to tables.
