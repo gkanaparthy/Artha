@@ -10,3 +10,13 @@ if git diff --cached --name-only | grep -qE '\.ts$|\.js$|\.sh$'; then
     exit 1
   fi
 fi
+
+# Scan for accidentally committed secrets
+if git diff --cached | grep -qE '(SNAPTRADE_CONSUMER_KEY|SNAPTRADE_CLIENT_ID|AUTH_SECRET|DATABASE_URL|cmkhnusy40000ie5ulwlcys4q|cmkhti6uu0000111l52rekv5x|wJEiuq|WELLTHY-PRODUCTS)'; then
+  echo "❌ ERROR: Potential secret or sensitive ID detected in commit!"
+  echo "   Found hardcoded API key, user ID, or credential."
+  echo "   Please use environment variables instead."
+  echo ""
+  echo "   Tip: Use process.env.VARIABLE_NAME instead of hardcoding secrets."
+  exit 1
+fi
