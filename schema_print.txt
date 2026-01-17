@@ -66,10 +66,10 @@ model BrokerAccount {
   userId             String
   brokerName         String?
   snapTradeAccountId String   @unique
-  accountNumber      String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   meta               String?
+  accountNumber      String?
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   trades             Trade[]
 
@@ -91,11 +91,11 @@ model Trade {
   optionType         String?
   strikePrice        Float?
   expiryDate         DateTime?
-  optionAction       String?
-  contractMultiplier Int           @default(1)
   snapTradeTradeId   String?       @unique
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
+  contractMultiplier Int           @default(1)
+  optionAction       String?
   account            BrokerAccount @relation(fields: [accountId], references: [id])
   tags               Tag[]         @relation("TagToTrade")
 
@@ -110,3 +110,5 @@ model Tag {
 
   @@map("tags")
 }
+
+
