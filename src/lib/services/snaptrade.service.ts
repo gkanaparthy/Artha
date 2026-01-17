@@ -145,10 +145,12 @@ export class SnapTradeService {
         // We need to iterate over date ranges or fetch "all".
         // For MVP, lets fetch "last 1 year" or similar defaults?
         // Or use `startDate` / `endDate`.
-        const oneYearAgo = new Date();
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+        // Fetch 3 years of history to ensure complete position data
+        // (1 year can miss opening trades for long-held positions)
+        const threeYearsAgo = new Date();
+        threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
 
-        console.log('[SnapTrade Sync] Fetching activities from', oneYearAgo.toISOString().split('T')[0], 'to', new Date().toISOString().split('T')[0]);
+        console.log('[SnapTrade Sync] Fetching activities from', threeYearsAgo.toISOString().split('T')[0], 'to', new Date().toISOString().split('T')[0]);
 
         // Use the newer account-level API (the old transactionsAndReporting.getActivities is deprecated)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -162,7 +164,7 @@ export class SnapTradeService {
                     accountId: acc.id,
                     userId: snapTradeUserId,
                     userSecret: snapTradeUserSecret,
-                    startDate: oneYearAgo.toISOString().split('T')[0],
+                    startDate: threeYearsAgo.toISOString().split('T')[0],
                     endDate: new Date().toISOString().split('T')[0],
                 });
                 // Response structure: { data: { data: [...activities], pagination: {...} } }

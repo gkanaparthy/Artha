@@ -1,0 +1,12 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Block dangerous Prisma commands from being committed
+if git diff --cached --name-only | grep -qE '\.ts$|\.js$|\.sh$'; then
+  if git diff --cached | grep -qE 'prisma (db push --force-reset|migrate reset)'; then
+    echo "❌ ERROR: Attempting to commit code with dangerous Prisma reset command!"
+    echo "   Commands like 'prisma db push --force-reset' are FORBIDDEN."
+    echo "   Please remove this command before committing."
+    exit 1
+  fi
+fi
