@@ -94,15 +94,22 @@ interface Lot {
 }
 
 function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOptions) {
-    // 0. Deduplicate trades (same symbol, action, quantity, price, and SAME DAY)
-    // This handles cases where SnapTrade returns the same trade with different timestamps (seconds/minutes apart)
+    // 0. Deduplicate trades using SnapTrade's unique trade ID
+    // This handles cases where the same trade appears multiple times in the database
     const seen = new Set<string>();
     const uniqueTrades = trades.filter(trade => {
-        // Safe deduplication: Only treat as duplicate if ALL fields (including timestamp and ID) match
-        // Or if SnapTradeTradeId is identical
-        const key = `${trade.snapTradeTradeId || trade.id}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
+        // CRITICAL: snapTradeTradeId must be present for all trades
+        if (!trade.snapTradeTradeId) {
+            console.warn('[FIFO] Trade missing snapTradeTradeId:', trade.id, trade.symbol, trade.timestamp);
+            return false; // Skip trades without snapTradeTradeId (shouldn't happen)
+        }
+
+        if (seen.has(trade.snapTradeTradeId)) {
+            console.warn('[FIFO] Duplicate trade detected:', trade.snapTradeTradeId, trade.symbol);
+            return false;
+        }
+
+        seen.add(trade.snapTradeTradeId);
         return true;
     });
 
