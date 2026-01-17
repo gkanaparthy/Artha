@@ -260,18 +260,18 @@ export class SnapTradeService {
             // Normalize values for consistent comparison
             const normalizedQuantity = trade.units || 0;
             const normalizedPrice = Math.round((trade.price || 0) * 10000) / 10000; // Round to 4 decimal places
-            const normalizedTimestamp = new Date(tradeTimestamp.toISOString().split('T')[0]); // Normalize to date only (midnight UTC)
+            // Normalize timestamp to seconds (remove milliseconds) for consistent comparison
+            const normalizedTimestamp = new Date(Math.floor(tradeTimestamp.getTime() / 1000) * 1000);
 
-            console.log('[SnapTrade Sync] Processing trade:', trade.id, 'Date:', normalizedTimestamp.toISOString(), 'Symbol:', tradeSymbol, 'Type:', isOption ? 'OPTION' : 'STOCK', 'Multiplier:', contractMultiplier);
+            console.log('[SnapTrade Sync] Processing trade:', trade.id, 'Date:', tradeTimestamp.toISOString(), 'Symbol:', tradeSymbol, 'Type:', isOption ? 'OPTION' : 'STOCK', 'Multiplier:', contractMultiplier);
 
             // Use transaction for atomic check-and-insert to prevent race conditions
             const result = await prisma.$transaction(async (tx) => {
                 // Content-based deduplication: Check if a trade with same content already exists
                 // SnapTrade sometimes returns the same trade with different IDs
-                // Use date range to handle timestamp precision issues
-                const startOfDay = new Date(normalizedTimestamp);
-                const endOfDay = new Date(normalizedTimestamp);
-                endOfDay.setUTCHours(23, 59, 59, 999);
+                // Use 1-minute window to handle timestamp precision issues while allowing multiple trades per day
+                const timeWindowStart = new Date(normalizedTimestamp.getTime() - 30000); // 30 seconds before
+                const timeWindowEnd = new Date(normalizedTimestamp.getTime() + 30000); // 30 seconds after
 
                 const existingTrade = await tx.trade.findFirst({
                     where: {
@@ -284,10 +284,10 @@ export class SnapTradeService {
                             gte: normalizedPrice - 0.01,
                             lte: normalizedPrice + 0.01,
                         },
-                        // Use date range instead of exact timestamp
+                        // Use 1-minute window instead of exact timestamp
                         timestamp: {
-                            gte: startOfDay,
-                            lte: endOfDay,
+                            gte: timeWindowStart,
+                            lte: timeWindowEnd,
                         }
                     }
                 });
