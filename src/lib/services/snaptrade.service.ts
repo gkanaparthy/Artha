@@ -202,6 +202,15 @@ export class SnapTradeService {
                 continue;
             }
 
+            // Check if this trade is on the permanent blocklist
+            const tradeId = trade.id;
+            const blockCheck = await import('../tradeBlocklist').then(m => m.isTradeBlocked(tradeId));
+            if (blockCheck.blocked) {
+                console.warn('[SnapTrade Sync] Skipping blocked trade:', tradeId, '-', blockCheck.reason);
+                skippedTrades++;
+                continue;
+            }
+
             // Ensure account exists locally (it should from step 1)
             // Use _accountId we attached, or fall back to trade.account?.id for old API
             const snapTradeAccountId = trade._accountId || trade.account?.id;
