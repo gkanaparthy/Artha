@@ -268,52 +268,22 @@ export class SnapTradeService {
             // Option action (BUY_TO_OPEN, SELL_TO_CLOSE, etc.) is in trade.option_type
             const optionAction = trade.option_type || null;
 
-            // Normalize values for consistent comparison
-            const normalizedQuantity = trade.units || 0;
-            const normalizedPrice = Math.round((trade.price || 0) * 10000) / 10000; // Round to 4 decimal places
-            // Normalize timestamp to seconds (remove milliseconds) for consistent comparison
-            const normalizedTimestamp = new Date(Math.floor(tradeTimestamp.getTime() / 1000) * 1000);
+            const quantity = trade.units || 0;
 
             console.log('[SnapTrade Sync] Processing trade:', trade.id, 'Date:', tradeTimestamp.toISOString(), 'Symbol:', tradeSymbol, 'Type:', isOption ? 'OPTION' : 'STOCK', 'Multiplier:', contractMultiplier);
 
             // Use transaction for atomic check-and-insert to prevent race conditions
             const result = await prisma.$transaction(async (tx) => {
-                // Content-based deduplication: Check if a trade with same content already exists
-                // SnapTrade sometimes returns the same trade with different IDs
-                // Use 1-minute window to handle timestamp precision issues while allowing multiple trades per day
-                const timeWindowStart = new Date(normalizedTimestamp.getTime() - 30000); // 30 seconds before
-                const timeWindowEnd = new Date(normalizedTimestamp.getTime() + 30000); // 30 seconds after
-
-                const existingTrade = await tx.trade.findFirst({
-                    where: {
-                        accountId: account.id,
-                        symbol: tradeSymbol,
-                        action: action,
-                        quantity: normalizedQuantity,
-                        // Use range for price to handle floating point issues (within 0.01)
-                        price: {
-                            gte: normalizedPrice - 0.01,
-                            lte: normalizedPrice + 0.01,
-                        },
-                        // Use 1-minute window instead of exact timestamp
-                        timestamp: {
-                            gte: timeWindowStart,
-                            lte: timeWindowEnd,
-                        }
-                    }
-                });
-
-                if (existingTrade) {
-                    return { skipped: true, tradeId: existingTrade.id };
-                }
-
-                // Also check by snapTradeTradeId if available
+                // Primary deduplication: Check by snapTradeTradeId (unique identifier from SnapTrade)
+                // This is the only reliable way to identify duplicates - content-based dedup
+                // was causing legitimate trades to be skipped (e.g., multiple partial fills
+                // with same qty/price at same time)
                 if (trade.id) {
                     const existingBySnapTradeId = await tx.trade.findUnique({
                         where: { snapTradeTradeId: trade.id }
                     });
                     if (existingBySnapTradeId) {
-                        // Update the existing trade
+                        // Update the existing trade with latest data
                         await tx.trade.update({
                             where: { id: existingBySnapTradeId.id },
                             data: {
@@ -338,7 +308,7 @@ export class SnapTradeService {
                         accountId: account.id,
                         symbol: tradeSymbol,
                         universalSymbolId: isOption ? optionSymbol.id : trade.symbol?.id,
-                        quantity: normalizedQuantity,
+                        quantity: quantity,
                         price: trade.price || 0, // Keep original price for storage
                         action: action,
                         timestamp: tradeTimestamp,
@@ -355,12 +325,6 @@ export class SnapTradeService {
                 });
                 return { skipped: false, created: true, tradeId: newTrade.id };
             });
-
-            if (result.skipped) {
-                console.log('[SnapTrade Sync] Skipping duplicate trade (same content exists):', trade.id);
-                skippedTrades++;
-                continue;
-            }
 
             count++;
         }
