@@ -257,63 +257,99 @@ export class SnapTradeService {
             // Option action (BUY_TO_OPEN, SELL_TO_CLOSE, etc.) is in trade.option_type
             const optionAction = trade.option_type || null;
 
-            console.log('[SnapTrade Sync] Processing trade:', trade.id, 'Date:', tradeTimestamp.toISOString(), 'Symbol:', tradeSymbol, 'Type:', isOption ? 'OPTION' : 'STOCK', 'Multiplier:', contractMultiplier);
+            // Normalize values for consistent comparison
+            const normalizedQuantity = trade.units || 0;
+            const normalizedPrice = Math.round((trade.price || 0) * 10000) / 10000; // Round to 4 decimal places
+            const normalizedTimestamp = new Date(tradeTimestamp.toISOString().split('T')[0]); // Normalize to date only (midnight UTC)
 
-            // Content-based deduplication: Check if a trade with same content already exists
-            // SnapTrade sometimes returns the same trade with different IDs
-            const existingTrade = await prisma.trade.findFirst({
-                where: {
-                    accountId: account.id,
-                    symbol: tradeSymbol,
-                    action: action,
-                    quantity: trade.units || 0,
-                    price: trade.price || 0,
-                    timestamp: tradeTimestamp
+            console.log('[SnapTrade Sync] Processing trade:', trade.id, 'Date:', normalizedTimestamp.toISOString(), 'Symbol:', tradeSymbol, 'Type:', isOption ? 'OPTION' : 'STOCK', 'Multiplier:', contractMultiplier);
+
+            // Use transaction for atomic check-and-insert to prevent race conditions
+            const result = await prisma.$transaction(async (tx) => {
+                // Content-based deduplication: Check if a trade with same content already exists
+                // SnapTrade sometimes returns the same trade with different IDs
+                // Use date range to handle timestamp precision issues
+                const startOfDay = new Date(normalizedTimestamp);
+                const endOfDay = new Date(normalizedTimestamp);
+                endOfDay.setUTCHours(23, 59, 59, 999);
+
+                const existingTrade = await tx.trade.findFirst({
+                    where: {
+                        accountId: account.id,
+                        symbol: tradeSymbol,
+                        action: action,
+                        quantity: normalizedQuantity,
+                        // Use range for price to handle floating point issues (within 0.01)
+                        price: {
+                            gte: normalizedPrice - 0.01,
+                            lte: normalizedPrice + 0.01,
+                        },
+                        // Use date range instead of exact timestamp
+                        timestamp: {
+                            gte: startOfDay,
+                            lte: endOfDay,
+                        }
+                    }
+                });
+
+                if (existingTrade) {
+                    return { skipped: true, tradeId: existingTrade.id };
                 }
+
+                // Also check by snapTradeTradeId if available
+                if (trade.id) {
+                    const existingBySnapTradeId = await tx.trade.findUnique({
+                        where: { snapTradeTradeId: trade.id }
+                    });
+                    if (existingBySnapTradeId) {
+                        // Update the existing trade
+                        await tx.trade.update({
+                            where: { id: existingBySnapTradeId.id },
+                            data: {
+                                timestamp: tradeTimestamp,
+                                symbol: tradeSymbol,
+                                universalSymbolId: isOption ? optionSymbol.id : trade.symbol?.id,
+                                type: isOption ? 'OPTION' : 'STOCK',
+                                optionType: optionSymbol?.option_type || null,
+                                strikePrice: optionSymbol?.strike_price || null,
+                                expiryDate: optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null,
+                                optionAction: optionAction,
+                                contractMultiplier: contractMultiplier,
+                            }
+                        });
+                        return { skipped: false, updated: true, tradeId: existingBySnapTradeId.id };
+                    }
+                }
+
+                // Create new trade
+                const newTrade = await tx.trade.create({
+                    data: {
+                        accountId: account.id,
+                        symbol: tradeSymbol,
+                        universalSymbolId: isOption ? optionSymbol.id : trade.symbol?.id,
+                        quantity: normalizedQuantity,
+                        price: trade.price || 0, // Keep original price for storage
+                        action: action,
+                        timestamp: tradeTimestamp,
+                        fees: trade.fee || 0,
+                        currency: trade.currency?.code || 'USD',
+                        type: isOption ? 'OPTION' : 'STOCK',
+                        snapTradeTradeId: trade.id || null, // Handle undefined/null explicitly
+                        contractMultiplier: contractMultiplier,
+                        optionAction: optionAction,
+                        optionType: optionSymbol?.option_type || null,
+                        strikePrice: optionSymbol?.strike_price || null,
+                        expiryDate: optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null,
+                    },
+                });
+                return { skipped: false, created: true, tradeId: newTrade.id };
             });
 
-            if (existingTrade) {
-                // Trade with same content already exists, skip to avoid duplicate
+            if (result.skipped) {
                 console.log('[SnapTrade Sync] Skipping duplicate trade (same content exists):', trade.id);
                 skippedTrades++;
                 continue;
             }
-
-            // Upsert Trade (only if not already existing with same content)
-            await prisma.trade.upsert({
-                where: { snapTradeTradeId: trade.id },
-                update: {
-                    timestamp: tradeTimestamp, // Always update the timestamp in case it was wrong before
-                    symbol: tradeSymbol,
-                    universalSymbolId: isOption ? optionSymbol.id : trade.symbol?.id,
-                    type: isOption ? 'OPTION' : 'STOCK',
-                    optionType: optionSymbol?.option_type || null,
-                    strikePrice: optionSymbol?.strike_price || null,
-                    expiryDate: optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null,
-                    optionAction: optionAction,
-                    contractMultiplier: contractMultiplier,
-                },
-                create: {
-                    accountId: account.id,
-                    symbol: tradeSymbol,
-                    universalSymbolId: isOption ? optionSymbol.id : trade.symbol?.id,
-                    quantity: trade.units || 0,
-                    price: trade.price || 0,
-                    action: action,
-                    timestamp: tradeTimestamp,
-                    fees: trade.fee || 0,
-                    currency: trade.currency?.code || 'USD',
-                    type: isOption ? 'OPTION' : 'STOCK',
-                    snapTradeTradeId: trade.id,
-                    contractMultiplier: contractMultiplier,
-                    optionAction: optionAction,
-
-                    // Detailed Option Data (snake_case from SnapTrade SDK)
-                    optionType: optionSymbol?.option_type || null,
-                    strikePrice: optionSymbol?.strike_price || null,
-                    expiryDate: optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null,
-                },
-            });
 
             count++;
         }
