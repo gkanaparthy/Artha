@@ -16,7 +16,6 @@ import {
   Flame,
   Clock,
   PieChart as PieChartIcon,
-  Sparkles,
   LayoutGrid,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -111,17 +110,17 @@ function SummaryCard({
     <AnimatedCard delay={delay}>
       <Card className="card-hover overflow-hidden relative">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500" />
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
+          <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
             {title}
           </CardTitle>
           <div className="metric-icon-bg">
-            <Icon className={cn("h-4 w-4", iconColor)} />
+            <Icon className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", iconColor)} />
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6 pt-0">
           <motion.div
-            className={cn("text-2xl font-bold", valueColor)}
+            className={cn("text-xl sm:text-2xl font-bold", valueColor)}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: delay + 0.2 }}
@@ -359,49 +358,49 @@ export function ReportsView({
 
   return (
     <PageTransition>
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6">
         {/* Header */}
         <motion.div
-          className="flex items-center justify-between"
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+          <div className="space-y-0.5 sm:space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2 sm:gap-3">
               <span className="text-gradient">Reports</span>
-              <Sparkles className="h-6 w-6 text-amber-500 float" />
+              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-500 float" />
               {isDemo && (
-                <span className="text-sm font-normal text-muted-foreground ml-2">
+                <span className="text-xs sm:text-sm font-normal text-muted-foreground ml-2">
                   (Demo Mode)
                 </span>
               )}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               {isDemo
                 ? "Sample trading performance analysis"
                 : "In-depth analysis of your trading performance"}
             </p>
           </div>
           {/* View Toggle */}
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 border">
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 border w-full sm:w-auto">
             <Button
               variant={viewType === "charts" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewType("charts")}
-              className="gap-2"
+              className="gap-2 flex-1 sm:flex-initial h-9"
             >
               <LayoutGrid className="h-4 w-4" />
-              Charts
+              <span className="sm:inline">Charts</span>
             </Button>
             <Button
               variant={viewType === "calendar" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewType("calendar")}
-              className="gap-2"
+              className="gap-2 flex-1 sm:flex-initial h-9"
             >
               <Calendar className="h-4 w-4" />
-              Calendar
+              <span className="sm:inline">Calendar</span>
             </Button>
           </div>
         </motion.div>
@@ -426,7 +425,7 @@ export function ReportsView({
         {viewType === "charts" && (
           <>
             {/* Summary Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <SummaryCard
                 title="Net P&L"
                 value={`${metrics.netPnL >= 0 ? "+" : "-"}${formatCurrency(
@@ -482,7 +481,7 @@ export function ReportsView({
             </div>
 
             {/* Secondary Stats */}
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <SummaryCard
                 title="Max Win Streak"
                 value={maxWinStreak}
@@ -525,7 +524,7 @@ export function ReportsView({
                 </CardHeader>
                 <CardContent>
                   {cumulativePnL.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={350}>
+                    <ResponsiveContainer width="100%" height={250} className="sm:h-[350px]">
                       <AreaChart data={cumulativePnL}>
                         <defs>
                           <linearGradient
@@ -561,7 +560,7 @@ export function ReportsView({
                         />
                         <XAxis
                           dataKey="date"
-                          tick={{ fontSize: 11, fill: "currentColor" }}
+                          tick={{ fontSize: 10, fill: "currentColor" }}
                           tickFormatter={(date) =>
                             new Date(date).toLocaleDateString("en-US", {
                               month: "short",
@@ -570,6 +569,9 @@ export function ReportsView({
                           }
                           className="text-muted-foreground"
                           stroke="currentColor"
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
                         />
                         <YAxis
                           tick={{ fontSize: 11, fill: "currentColor" }}
@@ -631,7 +633,7 @@ export function ReportsView({
             </AnimatedCard>
 
             {/* Charts Row */}
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {/* Monthly Performance */}
               <AnimatedCard delay={0.55}>
                 <Card className="card-hover">
@@ -643,7 +645,7 @@ export function ReportsView({
                   </CardHeader>
                   <CardContent>
                     {monthlyData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={280}>
+                      <ResponsiveContainer width="100%" height={250} className="sm:h-[280px]">
                         <BarChart data={monthlyData}>
                           <CartesianGrid
                             strokeDasharray="3 3"
@@ -651,9 +653,12 @@ export function ReportsView({
                           />
                           <XAxis
                             dataKey="month"
-                            tick={{ fontSize: 11, fill: "currentColor" }}
+                            tick={{ fontSize: 10, fill: "currentColor" }}
                             tickFormatter={formatMonth}
                             stroke="currentColor"
+                            angle={-45}
+                            textAnchor="end"
+                            height={60}
                           />
                           <YAxis
                             tick={{ fontSize: 11, fill: "currentColor" }}
@@ -718,7 +723,7 @@ export function ReportsView({
                   </CardHeader>
                   <CardContent>
                     {metrics.totalTrades > 0 ? (
-                      <ResponsiveContainer width="100%" height={280}>
+                      <ResponsiveContainer width="100%" height={250} className="sm:h-[280px]">
                         <PieChart>
                           <Pie
                             data={winLossData}
@@ -776,7 +781,7 @@ export function ReportsView({
             </div>
 
             {/* Day of Week & Trading Profile */}
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {/* Performance by Day of Week */}
               <AnimatedCard delay={0.65}>
                 <Card className="card-hover">
@@ -787,7 +792,7 @@ export function ReportsView({
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={280}>
+                    <ResponsiveContainer width="100%" height={250} className="sm:h-[280px]">
                       <BarChart data={dayOfWeekPerformance}>
                         <CartesianGrid
                           strokeDasharray="3 3"
@@ -848,7 +853,7 @@ export function ReportsView({
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={280}>
+                    <ResponsiveContainer width="100%" height={250} className="sm:h-[280px]">
                       <RadarChart data={tradingProfileData}>
                         <PolarGrid
                           stroke="currentColor"
@@ -1145,38 +1150,38 @@ export function ReportsView({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-                    <div className="text-center p-4 rounded-lg bg-card/50 border">
-                      <p className="text-sm text-muted-foreground mb-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">
                         Total Trades
                       </p>
-                      <p className="text-2xl font-bold text-foreground">
+                      <p className="text-lg sm:text-2xl font-bold text-foreground">
                         {metrics.totalTrades}
                       </p>
                     </div>
-                    <div className="text-center p-4 rounded-lg bg-card/50 border">
-                      <p className="text-sm text-muted-foreground mb-1">
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">
                         Avg Win
                       </p>
-                      <p className="text-2xl font-bold text-green-500">
+                      <p className="text-lg sm:text-2xl font-bold text-green-500">
                         +{formatCurrency(metrics.avgWin)}
                       </p>
                     </div>
-                    <div className="text-center p-4 rounded-lg bg-card/50 border">
-                      <p className="text-sm text-muted-foreground mb-1">
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">
                         Avg Loss
                       </p>
-                      <p className="text-2xl font-bold text-red-500">
+                      <p className="text-lg sm:text-2xl font-bold text-red-500">
                         -{formatCurrency(metrics.avgLoss)}
                       </p>
                     </div>
-                    <div className="text-center p-4 rounded-lg bg-card/50 border">
-                      <p className="text-sm text-muted-foreground mb-1">
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">
                         MTD P&L
                       </p>
                       <p
                         className={cn(
-                          "text-2xl font-bold",
+                          "text-lg sm:text-2xl font-bold",
                           mtdPnL >= 0 ? "text-green-500" : "text-red-500"
                         )}
                       >
@@ -1184,13 +1189,13 @@ export function ReportsView({
                         {formatCurrency(mtdPnL)}
                       </p>
                     </div>
-                    <div className="text-center p-4 rounded-lg bg-card/50 border">
-                      <p className="text-sm text-muted-foreground mb-1">
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">
                         YTD P&L
                       </p>
                       <p
                         className={cn(
-                          "text-2xl font-bold",
+                          "text-lg sm:text-2xl font-bold",
                           ytdPnL >= 0 ? "text-green-500" : "text-red-500"
                         )}
                       >
@@ -1198,13 +1203,13 @@ export function ReportsView({
                         {formatCurrency(ytdPnL)}
                       </p>
                     </div>
-                    <div className="text-center p-4 rounded-lg bg-card/50 border">
-                      <p className="text-sm text-muted-foreground mb-1">
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">
                         Expectancy
                       </p>
                       <p
                         className={cn(
-                          "text-2xl font-bold",
+                          "text-lg sm:text-2xl font-bold",
                           metrics.netPnL >= 0 ? "text-green-500" : "text-red-500"
                         )}
                       >

@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Sparkles, Trash2, BookOpen } from "lucide-react";
+import { Loader2, Trash2, BookOpen, Activity } from "lucide-react";
 import { format } from "date-fns";
 import { TradeDetailSheet } from "@/components/trade-detail-sheet";
 import { motion } from "framer-motion";
@@ -55,6 +55,87 @@ const getTradeSortValue = (t: Trade, field: SortField): string | number => {
       return 0;
   }
 };
+
+// Mobile Trade Card Component
+function MobileTradeCard({
+  trade,
+  idx,
+  onClick,
+  onDelete,
+  isDemo
+}: {
+  trade: Trade;
+  idx: number;
+  onClick: () => void;
+  onDelete: (e: React.MouseEvent) => void;
+  isDemo: boolean;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, delay: idx * 0.05 }}
+      className="bg-card border rounded-xl p-4 space-y-3 cursor-pointer hover:shadow-md transition-shadow"
+      onClick={onClick}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-lg truncate">{trade.symbol}</div>
+          <div className="text-sm text-muted-foreground">
+            {format(new Date(trade.timestamp), "MMM d, yyyy")}
+          </div>
+        </div>
+        <Badge
+          variant={
+            trade.action.includes("BUY") || trade.action === "ASSIGNMENT"
+              ? "outline"
+              : "secondary"
+          }
+          className={cn(
+            "font-mono uppercase text-xs shrink-0",
+            trade.action.includes("BUY") || trade.action === "ASSIGNMENT"
+              ? "border-green-500 text-green-500 bg-green-500/10"
+              : "text-red-500 bg-red-500/10"
+          )}
+        >
+          {trade.action}
+        </Badge>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <div className="text-muted-foreground text-xs">Quantity</div>
+          <div className="font-mono font-semibold">{trade.quantity}</div>
+        </div>
+        <div>
+          <div className="text-muted-foreground text-xs">Price</div>
+          <div className="font-mono font-semibold">${trade.price.toFixed(2)}</div>
+        </div>
+        <div>
+          <div className="text-muted-foreground text-xs">Value</div>
+          <div className="font-mono font-semibold text-muted-foreground">
+            ${(trade.quantity * trade.price).toFixed(2)}
+          </div>
+        </div>
+        {!isDemo && (
+          <div className="flex items-end justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-muted-foreground hover:text-destructive"
+              onClick={onDelete}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Delete
+            </Button>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
 
 export function JournalView({ initialTrades, isDemo = false }: JournalViewProps) {
   const { filters } = useFilters();
@@ -168,25 +249,25 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
 
   return (
     <PageTransition>
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6">
         {/* Header */}
         <motion.div
-          className="flex items-center justify-between"
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+          <div className="space-y-0.5 sm:space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2 sm:gap-3">
               <span className="text-gradient">Trade Journal</span>
-              <BookOpen className="h-6 w-6 text-blue-500 float" />
+              <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500 float" />
               {isDemo && (
-                <span className="text-sm font-normal text-muted-foreground ml-2">
+                <span className="text-xs sm:text-sm font-normal text-muted-foreground ml-2">
                   (Demo Mode)
                 </span>
               )}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               {isDemo
                 ? "Sample trading history data"
                 : "Review and manage your trading history"}
@@ -197,7 +278,7 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
               onClick={() => fetchTrades && fetchTrades()}
               variant="outline"
               size="sm"
-              className="hidden md:flex"
+              className="hidden md:flex h-9"
             >
               Refresh
             </Button>
@@ -212,13 +293,13 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
         {/* Table Card */}
         <AnimatedCard delay={0.2}>
           <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-medium flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-amber-500" />
+            <CardHeader className="pb-2 p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg font-medium flex items-center gap-2">
+                <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 Recent Activity
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0">
               <div className="rounded-md border bg-background">
                 <Table>
                   <TableHeader>

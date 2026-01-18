@@ -10,7 +10,7 @@ import {
   Target,
   DollarSign,
   BarChart3,
-  Sparkles,
+  LayoutDashboard,
   Wallet,
   Activity,
 } from "lucide-react";
@@ -274,25 +274,25 @@ export function DashboardView({
 
   return (
     <PageTransition>
-      <div className="space-y-8 p-4 md:p-8 pt-6">
+      <div className="space-y-6 sm:space-y-8 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6">
         {/* Header */}
         <motion.div
-          className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+          className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-              <Sparkles className="h-8 w-8 text-amber-500" />
+          <div className="space-y-0.5 sm:space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
+              <LayoutDashboard className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
               Dashboard
               {isDemo && (
-                <span className="text-sm font-normal text-muted-foreground ml-2">
+                <span className="text-xs sm:text-sm font-normal text-muted-foreground ml-2">
                   (Demo Mode)
                 </span>
               )}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               {isDemo
                 ? "Sample trading performance data"
                 : "Your trading performance at a glance"}
@@ -302,7 +302,7 @@ export function DashboardView({
             <Button
               onClick={handleSync}
               disabled={syncing}
-              className="gap-2 btn-primary"
+              className="gap-2 btn-primary w-full sm:w-auto h-10 sm:h-11"
             >
               <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
               {syncing ? "Syncing..." : "Sync Trades"}
@@ -311,7 +311,7 @@ export function DashboardView({
         </motion.div>
 
         {/* Metrics Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <MetricCard
             title="Net P&L"
             value={formatCurrency(metrics.netPnL, true)}
