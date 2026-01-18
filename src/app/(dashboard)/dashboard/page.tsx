@@ -11,7 +11,7 @@ import {
     DollarSign,
     BarChart3,
     Activity,
-    Sparkles,
+    LayoutDashboard,
     Wallet,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -270,7 +270,7 @@ export default function DashboardPage() {
                 >
                     <div className="space-y-0.5 sm:space-y-1">
                         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
-                            <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-amber-500" />
+                            <LayoutDashboard className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
                             Dashboard
                         </h1>
                         <p className="text-sm sm:text-base text-muted-foreground">

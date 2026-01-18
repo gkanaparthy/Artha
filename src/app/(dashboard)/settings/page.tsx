@@ -207,7 +207,7 @@ export default function SettingsPage() {
           <div className="space-y-0.5 sm:space-y-1">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2 sm:gap-3">
               <span className="text-gradient">Settings</span>
-              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-amber-500 float" />
+              <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-purple-500 float" />
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground">Manage your account and broker connections</p>
           </div>

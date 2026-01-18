@@ -334,7 +334,7 @@ export default function ReportsPage() {
           <div className="space-y-0.5 sm:space-y-1">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2 sm:gap-3">
               <span className="text-gradient">Reports</span>
-              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-amber-500 float" />
+              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-500 float" />
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground">In-depth analysis of your trading performance</p>
           </div>
