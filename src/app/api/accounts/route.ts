@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { safeDecrypt } from '@/lib/encryption';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,13 @@ export async function GET() {
             }
         });
 
-        return NextResponse.json({ accounts });
+        // Decrypt account numbers before sending to frontend
+        const decryptedAccounts = accounts.map(account => ({
+            ...account,
+            accountNumber: account.accountNumber ? safeDecrypt(account.accountNumber) : null,
+        }));
+
+        return NextResponse.json({ accounts: decryptedAccounts });
 
     } catch (error: unknown) {
         console.error('Accounts error:', error);
