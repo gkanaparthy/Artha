@@ -151,23 +151,25 @@ export function CalendarView({ data }: CalendarViewProps) {
   }, [dataByDate]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+          <h2 className="text-xl sm:text-2xl font-bold">
             {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h2>
-          <Button variant="outline" size="sm" onClick={goToToday}>
+          <Button variant="outline" size="sm" onClick={goToToday} className="h-8 sm:h-9">
             Today
           </Button>
         </div>
-        <div className="flex items-center gap-2 no-export">
-          <ShareReport elementId="share-calendar-capture" title={`${MONTHS[currentDate.getMonth()]} Performance`} />
-          <Button variant="outline" size="icon" onClick={() => navigateMonth(-1)}>
+        <div className="flex items-center gap-2 no-export self-end sm:self-auto">
+          <div className="hidden sm:block">
+            <ShareReport elementId="share-calendar-capture" title={`${MONTHS[currentDate.getMonth()]} Performance`} />
+          </div>
+          <Button variant="outline" size="icon" onClick={() => navigateMonth(-1)} className="h-8 w-8 sm:h-10 sm:w-10">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={() => navigateMonth(1)}>
+          <Button variant="outline" size="icon" onClick={() => navigateMonth(1)} className="h-8 w-8 sm:h-10 sm:w-10">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -188,37 +190,38 @@ export function CalendarView({ data }: CalendarViewProps) {
         </div>
 
         {/* Monthly Summary Cards */}
-        <div className="grid grid-cols-4 gap-4">
-          <div className="rounded-xl bg-card/50 border p-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          <div className="rounded-lg sm:rounded-xl bg-card/50 border p-3 sm:p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Monthly P&L</p>
-            <p className={cn("text-2xl font-bold mt-1", getPnLTextColor(monthlySummary.totalPnL))}>
+            <p className={cn("text-lg sm:text-2xl font-bold mt-1", getPnLTextColor(monthlySummary.totalPnL))}>
               {monthlySummary.totalPnL >= 0 ? "+" : "-"}${formatCurrency(monthlySummary.totalPnL)}
             </p>
           </div>
-          <div className="rounded-xl bg-card/50 border p-4">
+          <div className="rounded-lg sm:rounded-xl bg-card/50 border p-3 sm:p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Trades</p>
-            <p className="text-2xl font-bold mt-1">{monthlySummary.totalTrades}</p>
+            <p className="text-lg sm:text-2xl font-bold mt-1">{monthlySummary.totalTrades}</p>
           </div>
-          <div className="rounded-xl bg-card/50 border p-4">
+          <div className="rounded-lg sm:rounded-xl bg-card/50 border p-3 sm:p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Profit Days</p>
-            <p className="text-2xl font-bold mt-1 text-emerald-500">{monthlySummary.profitDays}</p>
+            <p className="text-lg sm:text-2xl font-bold mt-1 text-emerald-500">{monthlySummary.profitDays}</p>
           </div>
-          <div className="rounded-xl bg-card/50 border p-4">
+          <div className="rounded-lg sm:rounded-xl bg-card/50 border p-3 sm:p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Loss Days</p>
-            <p className="text-2xl font-bold mt-1 text-red-500">{monthlySummary.lossDays}</p>
+            <p className="text-lg sm:text-2xl font-bold mt-1 text-red-500">{monthlySummary.lossDays}</p>
           </div>
         </div>
 
         {/* Calendar Grid */}
-        <div className="rounded-xl border bg-card/30 overflow-hidden">
+        <div className="rounded-lg sm:rounded-xl border bg-card/30 overflow-x-auto">
           {/* Day Headers */}
-          <div className="grid grid-cols-8 border-b bg-muted/30">
+          <div className="grid grid-cols-7 md:grid-cols-8 border-b bg-muted/30">
             {DAYS.map(day => (
-              <div key={day} className="p-3 text-center text-sm font-medium text-muted-foreground">
-                {day}
+              <div key={day} className="p-1.5 sm:p-3 text-center text-xs sm:text-sm font-medium text-muted-foreground">
+                <span className="sm:hidden">{day.slice(0, 2)}</span>
+                <span className="hidden sm:inline">{day}</span>
               </div>
             ))}
-            <div className="p-3 text-center text-sm font-medium text-muted-foreground border-l">
+            <div className="hidden md:block p-3 text-center text-sm font-medium text-muted-foreground border-l">
               Week
             </div>
           </div>
@@ -233,7 +236,7 @@ export function CalendarView({ data }: CalendarViewProps) {
               transition={{ duration: 0.2 }}
             >
               {calendarData.map((week, weekIdx) => (
-                <div key={weekIdx} className="grid grid-cols-8 border-b last:border-b-0">
+                <div key={weekIdx} className="grid grid-cols-7 md:grid-cols-8 border-b last:border-b-0">
                   {week.map((dayInfo, dayIdx) => {
                     const intensity = dayInfo.data ? getIntensity(dayInfo.data.pnl, maxAbsPnL) : 0;
                     const bgColor = dayInfo.data
@@ -248,27 +251,27 @@ export function CalendarView({ data }: CalendarViewProps) {
                       <div
                         key={dayIdx}
                         className={cn(
-                          "min-h-[100px] p-2 border-r last:border-r-0 transition-all duration-200",
+                          "min-h-[70px] sm:min-h-[90px] md:min-h-[100px] p-1.5 sm:p-2 border-r last:border-r-0 md:last:border-r transition-all duration-200",
                           !dayInfo.isCurrentMonth && "opacity-40",
                           dayInfo.data && "cursor-pointer hover:brightness-110"
                         )}
                         style={{ backgroundColor: bgColor }}
                       >
                         <div className={cn(
-                          "text-sm font-medium mb-1",
+                          "text-xs sm:text-sm font-medium mb-0.5 sm:mb-1",
                           !dayInfo.isCurrentMonth && "text-muted-foreground"
                         )}>
                           {dayInfo.day}
                         </div>
                         {dayInfo.data && (
-                          <div className="space-y-1">
+                          <div className="space-y-0.5 sm:space-y-1">
                             <div className={cn(
-                              "text-lg font-bold",
+                              "text-xs sm:text-base md:text-lg font-bold leading-tight",
                               getPnLTextColor(dayInfo.data.pnl)
                             )}>
                               {dayInfo.data.pnl >= 0 ? "+" : ""}${formatCurrency(dayInfo.data.pnl)}
                             </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-[10px] sm:text-xs text-muted-foreground">
                               {dayInfo.data.trades} trade{dayInfo.data.trades !== 1 ? "s" : ""}
                             </div>
                           </div>
@@ -276,9 +279,9 @@ export function CalendarView({ data }: CalendarViewProps) {
                       </div>
                     );
                   })}
-                  {/* Weekly Summary */}
+                  {/* Weekly Summary - Hidden on mobile */}
                   <div className={cn(
-                    "min-h-[100px] p-2 border-l flex flex-col justify-center items-center",
+                    "hidden md:flex min-h-[100px] p-2 border-l flex-col justify-center items-center",
                     weeklySummaries[weekIdx].pnl > 0 && "bg-emerald-500/10",
                     weeklySummaries[weekIdx].pnl < 0 && "bg-red-500/10"
                   )}>
@@ -305,18 +308,19 @@ export function CalendarView({ data }: CalendarViewProps) {
         </div>
 
         {/* Legend */}
-        <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs sm:text-sm text-muted-foreground px-2">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-emerald-500/30 border border-emerald-500/50" />
+            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-emerald-500/30 border border-emerald-500/50" />
             <span>Profit Day</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-red-500/30 border border-red-500/50" />
+            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded bg-red-500/30 border border-red-500/50" />
             <span>Loss Day</span>
           </div>
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-emerald-500" />
-            <span>Higher intensity = larger P&L</span>
+            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-500" />
+            <span className="hidden sm:inline">Higher intensity = larger P&L</span>
+            <span className="sm:hidden">Intensity = P&L size</span>
           </div>
         </div>
 

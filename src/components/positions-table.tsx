@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Clock, TrendingUp, TrendingDown, Trash2 } from "lucide-react";
+import { Loader2, Clock, TrendingUp, TrendingDown, Trash2, Calendar, DollarSign } from "lucide-react";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useFilters } from "@/contexts/filter-context";
@@ -254,6 +254,138 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
     const openCount = allPositions.filter(p => p.status === "open").length;
     const closedCount = allPositions.filter(p => p.status === "closed").length;
 
+    // Mobile Card Component
+    const MobilePositionCard = ({ position, idx }: { position: DisplayPosition; idx: number }) => {
+        const isOpen = position.status === "open";
+        const displayPnl = isOpen ? null : position.pnl;
+        const displayPrice = isOpen ? null : position.exitPrice;
+        const returnPct = !isOpen && displayPrice && position.entryPrice
+            ? ((displayPrice - position.entryPrice) / position.entryPrice) * 100
+            : null;
+        const isProfit = (displayPnl ?? 0) >= 0;
+        const shouldAnimate = idx < 10;
+
+        return (
+            <motion.div
+                key={`${position.symbol}-${position.openedAt}-${idx}`}
+                initial={shouldAnimate ? { opacity: 0, y: 10 } : false}
+                animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
+                transition={shouldAnimate ? { duration: 0.2, delay: idx * 0.02 } : undefined}
+                className="bg-card border rounded-xl p-4 space-y-3 shadow-sm hover:shadow-md transition-all"
+            >
+                {/* Header Row */}
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {isOpen ? (
+                            <Clock className="h-5 w-5 text-blue-500 shrink-0" />
+                        ) : isProfit ? (
+                            <TrendingUp className="h-5 w-5 text-green-500 shrink-0" />
+                        ) : (
+                            <TrendingDown className="h-5 w-5 text-red-500 shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-base truncate">{position.symbol}</h3>
+                            <p className="text-xs text-muted-foreground truncate">{position.broker}</p>
+                        </div>
+                    </div>
+                    <Badge
+                        variant="outline"
+                        className={cn(
+                            "shrink-0",
+                            isOpen
+                                ? "border-blue-500/50 text-blue-500 bg-blue-500/10"
+                                : isProfit
+                                    ? "border-green-500/50 text-green-500 bg-green-500/10"
+                                    : "border-red-500/50 text-red-500 bg-red-500/10"
+                        )}
+                    >
+                        {isOpen ? "OPEN" : "CLOSED"}
+                    </Badge>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                    <div>
+                        <p className="text-xs text-muted-foreground mb-1">Quantity</p>
+                        <p className="text-sm font-medium">{position.quantity}</p>
+                    </div>
+                    <div>
+                        <p className="text-xs text-muted-foreground mb-1">Entry Price</p>
+                        <p className="text-sm font-medium">${formatCurrency(position.entryPrice)}</p>
+                    </div>
+                    <div>
+                        <p className="text-xs text-muted-foreground mb-1">Entry Date</p>
+                        <p className="text-sm font-medium">{formatDate(position.openedAt)}</p>
+                    </div>
+                    <div>
+                        <p className="text-xs text-muted-foreground mb-1">Exit Date</p>
+                        <p className="text-sm font-medium">{position.closedAt ? formatDate(position.closedAt) : "—"}</p>
+                    </div>
+                </div>
+
+                {/* P&L Section - Only for closed positions */}
+                {!isOpen && (
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+                        <div>
+                            <p className="text-xs text-muted-foreground mb-1">Exit Price</p>
+                            <p className="text-sm font-medium">
+                                {displayPrice !== null && displayPrice !== undefined ? `$${formatCurrency(displayPrice)}` : "—"}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-xs text-muted-foreground mb-1">Return</p>
+                            {returnPct !== null ? (
+                                <Badge
+                                    variant="outline"
+                                    className={cn(
+                                        "font-mono text-xs",
+                                        isProfit
+                                            ? "border-green-500/50 text-green-500 bg-green-500/10"
+                                            : "border-red-500/50 text-red-500 bg-red-500/10"
+                                    )}
+                                >
+                                    {returnPct >= 0 ? "+" : ""}{returnPct.toFixed(1)}%
+                                </Badge>
+                            ) : (
+                                <span className="text-sm text-muted-foreground">—</span>
+                            )}
+                        </div>
+                        <div className="col-span-2">
+                            <p className="text-xs text-muted-foreground mb-1">P&L</p>
+                            {displayPnl !== null && displayPnl !== undefined ? (
+                                <p
+                                    className={cn(
+                                        "text-lg font-bold",
+                                        isProfit ? "text-green-500" : "text-red-500"
+                                    )}
+                                >
+                                    {isProfit ? "+" : "-"}${formatCurrency(Math.abs(displayPnl))}
+                                </p>
+                            ) : (
+                                <span className="text-sm text-muted-foreground">—</span>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Actions */}
+                {!isDemo && isOpen && position.tradeId && (
+                    <div className="pt-3 border-t">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDelete(position.tradeId!)}
+                        >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Position
+                        </Button>
+                    </div>
+                )}
+            </motion.div>
+        );
+    };
+
     return (
         <div className="space-y-4">
             {/* Global Filter Bar with Export */}
@@ -276,8 +408,29 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
                 )}
             />
 
-            {/* Table */}
-            <div className="rounded-xl border-0 px-2">
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+                {loading && allPositions.length === 0 ? (
+                    <div className="flex justify-center py-12">
+                        <Loader2 className="animate-spin text-primary h-6 w-6" />
+                    </div>
+                ) : positionsWithLiveData.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                        {hasActiveFilters
+                            ? "No positions match your filters."
+                            : isDemo
+                                ? "No demo positions available."
+                                : "No positions found. Connect your broker to sync data."}
+                    </div>
+                ) : (
+                    positionsWithLiveData.map((position, idx) => (
+                        <MobilePositionCard key={`${position.symbol}-${position.openedAt}-${idx}`} position={position} idx={idx} />
+                    ))
+                )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block rounded-xl border-0 px-2">
                 <Table className="border-separate border-spacing-y-2">
                     <TableHeader>
                         <TableRow className="hover:bg-transparent border-none">

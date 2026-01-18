@@ -140,20 +140,20 @@ export default function JournalPage() {
 
   return (
     <PageTransition>
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         {/* Header */}
         <motion.div
-          className="flex items-center justify-between"
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+          <div className="space-y-0.5 sm:space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2 sm:gap-3">
               <span className="text-gradient">Trade Journal</span>
-              <BookOpen className="h-6 w-6 text-blue-500 float" />
+              <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500 float" />
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               Review and manage your trading history
             </p>
           </div>
@@ -183,14 +183,86 @@ export default function JournalPage() {
         {/* Table Card */}
         <AnimatedCard delay={0.2}>
           <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-medium flex items-center gap-2">
+            <CardHeader className="pb-2 p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg font-medium flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-amber-500" />
                 Recent Activity
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="rounded-md border bg-background">
+            <CardContent className="p-3 sm:p-6 pt-0">
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {loading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="animate-spin h-6 w-6 text-primary" />
+                  </div>
+                ) : sortedTrades.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    No trades found matching your criteria.
+                  </div>
+                ) : (
+                  sortedTrades.map((trade, idx) => (
+                    <div
+                      key={trade.id}
+                      onClick={() => {
+                        setSelectedTrade(trade);
+                        setSheetOpen(true);
+                      }}
+                      className="bg-card border rounded-xl p-4 space-y-3 shadow-sm cursor-pointer hover:shadow-md transition-all"
+                    >
+                      {/* Header Row */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-base truncate">{trade.symbol}</h3>
+                          <p className="text-xs text-muted-foreground">{format(new Date(trade.timestamp), "MMM d, yyyy")}</p>
+                        </div>
+                        <Badge variant={
+                          trade.action.includes("BUY") || trade.action === "ASSIGNMENT" ? "outline" : "secondary"
+                        } className={cn(
+                          "font-mono uppercase text-xs shrink-0",
+                          (trade.action.includes("BUY") || trade.action === "ASSIGNMENT")
+                            ? "border-green-500 text-green-500 bg-green-500/10"
+                            : "text-red-500 bg-red-500/10"
+                        )}>
+                          {trade.action}
+                        </Badge>
+                      </div>
+
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Quantity</p>
+                          <p className="text-sm font-medium font-mono">{trade.quantity}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Price</p>
+                          <p className="text-sm font-medium font-mono">${trade.price.toFixed(2)}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs text-muted-foreground mb-1">Total Value</p>
+                          <p className="text-base font-semibold font-mono">${(trade.quantity * trade.price).toFixed(2)}</p>
+                        </div>
+                      </div>
+
+                      {/* Delete Action */}
+                      <div className="pt-3 border-t">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => handleDelete(trade.id, e)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Trade
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block rounded-md border bg-background">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">

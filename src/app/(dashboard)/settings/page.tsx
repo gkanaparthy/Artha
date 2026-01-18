@@ -196,7 +196,7 @@ export default function SettingsPage() {
 
   return (
     <PageTransition>
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         {/* Header */}
         <motion.div
           className="flex items-center justify-between"
@@ -204,25 +204,25 @@ export default function SettingsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+          <div className="space-y-0.5 sm:space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2 sm:gap-3">
               <span className="text-gradient">Settings</span>
-              <Sparkles className="h-6 w-6 text-amber-500 float" />
+              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-amber-500 float" />
             </h1>
-            <p className="text-muted-foreground">Manage your account and broker connections</p>
+            <p className="text-sm sm:text-base text-muted-foreground">Manage your account and broker connections</p>
           </div>
         </motion.div>
 
         {/* User Info */}
         <AnimatedCard delay={0.1}>
           <Card className="card-hover overflow-hidden">
-            <CardHeader>
-              <div className="flex items-center justify-between">
+            <CardHeader className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   {session?.user?.image ? (
                     <Image
                       src={session.user.image}
-                      alt={session.user.name || "User"}
+                      alt={session?.user?.name || "User"}
                       width={40}
                       height={40}
                       className="h-10 w-10 rounded-lg object-cover"
@@ -233,23 +233,23 @@ export default function SettingsPage() {
                     </div>
                   )}
                   <div>
-                    <CardTitle>{session?.user?.name || "Account"}</CardTitle>
-                    <CardDescription>Signed in via OAuth</CardDescription>
+                    <CardTitle className="text-base sm:text-lg">{session?.user?.name || "Account"}</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">Signed in via OAuth</CardDescription>
                   </div>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleSignOut}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 w-full sm:w-auto h-9"
                 >
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign Out
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
+            <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground flex items-center gap-2">
                     <Mail className="h-4 w-4 text-muted-foreground" />
@@ -290,24 +290,24 @@ export default function SettingsPage() {
         {/* Connected Accounts */}
         <AnimatedCard delay={0.2}>
           <Card className="card-hover overflow-hidden">
-            <CardHeader>
-              <div className="flex items-center justify-between">
+            <CardHeader className="p-4 sm:p-6">
+              <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-500/10 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-500/10 flex items-center justify-center shrink-0">
                     <Building2 className="h-5 w-5 text-blue-500" />
                   </div>
-                  <div>
-                    <CardTitle>Connected Brokers</CardTitle>
-                    <CardDescription>Manage your brokerage account connections</CardDescription>
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base sm:text-lg">Connected Brokers</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">Manage your brokerage account connections</CardDescription>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handleSyncAll}
                     disabled={syncing || !userData?.accounts.length}
-                    className="btn-glow"
+                    className="btn-glow w-full sm:w-auto h-9"
                   >
                     <RefreshCw className={cn("h-4 w-4 mr-2", syncing && "animate-spin")} />
                     Sync All
@@ -316,7 +316,7 @@ export default function SettingsPage() {
                     size="sm"
                     onClick={handleConnectBroker}
                     disabled={connecting}
-                    className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 btn-glow"
+                    className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 btn-glow w-full sm:w-auto h-9"
                   >
                     {connecting ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -328,7 +328,7 @@ export default function SettingsPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6 pt-0">
               {!userData || userData.accounts.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="relative mx-auto w-16 h-16 mb-4">
@@ -348,27 +348,27 @@ export default function SettingsPage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.1 }}
-                      className="flex items-center justify-between p-4 rounded-xl border bg-gradient-to-br from-card to-muted/20 hover:shadow-md transition-all"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-4 rounded-xl border bg-gradient-to-br from-card to-muted/20 hover:shadow-md transition-all"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                      <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                        <div className="h-12 w-12 shrink-0 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
                           <Building2 className="h-6 w-6 text-primary" />
                         </div>
-                        <div>
-                          <div className="font-semibold text-foreground">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-foreground truncate">
                             {account.brokerName || "Unknown Broker"}
                           </div>
-                          <div className="text-sm text-muted-foreground font-mono">
+                          <div className="text-xs sm:text-sm text-muted-foreground font-mono truncate">
                             ID: {account.snapTradeAccountId.slice(0, 12)}...
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <Badge variant="secondary" className="bg-muted/50">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                        <Badge variant="secondary" className="bg-muted/50 text-xs">
                           {account._count.trades} trades
                         </Badge>
-                        <Badge variant="outline" className="text-green-500 border-green-500/50 bg-green-500/10">
-                          <span className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse" />
+                        <Badge variant="outline" className="text-green-500 border-green-500/50 bg-green-500/10 text-xs">
+                          <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse" />
                           Connected
                         </Badge>
                         <Button
@@ -392,19 +392,19 @@ export default function SettingsPage() {
         {/* Preferences */}
         <AnimatedCard delay={0.3}>
           <Card className="card-hover overflow-hidden">
-            <CardHeader>
+            <CardHeader className="p-4 sm:p-6">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-500/10 flex items-center justify-center">
                   <Settings className="h-5 w-5 text-purple-500" />
                 </div>
                 <div>
-                  <CardTitle>Preferences</CardTitle>
-                  <CardDescription>Customize your experience</CardDescription>
+                  <CardTitle className="text-base sm:text-lg">Preferences</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">Customize your experience</CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="p-4 rounded-lg border bg-muted/20">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium text-foreground flex items-center gap-2">

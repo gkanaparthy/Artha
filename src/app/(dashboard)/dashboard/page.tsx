@@ -86,22 +86,22 @@ function MetricCard({
                 glowClass && `hover:${glowClass}`
             )}>
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500" />
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
+                    <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</CardTitle>
                     <div className="metric-icon-bg">
-                        <Icon className={cn("h-4 w-4", iconColor)} />
+                        <Icon className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", iconColor)} />
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 sm:p-6 pt-0">
                     <motion.div
-                        className={cn("text-2xl font-bold stat-number", valueColor)}
+                        className={cn("text-xl sm:text-2xl font-bold stat-number", valueColor)}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: delay + 0.2 }}
                     >
                         {value}
                     </motion.div>
-                    <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">{subtitle}</p>
                 </CardContent>
             </Card>
         </AnimatedCard>
@@ -260,27 +260,27 @@ export default function DashboardPage() {
 
     return (
         <PageTransition>
-            <div className="space-y-8 p-4 md:p-8 pt-6">
+            <div className="space-y-6 sm:space-y-8 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6">
                 {/* Header */}
                 <motion.div
-                    className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4"
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <div className="space-y-1">
-                        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                            <Sparkles className="h-8 w-8 text-amber-500" />
+                    <div className="space-y-0.5 sm:space-y-1">
+                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
+                            <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-amber-500" />
                             Dashboard
                         </h1>
-                        <p className="text-muted-foreground">
+                        <p className="text-sm sm:text-base text-muted-foreground">
                             Your trading performance at a glance
                         </p>
                     </div>
                     <Button
                         onClick={handleSync}
                         disabled={syncing}
-                        className="gap-2 btn-primary"
+                        className="gap-2 btn-primary w-full sm:w-auto h-10 sm:h-11"
                     >
                         <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
                         {syncing ? "Syncing..." : "Sync Trades"}
@@ -288,7 +288,7 @@ export default function DashboardPage() {
                 </motion.div>
 
                 {/* Metrics Cards */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <MetricCard
                         title="Net P&L"
                         value={formatCurrency(metrics.netPnL, true)}
@@ -330,7 +330,7 @@ export default function DashboardPage() {
 
 
                 {/* Secondary Metrics */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <MetricCard
                         title="Total Trades"
                         value={metrics.totalTrades}
@@ -372,13 +372,13 @@ export default function DashboardPage() {
                 {/* Positions Table */}
                 <AnimatedCard delay={0.7}>
                     <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-medium flex items-center gap-2">
-                                <Activity className="h-5 w-5 text-primary" />
+                        <CardHeader className="p-4 sm:p-6">
+                            <CardTitle className="text-base sm:text-lg font-medium flex items-center gap-2">
+                                <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                                 Positions
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="p-3 sm:p-6 pt-0">
                             <PositionsTable
                                 key={refreshKey}
                                 onMetricsUpdate={handleMetricsUpdate}

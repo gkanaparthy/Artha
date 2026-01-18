@@ -124,15 +124,15 @@ export function ReportsCharts({
     <>
       {/* Cumulative P&L Chart */}
       <Card className="card-hover">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             Equity Curve
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-2 sm:px-6">
           {cumulativePnL.length > 0 ? (
-            <ResponsiveContainer width="100%" height={350}>
+            <ResponsiveContainer width="100%" height={300} className="sm:h-[350px]">
               <AreaChart data={cumulativePnL}>
                 <defs>
                   <linearGradient id="colorCumulative" x1="0" y1="0" x2="0" y2="1">
@@ -143,16 +143,20 @@ export function ReportsCharts({
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 11, fill: "currentColor" }}
+                  tick={{ fontSize: 10, fill: "currentColor" }}
                   tickFormatter={(date) => new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   className="text-muted-foreground"
                   stroke="currentColor"
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
                 />
                 <YAxis
-                  tick={{ fontSize: 11, fill: "currentColor" }}
+                  tick={{ fontSize: 10, fill: "currentColor" }}
                   tickFormatter={(value) => `$${value}`}
                   className="text-muted-foreground"
                   stroke="currentColor"
+                  width={50}
                 />
                 <Tooltip
                   content={({ active, payload, label }) => (
@@ -190,27 +194,31 @@ export function ReportsCharts({
       <div className="grid gap-4 md:grid-cols-2">
         {/* Monthly Performance */}
         <Card className="card-hover">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               Monthly Performance
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-2 sm:px-6">
             {monthlyData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={250} className="sm:h-[280px]">
                 <BarChart data={monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                   <XAxis
                     dataKey="month"
-                    tick={{ fontSize: 11, fill: "currentColor" }}
+                    tick={{ fontSize: 10, fill: "currentColor" }}
                     tickFormatter={formatMonth}
                     stroke="currentColor"
+                    angle={-45}
+                    textAnchor="end"
+                    height={50}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: "currentColor" }}
+                    tick={{ fontSize: 10, fill: "currentColor" }}
                     tickFormatter={(value) => `$${value}`}
                     stroke="currentColor"
+                    width={45}
                   />
                   <Tooltip
                     content={({ active, payload, label }) => (
@@ -250,25 +258,31 @@ export function ReportsCharts({
 
         {/* Win/Loss Distribution */}
         <Card className="card-hover">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChartIcon className="h-5 w-5 text-primary" />
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <PieChartIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               Win/Loss Distribution
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-2 sm:px-6">
             {totalTrades > 0 ? (
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={250} className="sm:h-[280px]">
                 <PieChart>
                   <Pie
                     data={winLossData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={70}
-                    outerRadius={100}
+                    innerRadius={60}
+                    outerRadius={90}
                     paddingAngle={5}
                     dataKey="value"
-                    label={({ name, value, percent }) => `${name}: ${value} (${((percent ?? 0) * 100).toFixed(0)}%)`}
+                    label={({ name, value, percent }) => {
+                      // On mobile, show shorter labels
+                      if (window.innerWidth < 640) {
+                        return `${value}`;
+                      }
+                      return `${name}: ${value} (${((percent ?? 0) * 100).toFixed(0)}%)`;
+                    }}
                     labelLine={{ stroke: "currentColor", strokeWidth: 1 }}
                   >
                     {winLossData.map((entry, index) => (
@@ -309,25 +323,29 @@ export function ReportsCharts({
       <div className="grid gap-4 md:grid-cols-2">
         {/* Performance by Day of Week */}
         <Card className="card-hover">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-primary" />
-              Performance by Day of Week
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              Performance by Day
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
+          <CardContent className="px-2 sm:px-6">
+            <ResponsiveContainer width="100%" height={250} className="sm:h-[280px]">
               <BarChart data={dayOfWeekPerformance}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                 <XAxis
                   dataKey="day"
-                  tick={{ fontSize: 11, fill: "currentColor" }}
+                  tick={{ fontSize: 10, fill: "currentColor" }}
                   stroke="currentColor"
+                  angle={-45}
+                  textAnchor="end"
+                  height={50}
                 />
                 <YAxis
-                  tick={{ fontSize: 11, fill: "currentColor" }}
+                  tick={{ fontSize: 10, fill: "currentColor" }}
                   tickFormatter={(value) => `$${value}`}
                   stroke="currentColor"
+                  width={45}
                 />
                 <Tooltip
                   content={({ active, payload, label }) => (
@@ -358,14 +376,14 @@ export function ReportsCharts({
 
         {/* Trading Profile Radar */}
         <Card className="card-hover">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-primary" />
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Target className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               Trading Profile
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
+          <CardContent className="px-2 sm:px-6">
+            <ResponsiveContainer width="100%" height={250} className="sm:h-[280px]">
               <RadarChart data={tradingProfileData}>
                 <PolarGrid stroke="currentColor" className="stroke-border/50" />
                 <PolarAngleAxis
@@ -405,14 +423,14 @@ export function ReportsCharts({
       {/* Drawdown Chart */}
       {drawdownData.length > 0 && (
         <Card className="card-hover">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingDown className="h-5 w-5 text-orange-500" />
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
               Drawdown Analysis
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+          <CardContent className="px-2 sm:px-6">
+            <ResponsiveContainer width="100%" height={220} className="sm:h-[250px]">
               <AreaChart data={drawdownData}>
                 <defs>
                   <linearGradient id="colorDrawdown" x1="0" y1="0" x2="0" y2="1">
@@ -423,15 +441,19 @@ export function ReportsCharts({
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 11, fill: "currentColor" }}
+                  tick={{ fontSize: 10, fill: "currentColor" }}
                   tickFormatter={(date) => new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   stroke="currentColor"
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
                 />
                 <YAxis
-                  tick={{ fontSize: 11, fill: "currentColor" }}
+                  tick={{ fontSize: 10, fill: "currentColor" }}
                   tickFormatter={(value) => `$${value}`}
                   stroke="currentColor"
                   reversed
+                  width={50}
                 />
                 <Tooltip
                   content={({ active, payload, label }) => (
@@ -464,29 +486,29 @@ export function ReportsCharts({
 
       {/* Performance by Symbol */}
       <Card className="card-hover">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             Performance by Symbol
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-2 sm:px-6">
           {symbolData.length > 0 ? (
-            <div className="space-y-6">
-              <ResponsiveContainer width="100%" height={Math.max(200, Math.min(symbolData.length, 10) * 45)}>
+            <div className="space-y-4 sm:space-y-6">
+              <ResponsiveContainer width="100%" height={Math.max(180, Math.min(symbolData.length, 10) * 40)} className="sm:h-auto">
                 <BarChart data={symbolData.slice(0, 10)} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                   <XAxis
                     type="number"
-                    tick={{ fontSize: 11, fill: "currentColor" }}
+                    tick={{ fontSize: 10, fill: "currentColor" }}
                     tickFormatter={(value) => `$${value}`}
                     stroke="currentColor"
                   />
                   <YAxis
                     type="category"
                     dataKey="symbol"
-                    tick={{ fontSize: 11, fill: "currentColor" }}
-                    width={80}
+                    tick={{ fontSize: 10, fill: "currentColor" }}
+                    width={60}
                     stroke="currentColor"
                   />
                   <Tooltip
@@ -515,14 +537,14 @@ export function ReportsCharts({
               </ResponsiveContainer>
 
               {/* Symbol Stats Table */}
-              <div className="rounded-lg border bg-card overflow-hidden">
-                <table className="w-full text-sm">
+              <div className="rounded-lg border bg-card overflow-x-auto">
+                <table className="w-full text-xs sm:text-sm min-w-[500px]">
                   <thead>
                     <tr className="border-b bg-muted/50">
-                      <th className="text-left p-4 font-semibold text-foreground">Symbol</th>
-                      <th className="text-right p-4 font-semibold text-foreground">P&L</th>
-                      <th className="text-right p-4 font-semibold text-foreground">Trades</th>
-                      <th className="text-right p-4 font-semibold text-foreground">Win Rate</th>
+                      <th className="text-left p-2 sm:p-4 font-semibold text-foreground">Symbol</th>
+                      <th className="text-right p-2 sm:p-4 font-semibold text-foreground">P&L</th>
+                      <th className="text-right p-2 sm:p-4 font-semibold text-foreground">Trades</th>
+                      <th className="text-right p-2 sm:p-4 font-semibold text-foreground">Win Rate</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -534,16 +556,16 @@ export function ReportsCharts({
                           index % 2 === 0 ? "bg-background" : "bg-muted/20"
                         )}
                       >
-                        <td className="p-4 font-medium text-foreground">{symbol.symbol}</td>
+                        <td className="p-2 sm:p-4 font-medium text-foreground">{symbol.symbol}</td>
                         <td className={cn(
-                          "p-4 text-right font-mono font-semibold",
+                          "p-2 sm:p-4 text-right font-mono font-semibold",
                           symbol.pnl >= 0 ? "text-green-500" : "text-red-500"
                         )}>
                           {symbol.pnl >= 0 ? "+" : "-"}{formatCurrency(symbol.pnl)}
                         </td>
-                        <td className="p-4 text-right text-muted-foreground">{symbol.trades}</td>
+                        <td className="p-2 sm:p-4 text-right text-muted-foreground">{symbol.trades}</td>
                         <td className={cn(
-                          "p-4 text-right font-semibold",
+                          "p-2 sm:p-4 text-right font-semibold",
                           symbol.winRate >= 60 ? "text-green-500" : symbol.winRate >= 50 ? "text-amber-500" : "text-red-500"
                         )}>
                           {symbol.winRate}%

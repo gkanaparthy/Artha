@@ -66,11 +66,85 @@ export function TradeTable() {
         fetchTrades();
     }, []);
 
+    // Mobile Card Component
+    const MobileTradeCard = ({ trade, idx }: { trade: Trade; idx: number }) => {
+        const isBuy = trade.action === "BUY";
+        const totalValue = trade.price * trade.quantity;
+
+        return (
+            <div
+                key={`${trade.id}-${idx}`}
+                className="bg-card border rounded-xl p-4 space-y-3 shadow-sm"
+            >
+                {/* Header Row */}
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-base truncate">{trade.symbol}</h3>
+                        <p className="text-xs text-muted-foreground truncate">{trade.account?.brokerName}</p>
+                    </div>
+                    <Badge variant={isBuy ? "default" : "secondary"} className="shrink-0">
+                        {trade.action}
+                    </Badge>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                    <div>
+                        <p className="text-xs text-muted-foreground mb-1">Date</p>
+                        <p className="text-sm font-medium">
+                            {trade.timestamp ? new Date(trade.timestamp).toLocaleDateString() : '-'}
+                        </p>
+                    </div>
+                    <div>
+                        <p className="text-xs text-muted-foreground mb-1">Quantity</p>
+                        <p className="text-sm font-medium">{trade.quantity}</p>
+                    </div>
+                    <div>
+                        <p className="text-xs text-muted-foreground mb-1">Price</p>
+                        <p className="text-sm font-medium">${trade.price.toFixed(2)}</p>
+                    </div>
+                    <div>
+                        <p className="text-xs text-muted-foreground mb-1">Total Value</p>
+                        <p className="text-sm font-semibold">${totalValue.toFixed(2)}</p>
+                    </div>
+                </div>
+
+                {/* Delete Action */}
+                <div className="pt-3 border-t">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDelete(trade.id)}
+                    >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Trade
+                    </Button>
+                </div>
+            </div>
+        );
+    };
+
     if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>;
 
     return (
-        <div className="rounded-md border bg-card">
-            <Table>
+        <div className="space-y-3">
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+                {trades.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground bg-card border rounded-xl">
+                        No trades found. Connect your broker to sync data.
+                    </div>
+                ) : (
+                    trades.map((trade, idx) => (
+                        <MobileTradeCard key={trade.id} trade={trade} idx={idx} />
+                    ))
+                )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block rounded-md border bg-card">
+                <Table>
                 <TableHeader>
                     <TableRow>
                         <TableHead>Date</TableHead>
@@ -120,6 +194,7 @@ export function TradeTable() {
                     )}
                 </TableBody>
             </Table>
+            </div>
         </div>
     );
 }

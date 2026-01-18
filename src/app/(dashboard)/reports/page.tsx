@@ -103,15 +103,15 @@ function SummaryCard({
     <AnimatedCard delay={delay}>
       <Card className="card-hover overflow-hidden relative">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500" />
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
+          <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</CardTitle>
           <div className="metric-icon-bg">
-            <Icon className={cn("h-4 w-4", iconColor)} />
+            <Icon className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", iconColor)} />
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6 pt-0">
           <motion.div
-            className={cn("text-2xl font-bold", valueColor)}
+            className={cn("text-xl sm:text-2xl font-bold", valueColor)}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: delay + 0.2 }}
@@ -323,40 +323,40 @@ export default function ReportsPage() {
 
   return (
     <PageTransition>
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         {/* Header */}
         <motion.div
-          className="flex items-center justify-between"
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+          <div className="space-y-0.5 sm:space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2 sm:gap-3">
               <span className="text-gradient">Reports</span>
-              <Sparkles className="h-6 w-6 text-amber-500 float" />
+              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-amber-500 float" />
             </h1>
-            <p className="text-muted-foreground">In-depth analysis of your trading performance</p>
+            <p className="text-sm sm:text-base text-muted-foreground">In-depth analysis of your trading performance</p>
           </div>
           {/* View Toggle */}
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 border">
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 border self-end sm:self-auto">
             <Button
               variant={viewType === "charts" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewType("charts")}
-              className="gap-2"
+              className="gap-1.5 h-8 sm:h-9 text-xs sm:text-sm"
             >
-              <LayoutGrid className="h-4 w-4" />
-              Charts
+              <LayoutGrid className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Charts</span>
             </Button>
             <Button
               variant={viewType === "calendar" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewType("calendar")}
-              className="gap-2"
+              className="gap-1.5 h-8 sm:h-9 text-xs sm:text-sm"
             >
-              <Calendar className="h-4 w-4" />
-              Calendar
+              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Calendar</span>
             </Button>
           </div>
         </motion.div>
@@ -381,7 +381,7 @@ export default function ReportsPage() {
         {viewType === "charts" && (
           <>
             {/* Summary Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <SummaryCard
                 title="Net P&L"
                 value={`${metrics.netPnL >= 0 ? "+" : "-"}${formatCurrency(metrics.netPnL)}`}
@@ -417,7 +417,7 @@ export default function ReportsPage() {
             </div>
 
             {/* Secondary Stats */}
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               <SummaryCard
                 title="Max Win Streak"
                 value={chartData.maxWinStreak}
@@ -465,41 +465,41 @@ export default function ReportsPage() {
             {/* Stats Summary */}
             <AnimatedCard delay={0.85}>
               <Card className="card-hover bg-gradient-to-br from-primary/5 via-background to-background">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-primary" />
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                     Key Statistics
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-                    <div className="text-center p-4 rounded-lg bg-card/50 border">
-                      <p className="text-sm text-muted-foreground mb-1">Total Trades</p>
-                      <p className="text-2xl font-bold text-foreground">{metrics.totalTrades}</p>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Trades</p>
+                      <p className="text-lg sm:text-2xl font-bold text-foreground">{metrics.totalTrades}</p>
                     </div>
-                    <div className="text-center p-4 rounded-lg bg-card/50 border">
-                      <p className="text-sm text-muted-foreground mb-1">Avg Win</p>
-                      <p className="text-2xl font-bold text-green-500">+{formatCurrency(metrics.avgWin)}</p>
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-1">Avg Win</p>
+                      <p className="text-lg sm:text-2xl font-bold text-green-500">+{formatCurrency(metrics.avgWin)}</p>
                     </div>
-                    <div className="text-center p-4 rounded-lg bg-card/50 border">
-                      <p className="text-sm text-muted-foreground mb-1">Avg Loss</p>
-                      <p className="text-2xl font-bold text-red-500">-{formatCurrency(metrics.avgLoss)}</p>
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-1">Avg Loss</p>
+                      <p className="text-lg sm:text-2xl font-bold text-red-500">-{formatCurrency(metrics.avgLoss)}</p>
                     </div>
-                    <div className="text-center p-4 rounded-lg bg-card/50 border">
-                      <p className="text-sm text-muted-foreground mb-1">MTD P&L</p>
-                      <p className={cn("text-2xl font-bold", metrics.mtdPnL >= 0 ? "text-green-500" : "text-red-500")}>
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-1">MTD P&L</p>
+                      <p className={cn("text-lg sm:text-2xl font-bold", metrics.mtdPnL >= 0 ? "text-green-500" : "text-red-500")}>
                         {metrics.mtdPnL >= 0 ? "+" : "-"}{formatCurrency(metrics.mtdPnL)}
                       </p>
                     </div>
-                    <div className="text-center p-4 rounded-lg bg-card/50 border">
-                      <p className="text-sm text-muted-foreground mb-1">YTD P&L</p>
-                      <p className={cn("text-2xl font-bold", metrics.ytdPnL >= 0 ? "text-green-500" : "text-red-500")}>
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-1">YTD P&L</p>
+                      <p className={cn("text-lg sm:text-2xl font-bold", metrics.ytdPnL >= 0 ? "text-green-500" : "text-red-500")}>
                         {metrics.ytdPnL >= 0 ? "+" : "-"}{formatCurrency(metrics.ytdPnL)}
                       </p>
                     </div>
-                    <div className="text-center p-4 rounded-lg bg-card/50 border">
-                      <p className="text-sm text-muted-foreground mb-1">Expectancy</p>
-                      <p className={cn("text-2xl font-bold", metrics.netPnL >= 0 ? "text-green-500" : "text-red-500")}>
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-1">Expectancy</p>
+                      <p className={cn("text-lg sm:text-2xl font-bold", metrics.netPnL >= 0 ? "text-green-500" : "text-red-500")}>
                         {metrics.totalTrades > 0 ? `${metrics.netPnL >= 0 ? "+" : "-"}${formatCurrency(metrics.netPnL / metrics.totalTrades)}` : "—"}
                       </p>
                     </div>
