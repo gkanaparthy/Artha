@@ -49,7 +49,7 @@ export function MobileNav() {
             <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-card/95 backdrop-blur-md border-b z-50 flex items-center justify-between px-4">
                 <Link href="/dashboard" className="flex items-center gap-2">
                     <div className="w-8 h-8 relative flex items-center justify-center">
-                        <Image src="/logo.png" alt="Artha" fill className="object-contain" />
+                        <Image src="/logo.png" alt="" fill className="object-contain" />
                     </div>
                     <span className="font-serif font-bold text-lg">Artha</span>
                 </Link>
@@ -58,6 +58,8 @@ export function MobileNav() {
                     size="icon"
                     onClick={() => setIsOpen(!isOpen)}
                     className="h-10 w-10"
+                    aria-label="Toggle navigation menu"
+                    aria-expanded={isOpen}
                 >
                     {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
                 </Button>
@@ -68,11 +70,20 @@ export function MobileNav() {
                 <div
                     className="md:hidden fixed inset-0 bg-black/50 z-40"
                     onClick={() => setIsOpen(false)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Escape') setIsOpen(false);
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Close navigation menu"
                 />
             )}
 
             {/* Slide-out Menu */}
             <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="Navigation menu"
                 className={cn(
                     "md:hidden fixed top-0 right-0 h-full w-72 bg-card z-50 transform transition-transform duration-300 ease-in-out shadow-xl",
                     isOpen ? "translate-x-0" : "translate-x-full"

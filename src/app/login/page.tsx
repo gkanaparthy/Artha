@@ -70,7 +70,7 @@ export default function LoginPage() {
         >
           <Link href="/" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
             <div className="w-20 h-20 relative flex items-center justify-center">
-              <Image src="/logo.png" alt="Artha Logo" fill className="object-contain" />
+              <Image src="/logo.png" alt="" fill className="object-contain" />
             </div>
             <span className={cn("text-[#2E4A3B] text-4xl font-bold tracking-tight", playfair.className)}>
               Artha
@@ -142,7 +142,7 @@ export default function LoginPage() {
           {/* Mobile Logo */}
           <div className="lg:hidden flex justify-center mb-8">
             <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <div className="w-12 h-12 relative flex items-center justify-center"> <Image src="/logo.png" alt="Artha Logo" fill className="object-contain" /> </div> <span className={cn("text-[#2E4A3B] text-3xl font-bold", playfair.className)}>Artha</span>
+              <div className="w-12 h-12 relative flex items-center justify-center"> <Image src="/logo.png" alt="" fill className="object-contain" /> </div> <span className={cn("text-[#2E4A3B] text-3xl font-bold", playfair.className)}>Artha</span>
             </Link>
           </div>
 
@@ -150,7 +150,7 @@ export default function LoginPage() {
             <h1 className={cn("text-4xl font-bold text-[#2E4A3B]", playfair.className)}>
               Welcome back
             </h1>
-            <p className="text-[#2E4A3B]/60 text-base">
+            <p className="text-[#2E4A3B]/70 text-base">
               Please enter your details to sign in.
             </p>
           </div>
@@ -186,6 +186,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full h-14 pl-12 pr-4 bg-white border border-[#2E4A3B]/10 rounded-xl text-[#2E4A3B] placeholder:text-[#2E4A3B]/40 focus:outline-none focus:ring-2 focus:ring-[#2E4A3B]/20 focus:border-transparent transition-all"
+                    aria-label="Email address"
                     required
                   />
                 </div>
@@ -210,7 +211,7 @@ export default function LoginPage() {
 
             <div className="flex items-center gap-3 my-6">
               <div className="h-[1px] flex-1 bg-[#2E4A3B]/10"></div>
-              <span className="text-xs text-[#2E4A3B]/40 font-medium uppercase tracking-wider">or continue with</span>
+              <span className="text-xs text-[#2E4A3B]/60 font-medium uppercase tracking-wider">or continue with</span>
               <div className="h-[1px] flex-1 bg-[#2E4A3B]/10"></div>
             </div>
 
@@ -248,7 +249,7 @@ export default function LoginPage() {
           </div>
 
           {/* Footer Links */}
-          <p className="text-xs text-center text-[#2E4A3B]/50 leading-relaxed max-w-xs mx-auto">
+          <p className="text-xs text-center text-[#2E4A3B]/70 leading-relaxed max-w-xs mx-auto">
             By continuing, you agree to our <br />
             <Link href="/terms" className="font-semibold text-[#2E4A3B] hover:underline">Terms of Service</Link> and <Link href="/privacy" className="font-semibold text-[#2E4A3B] hover:underline">Privacy Policy</Link>.
           </p>
@@ -258,6 +259,8 @@ export default function LoginPage() {
         <motion.button
           whileHover={{ scale: 1.1 }}
           className="absolute bottom-8 right-8 w-12 h-12 rounded-full bg-[#E59889] text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all"
+          aria-label="Get help with login"
+          onClick={() => window.location.href = '/contact'}
         >
           <Info className="h-6 w-6" />
         </motion.button>

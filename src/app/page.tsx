@@ -28,7 +28,7 @@ export default function LandingPage() {
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-6xl">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 relative flex items-center justify-center">
-                            <Image src="/logo.png" alt="Artha" fill className="object-contain" />
+                            <Image src="/logo.png" alt="" fill className="object-contain" />
                         </div>
                         <span className={cn("text-[#2E4A3B] text-2xl font-bold tracking-tight", playfair.className)}>
                             Artha
@@ -114,7 +114,7 @@ export default function LandingPage() {
                                     </Button>
                                 </Link>
                             </motion.div>
-                            <p className="text-sm text-[#2E4A3B]/60 font-medium">
+                            <p className="text-sm text-[#2E4A3B]/70 font-medium">
                                 No credit card required
                             </p>
 
@@ -149,7 +149,7 @@ export default function LandingPage() {
                             <h2 className={cn("text-3xl md:text-4xl font-bold text-[#2E4A3B] mb-4", playfair.className)}>
                                 Everything you need to grow
                             </h2>
-                            <p className="text-[#2E4A3B]/60 text-lg max-w-2xl mx-auto">
+                            <p className="text-[#2E4A3B]/70 text-lg max-w-2xl mx-auto">
                                 Artha replaces your messy spreadsheets with automated syncing and powerful insights.
                             </p>
                         </div>
@@ -189,7 +189,7 @@ export default function LandingPage() {
                                 EARLY ACCESS
                             </div>
                             <div className="text-5xl font-bold text-[#2E4A3B] mb-2">$0</div>
-                            <p className="text-[#2E4A3B]/50 mb-8">Forever free for early adopters</p>
+                            <p className="text-[#2E4A3B]/70 mb-8">Forever free for early adopters</p>
 
                             <ul className="space-y-4 text-left mb-8 max-w-xs mx-auto">
                                 <li className="flex items-center gap-3 text-[#2E4A3B]">
@@ -220,7 +220,7 @@ export default function LandingPage() {
                 <div className="container mx-auto px-4 max-w-6xl flex flex-col md:flex-row justify-between items-center gap-8">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 relative flex items-center justify-center">
-                            <Image src="/logo.png" alt="Artha" fill className="object-contain brightness-0 invert" />
+                            <Image src="/logo.png" alt="" fill className="object-contain brightness-0 invert" />
                         </div>
                         <span className={cn("text-2xl font-bold", playfair.className)}>Artha</span>
                     </div>

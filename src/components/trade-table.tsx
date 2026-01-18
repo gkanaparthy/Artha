@@ -110,6 +110,7 @@ export function TradeTable() {
                                         size="icon"
                                         className="h-8 w-8 text-muted-foreground hover:text-destructive"
                                         onClick={() => handleDelete(trade.id)}
+                                        aria-label={`Delete ${trade.symbol} trade from ${trade.timestamp ? new Date(trade.timestamp).toLocaleDateString() : 'unknown date'}`}
                                     >
                                         <Trash2 className="h-4 w-4" />
                                     </Button>

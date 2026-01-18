@@ -51,6 +51,7 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                     value={filters.symbol}
                     onChange={(e) => setFilters(prev => ({ ...prev, symbol: e.target.value }))}
                     className="h-9"
+                    aria-label="Filter trades by symbol"
                 />
             </div>
 
