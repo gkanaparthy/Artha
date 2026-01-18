@@ -7,6 +7,41 @@ description: Specialized instructions for managing the Artha (Pravaha) trading j
 
 This skill provides the domain-specific knowledge required to maintain and debug the Artha trading journal.
 
+## ⚠️ CRITICAL: Testing & Quality Standards
+
+**BEFORE pushing ANY changes to production:**
+
+### 1. Build Verification
+- ✅ Run `npm run build` - must complete with ZERO errors
+- ✅ Check for TypeScript errors in IDE
+- ✅ Verify no lint errors introduced
+
+### 2. Regression Testing
+- ✅ Test the specific feature you changed
+- ✅ Test related features that might be affected
+- ✅ **DO NOT break existing functionality**
+- ✅ If touching metrics/FIFO: Verify P&L calculations still work
+- ✅ If touching auth/encryption: Verify login and data access still work
+- ✅ If touching trade sync: Verify new accounts can connect
+
+### 3. Data Integrity
+- ✅ Never modify database schema without migration strategy
+- ✅ When adding encryption/decryption: Audit ALL read/write paths
+- ✅ Test with REAL user scenarios, not just synthetic data
+
+### 4. User Impact Assessment
+- ✅ Will users need to logout/login?
+- ✅ Will existing data need migration?
+- ✅ Are there any breaking changes to UI/API contracts?
+
+### 5. Deployment Checklist
+- ✅ All environment variables set in Vercel
+- ✅ Database migrations run (if needed)
+- ✅ No hardcoded secrets or local paths
+- ✅ Commit messages clearly explain the change
+
+**Philosophy:** Every change should make the app better, not just different. Test thoroughly and think about edge cases.
+
 ## Core Domain Knowledge
 
 ### 1. FIFO P&L Engine
