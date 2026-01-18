@@ -17,7 +17,7 @@ import {
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
-import { cn } from "@/lib/utils";
+import { cn, formatCompactCurrency } from "@/lib/utils";
 import { useFilters } from "@/contexts/filter-context";
 import type { Metrics, DisplayPosition } from "@/types/trading";
 
@@ -30,6 +30,7 @@ interface DashboardViewProps {
 function MetricCard({
   title,
   value,
+  compactValue,
   subtitle,
   icon: Icon,
   iconColor = "text-muted-foreground",
@@ -39,6 +40,7 @@ function MetricCard({
 }: {
   title: string;
   value: string | number;
+  compactValue?: string | number;
   subtitle: string;
   icon: React.ElementType;
   iconColor?: string;
@@ -65,12 +67,19 @@ function MetricCard({
         </CardHeader>
         <CardContent>
           <motion.div
-            className={cn("text-2xl font-bold stat-number", valueColor)}
+            className={cn("font-bold stat-number", valueColor)}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: delay + 0.2 }}
           >
-            {value}
+            {compactValue !== undefined ? (
+              <>
+                <span className="hidden sm:inline text-2xl">{value}</span>
+                <span className="sm:hidden text-xl">{compactValue}</span>
+              </>
+            ) : (
+              <span className="text-2xl">{value}</span>
+            )}
           </motion.div>
           <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
         </CardContent>
@@ -315,6 +324,7 @@ export function DashboardView({
           <MetricCard
             title="Net P&L"
             value={formatCurrency(metrics.netPnL, true)}
+            compactValue={formatCompactCurrency(metrics.netPnL, true)}
             subtitle="Based on filtered trades"
             icon={DollarSign}
             iconColor={getPnLColor(metrics.netPnL)}
@@ -334,6 +344,7 @@ export function DashboardView({
           <MetricCard
             title="Largest Win"
             value={formatCurrency(metrics.largestWin, true)}
+            compactValue={formatCompactCurrency(metrics.largestWin, true)}
             subtitle="Best single trade"
             icon={TrendingUp}
             iconColor="text-gradient-green"
@@ -343,6 +354,7 @@ export function DashboardView({
           <MetricCard
             title="Largest Loss"
             value={formatCurrency(metrics.largestLoss, true)}
+            compactValue={formatCompactCurrency(metrics.largestLoss, true)}
             subtitle="Worst single trade"
             icon={TrendingDown}
             iconColor="text-gradient-red"
@@ -364,6 +376,7 @@ export function DashboardView({
           <MetricCard
             title="Avg Win"
             value={formatCurrency(metrics.avgWin, true)}
+            compactValue={formatCompactCurrency(metrics.avgWin, true)}
             subtitle={`${metrics.avgWinPct}% avg return`}
             icon={TrendingUp}
             iconColor="text-gradient-green"
@@ -373,6 +386,7 @@ export function DashboardView({
           <MetricCard
             title="Avg Loss"
             value={formatCurrency(-metrics.avgLoss, true)}
+            compactValue={formatCompactCurrency(-metrics.avgLoss, true)}
             subtitle={`-${metrics.avgLossPct}% avg return`}
             icon={TrendingDown}
             iconColor="text-gradient-red"
@@ -382,6 +396,7 @@ export function DashboardView({
           <MetricCard
             title="Avg Trade"
             value={formatCurrency(metrics.avgTrade, true)}
+            compactValue={formatCompactCurrency(metrics.avgTrade, true)}
             subtitle="Expected per trade"
             icon={Target}
             iconColor={getPnLColor(metrics.avgTrade)}
@@ -397,6 +412,15 @@ export function DashboardView({
                   ? "..."
                   : livePositions
                     ? formatCurrency(filteredLiveMetrics.totalUnrealizedPnl, true)
+                    : "—"
+            }
+            compactValue={
+              isDemo
+                ? formatCompactCurrency(2847.50, true) // Demo value
+                : liveLoading
+                  ? "..."
+                  : livePositions
+                    ? formatCompactCurrency(filteredLiveMetrics.totalUnrealizedPnl, true)
                     : "—"
             }
             subtitle={isDemo ? "Sample data" : livePositions ? "Live from broker" : "Connect broker"}

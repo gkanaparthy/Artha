@@ -17,7 +17,7 @@ import { format } from "date-fns";
 import { TradeDetailSheet } from "@/components/trade-detail-sheet";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
-import { cn } from "@/lib/utils";
+import { cn, formatCompactCurrency } from "@/lib/utils";
 import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { useSort } from "@/hooks/use-sort";
@@ -111,12 +111,20 @@ function MobileTradeCard({
         </div>
         <div>
           <div className="text-muted-foreground text-xs">Price</div>
-          <div className="font-mono font-semibold">${trade.price.toFixed(2)}</div>
+          <div className="font-mono font-semibold">
+            {trade.price >= 1000
+              ? formatCompactCurrency(trade.price).replace(/^\$/, '$')
+              : `$${trade.price.toFixed(2)}`
+            }
+          </div>
         </div>
         <div>
           <div className="text-muted-foreground text-xs">Value</div>
           <div className="font-mono font-semibold text-muted-foreground">
-            ${(trade.quantity * trade.price).toFixed(2)}
+            {(trade.quantity * trade.price) >= 1000
+              ? formatCompactCurrency(trade.quantity * trade.price).replace(/^\$/, '$')
+              : `$${(trade.quantity * trade.price).toFixed(2)}`
+            }
           </div>
         </div>
         {!isDemo && (
@@ -290,8 +298,8 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
           <GlobalFilterBar />
         </AnimatedCard>
 
-        {/* Table Card */}
-        <AnimatedCard delay={0.2}>
+        {/* Table Card - Desktop */}
+        <AnimatedCard delay={0.2} className="hidden md:block">
           <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
             <CardHeader className="pb-2 p-4 sm:p-6">
               <CardTitle className="text-base sm:text-lg font-medium flex items-center gap-2">
@@ -443,6 +451,47 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
                   </TableBody>
                 </Table>
               </div>
+            </CardContent>
+          </Card>
+        </AnimatedCard>
+
+        {/* Mobile Card View */}
+        <AnimatedCard delay={0.2} className="md:hidden">
+          <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-2 p-4">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" />
+                Recent Activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 pt-0">
+              {loading ? (
+                <div className="flex justify-center items-center h-32">
+                  <Loader2 className="animate-spin h-6 w-6 text-primary" />
+                </div>
+              ) : sortedTrades.length === 0 ? (
+                <div className="text-center text-muted-foreground py-12">
+                  {isDemo
+                    ? "No demo trades available."
+                    : "No trades found matching your criteria."}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {sortedTrades.map((trade, i) => (
+                    <MobileTradeCard
+                      key={trade.id}
+                      trade={trade}
+                      idx={i}
+                      onClick={() => {
+                        setSelectedTrade(trade);
+                        setSheetOpen(true);
+                      }}
+                      onDelete={(e) => handleDelete(trade.id, e)}
+                      isDemo={isDemo}
+                    />
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </AnimatedCard>

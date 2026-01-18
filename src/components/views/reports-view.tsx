@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
-import { cn } from "@/lib/utils";
+import { cn, formatCompactCurrency } from "@/lib/utils";
 import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { CalendarView } from "@/components/calendar-view";
@@ -94,6 +94,7 @@ function CustomTooltip({
 function SummaryCard({
   title,
   value,
+  compactValue,
   icon: Icon,
   iconColor,
   valueColor,
@@ -101,6 +102,7 @@ function SummaryCard({
 }: {
   title: string;
   value: string | number;
+  compactValue?: string | number;
   icon: React.ElementType;
   iconColor: string;
   valueColor?: string;
@@ -120,12 +122,19 @@ function SummaryCard({
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0">
           <motion.div
-            className={cn("text-xl sm:text-2xl font-bold", valueColor)}
+            className={cn("font-bold", valueColor)}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: delay + 0.2 }}
           >
-            {value}
+            {compactValue !== undefined ? (
+              <>
+                <span className="hidden sm:inline text-2xl">{value}</span>
+                <span className="sm:hidden text-lg">{compactValue}</span>
+              </>
+            ) : (
+              <span className="text-xl sm:text-2xl">{value}</span>
+            )}
           </motion.div>
         </CardContent>
       </Card>
@@ -431,6 +440,7 @@ export function ReportsView({
                 value={`${metrics.netPnL >= 0 ? "+" : "-"}${formatCurrency(
                   metrics.netPnL
                 )}`}
+                compactValue={formatCompactCurrency(metrics.netPnL, true)}
                 icon={metrics.netPnL >= 0 ? TrendingUp : TrendingDown}
                 iconColor={
                   metrics.netPnL >= 0 ? "text-green-500" : "text-red-500"
@@ -499,6 +509,7 @@ export function ReportsView({
               <SummaryCard
                 title="Max Drawdown"
                 value={`-${formatCurrency(maxDrawdown)}`}
+                compactValue={`-${formatCompactCurrency(maxDrawdown).replace('$', '$')}`}
                 icon={TrendingDown}
                 iconColor="text-orange-500"
                 valueColor={maxDrawdown === 0 ? "text-green-500" : "text-red-500"}
@@ -507,6 +518,7 @@ export function ReportsView({
               <SummaryCard
                 title="Avg Holding"
                 value={`${avgHoldingPeriod.toFixed(1)} days`}
+                compactValue={`${avgHoldingPeriod.toFixed(1)}d`}
                 icon={Clock}
                 iconColor="text-cyan-500"
                 delay={0.45}
@@ -1163,16 +1175,18 @@ export function ReportsView({
                       <p className="text-xs sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">
                         Avg Win
                       </p>
-                      <p className="text-lg sm:text-2xl font-bold text-green-500">
-                        +{formatCurrency(metrics.avgWin)}
+                      <p className="font-bold text-green-500">
+                        <span className="hidden sm:inline text-2xl">+{formatCurrency(metrics.avgWin)}</span>
+                        <span className="sm:hidden text-lg">{formatCompactCurrency(metrics.avgWin, true)}</span>
                       </p>
                     </div>
                     <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
                       <p className="text-xs sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">
                         Avg Loss
                       </p>
-                      <p className="text-lg sm:text-2xl font-bold text-red-500">
-                        -{formatCurrency(metrics.avgLoss)}
+                      <p className="font-bold text-red-500">
+                        <span className="hidden sm:inline text-2xl">-{formatCurrency(metrics.avgLoss)}</span>
+                        <span className="sm:hidden text-lg">{formatCompactCurrency(-metrics.avgLoss, true)}</span>
                       </p>
                     </div>
                     <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
@@ -1181,12 +1195,12 @@ export function ReportsView({
                       </p>
                       <p
                         className={cn(
-                          "text-lg sm:text-2xl font-bold",
+                          "font-bold",
                           mtdPnL >= 0 ? "text-green-500" : "text-red-500"
                         )}
                       >
-                        {mtdPnL >= 0 ? "+" : "-"}
-                        {formatCurrency(mtdPnL)}
+                        <span className="hidden sm:inline text-2xl">{mtdPnL >= 0 ? "+" : "-"}{formatCurrency(mtdPnL)}</span>
+                        <span className="sm:hidden text-lg">{formatCompactCurrency(mtdPnL, true)}</span>
                       </p>
                     </div>
                     <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
@@ -1195,12 +1209,12 @@ export function ReportsView({
                       </p>
                       <p
                         className={cn(
-                          "text-lg sm:text-2xl font-bold",
+                          "font-bold",
                           ytdPnL >= 0 ? "text-green-500" : "text-red-500"
                         )}
                       >
-                        {ytdPnL >= 0 ? "+" : "-"}
-                        {formatCurrency(ytdPnL)}
+                        <span className="hidden sm:inline text-2xl">{ytdPnL >= 0 ? "+" : "-"}{formatCurrency(ytdPnL)}</span>
+                        <span className="sm:hidden text-lg">{formatCompactCurrency(ytdPnL, true)}</span>
                       </p>
                     </div>
                     <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
@@ -1209,15 +1223,22 @@ export function ReportsView({
                       </p>
                       <p
                         className={cn(
-                          "text-lg sm:text-2xl font-bold",
+                          "font-bold",
                           metrics.netPnL >= 0 ? "text-green-500" : "text-red-500"
                         )}
                       >
-                        {metrics.totalTrades > 0
-                          ? `${metrics.netPnL >= 0 ? "+" : "-"}${formatCurrency(
-                              metrics.netPnL / metrics.totalTrades
-                            )}`
-                          : "—"}
+                        {metrics.totalTrades > 0 ? (
+                          <>
+                            <span className="hidden sm:inline text-2xl">
+                              {metrics.netPnL >= 0 ? "+" : "-"}{formatCurrency(metrics.netPnL / metrics.totalTrades)}
+                            </span>
+                            <span className="sm:hidden text-lg">
+                              {formatCompactCurrency(metrics.netPnL / metrics.totalTrades, true)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-lg sm:text-2xl">—</span>
+                        )}
                       </p>
                     </div>
                   </div>

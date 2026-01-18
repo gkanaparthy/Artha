@@ -13,6 +13,23 @@ export function formatCurrency(value: number): string {
   });
 }
 
+// Format currency in compact form for mobile (e.g., 1.1K, 2.5M)
+export function formatCompactCurrency(value: number, showSign = false): string {
+  const absValue = Math.abs(value);
+  let formatted: string;
+
+  if (absValue >= 1_000_000) {
+    formatted = `${(absValue / 1_000_000).toFixed(1)}M`;
+  } else if (absValue >= 1_000) {
+    formatted = `${(absValue / 1_000).toFixed(1)}K`;
+  } else {
+    formatted = absValue.toFixed(0);
+  }
+
+  const sign = showSign && value !== 0 ? (value >= 0 ? '+' : '-') : '';
+  return `${sign}$${formatted}`;
+}
+
 // Format date as "Jan 1, 2024"
 export function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {

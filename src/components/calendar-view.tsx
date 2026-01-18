@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, formatCompactCurrency } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface DayData {
@@ -193,8 +193,13 @@ export function CalendarView({ data }: CalendarViewProps) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <div className="rounded-lg sm:rounded-xl bg-card/50 border p-3 sm:p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Monthly P&L</p>
-            <p className={cn("text-lg sm:text-2xl font-bold mt-1", getPnLTextColor(monthlySummary.totalPnL))}>
-              {monthlySummary.totalPnL >= 0 ? "+" : "-"}${formatCurrency(monthlySummary.totalPnL)}
+            <p className={cn("font-bold mt-1", getPnLTextColor(monthlySummary.totalPnL))}>
+              <span className="hidden sm:inline text-2xl">
+                {monthlySummary.totalPnL >= 0 ? "+" : "-"}${formatCurrency(monthlySummary.totalPnL)}
+              </span>
+              <span className="sm:hidden text-lg">
+                {formatCompactCurrency(monthlySummary.totalPnL, true)}
+              </span>
             </p>
           </div>
           <div className="rounded-lg sm:rounded-xl bg-card/50 border p-3 sm:p-4">
@@ -266,10 +271,15 @@ export function CalendarView({ data }: CalendarViewProps) {
                         {dayInfo.data && (
                           <div className="space-y-0.5 sm:space-y-1">
                             <div className={cn(
-                              "text-xs sm:text-base md:text-lg font-bold leading-tight",
+                              "font-bold leading-tight",
                               getPnLTextColor(dayInfo.data.pnl)
                             )}>
-                              {dayInfo.data.pnl >= 0 ? "+" : ""}${formatCurrency(dayInfo.data.pnl)}
+                              <span className="hidden md:inline text-lg">
+                                {dayInfo.data.pnl >= 0 ? "+" : ""}${formatCurrency(dayInfo.data.pnl)}
+                              </span>
+                              <span className="md:hidden text-xs sm:text-sm">
+                                {formatCompactCurrency(dayInfo.data.pnl, true)}
+                              </span>
                             </div>
                             <div className="text-[10px] sm:text-xs text-muted-foreground">
                               {dayInfo.data.trades} trade{dayInfo.data.trades !== 1 ? "s" : ""}
@@ -288,10 +298,15 @@ export function CalendarView({ data }: CalendarViewProps) {
                     {weeklySummaries[weekIdx].trades > 0 ? (
                       <>
                         <div className={cn(
-                          "text-lg font-bold",
+                          "font-bold",
                           getPnLTextColor(weeklySummaries[weekIdx].pnl)
                         )}>
-                          {weeklySummaries[weekIdx].pnl >= 0 ? "+" : ""}${formatCurrency(weeklySummaries[weekIdx].pnl)}
+                          <span className="hidden lg:inline text-lg">
+                            {weeklySummaries[weekIdx].pnl >= 0 ? "+" : ""}${formatCurrency(weeklySummaries[weekIdx].pnl)}
+                          </span>
+                          <span className="lg:hidden text-sm">
+                            {formatCompactCurrency(weeklySummaries[weekIdx].pnl, true)}
+                          </span>
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">
                           {weeklySummaries[weekIdx].trades} trades
