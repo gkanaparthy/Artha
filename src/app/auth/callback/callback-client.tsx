@@ -27,36 +27,30 @@ export function CallbackClient() {
           return;
         }
 
-        // Attempt initial sync - may return empty for newly connected accounts
-        setMessage("Syncing your trades...");
-        const syncRes = await fetch("/api/trades/sync", {
+        // Start sync in background (non-blocking) - returns immediately
+        setMessage("Starting trade sync...");
+        const syncRes = await fetch("/api/trades/sync-async", {
           method: "POST",
         });
 
-        let syncResult = null;
         if (syncRes.ok) {
-          syncResult = await syncRes.json();
-        }
-
-        setStatus("success");
-
-        // Check if sync returned trades or was empty
-        if (syncResult && syncResult.synced > 0) {
-          setMessage(`Synced ${syncResult.synced} trades successfully!`);
+          setStatus("success");
+          setMessage("Broker connected! Your trades are syncing in the background and will appear shortly.");
         } else {
-          // Empty result - broker data may still be processing
-          setMessage("Broker connected! If trades don't appear, click 'Sync Trades' in a few minutes.");
+          // Even if async sync fails to start, the broker is still connected
+          setStatus("success");
+          setMessage("Broker connected! Please use 'Sync Trades' button to load your trading history.");
         }
 
         // Notify parent window and close after delay
         if (window.opener) {
           window.opener.postMessage({ type: "SNAPTRADE_CONNECTION_SUCCESS" }, "*");
-          setTimeout(() => window.close(), 2000);
+          setTimeout(() => window.close(), 3000); // Extended to 3s to let user read message
         } else {
           // If not opened as popup, redirect to dashboard
           setTimeout(() => {
             window.location.href = "/dashboard";
-          }, 2000);
+          }, 3000);
         }
       } catch (error) {
         console.error("Callback error:", error);
