@@ -68,3 +68,30 @@ Use `src/lib/tradeValidation.ts` to detect:
 - [ ] Verify `DATABASE_URL` has `pgbouncer=true`.
 - [ ] Verify `AUTH_SECRET` and `AUTH_URL` match production.
 - [ ] Ensure `RESEND_API_KEY` is set if email auth is enabled.
+
+## Useful Tools & Scripts
+
+### YTD P&L Calculator
+**Location:** `scripts/calculate-ytd-pnl.ts`
+
+A reusable command-line tool to calculate Year-to-Date P&L for any user using the same FIFO engine as the metrics API.
+
+**Usage:**
+```bash
+# By user name (partial match)
+npx tsx scripts/calculate-ytd-pnl.ts --user "Suman"
+
+# Custom date range
+npx tsx scripts/calculate-ytd-pnl.ts --user "Suman" --startDate "2026-01-01" --endDate "2026-01-15"
+
+# JSON output
+npx tsx scripts/calculate-ytd-pnl.ts --user "Suman" --json
+```
+
+**Output:** Total P&L, monthly breakdown, top winners/losers, trade counts
+
+### Diagnostic Scripts
+- `scripts/diagnose-orphaned-trades.ts` - Detects phantom positions
+- `scripts/check-recent-trades.ts` - Verifies recent sync activity
+- `scripts/verify-live-positions.ts` - Compares DB vs broker positions
+
