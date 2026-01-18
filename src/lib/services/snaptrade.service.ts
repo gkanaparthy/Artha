@@ -126,17 +126,21 @@ export class SnapTradeService {
         // Update/Create Accounts in DB
         for (const acc of accounts.data || []) {
             console.log('[SnapTrade Sync] Account:', acc.id, acc.institution_name, 'Number:', acc.number);
+
+            // Encrypt account number (PII) before storing
+            const encryptedAccountNumber = acc.number ? encrypt(acc.number) : null;
+
             await prisma.brokerAccount.upsert({
                 where: { snapTradeAccountId: acc.id },
                 update: {
                     brokerName: acc.institution_name,
-                    accountNumber: acc.number || null,
+                    accountNumber: encryptedAccountNumber,
                 },
                 create: {
                     userId: localUserId,
                     snapTradeAccountId: acc.id,
                     brokerName: acc.institution_name,
-                    accountNumber: acc.number || null,
+                    accountNumber: encryptedAccountNumber,
                 },
             });
         }

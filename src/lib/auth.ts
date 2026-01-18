@@ -5,6 +5,7 @@ import Resend from "next-auth/providers/resend";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
 import { sendVerificationRequest } from "./email";
+import { encrypt } from "./encryption";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma) as ReturnType<typeof PrismaAdapter>,
@@ -52,6 +53,33 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (url.startsWith(baseUrl)) return url;
       if (url.startsWith("/")) return `${baseUrl}${url}`;
       return baseUrl;
+    },
+  },
+  events: {
+    // Encrypt OAuth tokens before storing in database
+    async linkAccount(message) {
+      const accountId = message.account.id as string;
+
+      // Encrypt sensitive OAuth tokens
+      const encryptedData: Record<string, string> = {};
+
+      if (message.account.refresh_token) {
+        encryptedData.refresh_token = encrypt(message.account.refresh_token as string);
+      }
+      if (message.account.access_token) {
+        encryptedData.access_token = encrypt(message.account.access_token as string);
+      }
+      if (message.account.id_token) {
+        encryptedData.id_token = encrypt(message.account.id_token as string);
+      }
+
+      // Update account with encrypted tokens
+      if (Object.keys(encryptedData).length > 0) {
+        await prisma.account.update({
+          where: { id: accountId },
+          data: encryptedData,
+        });
+      }
     },
   },
   trustHost: true,
