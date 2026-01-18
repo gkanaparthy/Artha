@@ -15,6 +15,7 @@ interface ClosedTrade {
     broker: string;
     accountId: string;
     type: string;
+    multiplier: number; // Contract multiplier (100 for options, 1 for stocks)
 }
 
 interface OpenPosition {
@@ -241,7 +242,8 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                         openedAt: matchLot.date,
                         broker: matchLot.broker,
                         accountId: matchLot.accountId,
-                        type: matchLot.type
+                        type: matchLot.type,
+                        multiplier: lotMultiplier
                     });
 
                     matchLot.quantity -= matchQty;
@@ -289,7 +291,8 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                         openedAt: matchLot.date,
                         broker: matchLot.broker,
                         accountId: matchLot.accountId,
-                        type: matchLot.type
+                        type: matchLot.type,
+                        multiplier: lotMultiplier
                     });
 
                     matchLot.quantity -= matchQty;
@@ -340,7 +343,8 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                         openedAt: lot.date,
                         broker: lot.broker,
                         accountId: lot.accountId,
-                        type: lot.type
+                        type: lot.type,
+                        multiplier: lot.multiplier
                     });
                 }
             }
@@ -360,7 +364,8 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                         openedAt: lot.date,
                         broker: lot.broker,
                         accountId: lot.accountId,
-                        type: lot.type
+                        type: lot.type,
+                        multiplier: lot.multiplier
                     });
                 }
             }
@@ -478,15 +483,16 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
     const avgLoss = losingTrades.length > 0 ? totalLosses / losingTrades.length : 0;
 
     // Calculate average win/loss percentages
+    // CRITICAL: Must include multiplier for options (100) to get correct percentage
     const avgWinPct = winningTrades.length > 0
         ? winningTrades.reduce((sum, t) => {
-            const costBasis = t.entryPrice * t.quantity;
+            const costBasis = t.entryPrice * t.quantity * t.multiplier;
             return sum + (costBasis > 0 ? (t.pnl / costBasis) * 100 : 0);
         }, 0) / winningTrades.length
         : 0;
     const avgLossPct = losingTrades.length > 0
         ? Math.abs(losingTrades.reduce((sum, t) => {
-            const costBasis = t.entryPrice * t.quantity;
+            const costBasis = t.entryPrice * t.quantity * t.multiplier;
             return sum + (costBasis > 0 ? (t.pnl / costBasis) * 100 : 0);
         }, 0) / losingTrades.length)
         : 0;
