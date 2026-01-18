@@ -381,18 +381,43 @@ function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOption
                 type: lot.type
             });
         }
-        for (const lot of shortLots) {
-            allOpenPositions.push({
-                symbol: keyDetails.get(key)?.symbol || key,
-                quantity: -lot.quantity,
-                entryPrice: lot.price,
-                openedAt: lot.date,
-                broker: lot.broker,
-                accountId: lot.accountId,
-                currentValue: lot.price * -lot.quantity * lot.multiplier,
-                tradeId: lot.tradeId,
-                type: lot.type
-            });
+
+        // Filter out phantom short positions (orphaned sells without buys)
+        // These typically occur when:
+        // 1. Account was liquidated/closed before sync window
+        // 2. Positions were transferred out
+        // 3. Opening trades are outside 3-year sync window
+        // We detect these by checking if ALL trades for this symbol are sells
+        const symbolTrades = instrumentTrades;
+        const hasBuys = symbolTrades.some(t => {
+            const action = t.action.toUpperCase();
+            return action.includes('BUY') || action === 'ASSIGNMENT';
+        });
+        const hasSells = symbolTrades.some(t => {
+            const action = t.action.toUpperCase();
+            return action.includes('SELL') || action === 'EXERCISES' || action === 'OPTIONEXPIRATION';
+        });
+
+        // Only add short positions if we have evidence of actual short selling
+        // (buys present in history). Otherwise it's likely a phantom from missing data.
+        const isLikelyPhantom = shortLots.length > 0 && !hasBuys && hasSells;
+
+        if (!isLikelyPhantom) {
+            for (const lot of shortLots) {
+                allOpenPositions.push({
+                    symbol: keyDetails.get(key)?.symbol || key,
+                    quantity: -lot.quantity,
+                    entryPrice: lot.price,
+                    openedAt: lot.date,
+                    broker: lot.broker,
+                    accountId: lot.accountId,
+                    currentValue: lot.price * -lot.quantity * lot.multiplier,
+                    tradeId: lot.tradeId,
+                    type: lot.type
+                });
+            }
+        } else {
+            console.log('[FIFO] Filtered phantom short position for', keyDetails.get(key)?.symbol, '- missing buy history');
         }
     }
 
