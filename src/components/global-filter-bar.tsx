@@ -113,81 +113,29 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                             </SelectContent>
                         </Select>
 
-                        {/* Date Range */}
+                        {/* Date Range - Native inputs for mobile */}
                         <div className="flex items-center gap-2">
-                            <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant={"outline"}
-                                        className={cn(
-                                            "flex-1 h-10 justify-start text-left font-normal text-xs sm:text-sm touch-manipulation",
-                                            !filters.startDate && "text-muted-foreground"
-                                        )}
-                                    >
-                                        <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-                                        {filters.startDate ? (
-                                            format(new Date(new Date(filters.startDate).getTime() + new Date(filters.startDate).getTimezoneOffset() * 60000), "MMM dd, yy")
-                                        ) : (
-                                            <span>From</span>
-                                        )}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0 z-[100]" align="center" sideOffset={5}>
-                                    <Calendar
-                                        mode="single"
-                                        selected={filters.startDate ? new Date(new Date(filters.startDate).getTime() + new Date(filters.startDate).getTimezoneOffset() * 60000) : undefined}
-                                        onSelect={(date) => {
-                                            if (date) {
-                                                const offset = date.getTimezoneOffset();
-                                                const localDate = new Date(date.getTime() - (offset * 60 * 1000));
-                                                setFilters(prev => ({ ...prev, startDate: localDate.toISOString().split('T')[0] }));
-                                            } else {
-                                                setFilters(prev => ({ ...prev, startDate: "" }));
-                                            }
-                                            setStartDateOpen(false);
-                                        }}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                            <div className="flex-1">
+                                <input
+                                    type="date"
+                                    value={filters.startDate || ''}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm touch-manipulation"
+                                    placeholder="From date"
+                                />
+                            </div>
 
                             <span className="text-muted-foreground text-sm">-</span>
 
-                            <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant={"outline"}
-                                        className={cn(
-                                            "flex-1 h-10 justify-start text-left font-normal text-xs sm:text-sm touch-manipulation",
-                                            !filters.endDate && "text-muted-foreground"
-                                        )}
-                                    >
-                                        <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-                                        {filters.endDate ? (
-                                            format(new Date(new Date(filters.endDate).getTime() + new Date(filters.endDate).getTimezoneOffset() * 60000), "MMM dd, yy")
-                                        ) : (
-                                            <span>To</span>
-                                        )}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0 z-[100]" align="center" sideOffset={5}>
-                                    <Calendar
-                                        mode="single"
-                                        selected={filters.endDate ? new Date(new Date(filters.endDate).getTime() + new Date(filters.endDate).getTimezoneOffset() * 60000) : undefined}
-                                        onSelect={(date) => {
-                                            if (date) {
-                                                const offset = date.getTimezoneOffset();
-                                                const localDate = new Date(date.getTime() - (offset * 60 * 1000));
-                                                setFilters(prev => ({ ...prev, endDate: localDate.toISOString().split('T')[0] }));
-                                            } else {
-                                                setFilters(prev => ({ ...prev, endDate: "" }));
-                                            }
-                                            setEndDateOpen(false);
-                                        }}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                            <div className="flex-1">
+                                <input
+                                    type="date"
+                                    value={filters.endDate || ''}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm touch-manipulation"
+                                    placeholder="To date"
+                                />
+                            </div>
                         </div>
 
                         {/* Status Filter (Optional) */}
