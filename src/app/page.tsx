@@ -67,7 +67,7 @@ export default function LandingPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            className="h-10 w-10"
+                            className="h-10 w-10 text-[#2E4A3B] hover:bg-[#2E4A3B]/10"
                             aria-label="Toggle navigation menu"
                             aria-expanded={mobileMenuOpen}
                         >
