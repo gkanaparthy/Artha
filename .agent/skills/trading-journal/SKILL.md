@@ -95,3 +95,97 @@ npx tsx scripts/calculate-ytd-pnl.ts --user "Suman" --json
 - `scripts/check-recent-trades.ts` - Verifies recent sync activity
 - `scripts/verify-live-positions.ts` - Compares DB vs broker positions
 
+
+## Monitoring Workflows
+
+### Check for Recent Trade Activity
+
+To verify if trades are being synced properly, check for recent activity:
+
+**For a specific user:**
+```bash
+npx tsx scripts/check-recent-trades.ts "Username"
+```
+
+**For all users (quick check):**
+```typescript
+// Create a monitoring script if needed
+const twoDaysAgo = new Date();
+twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+const recentTrades = await prisma.trade.findMany({
+  where: {
+    timestamp: { gte: twoDaysAgo }
+  },
+  include: {
+    account: {
+      include: { user: true }
+    }
+  },
+  orderBy: { timestamp: 'desc' },
+  take: 50
+});
+
+// Group by user
+const byUser = recentTrades.reduce((acc, trade) => {
+  const userId = trade.account.userId;
+  if (!acc[userId]) acc[userId] = [];
+  acc[userId].push(trade);
+  return acc;
+}, {});
+```
+
+**Red flags:**
+- No trades in 2+ days for active users → Sync may be broken
+- Trades only from weekdays → Check if weekend syncs work
+- Same timestamp for many trades → Possible sync duplication
+
+### Verify Sync Status
+
+Check when each user's broker account was last synced:
+
+```bash
+# Look at most recent trade per account
+SELECT 
+  ba.brokerName,
+  u.name,
+  MAX(t.timestamp) as last_trade,
+  COUNT(*) as total_trades
+FROM broker_accounts ba
+JOIN trades t ON t.accountId = ba.id
+JOIN users u ON u.id = ba.userId
+GROUP BY ba.id, ba.brokerName, u.name
+ORDER BY MAX(t.timestamp) DESC;
+```
+
+If last_trade is > 48 hours ago and it's a trading day, investigate sync issues.
+
+
+## Common Workflows
+
+### Check for Recent Trade Activity
+To verify if new trades have been synced for a user in the last 1-2 days:
+
+```bash
+# Check specific user
+npx tsx scripts/check-recent-trades.ts "Username"
+```
+
+**What it checks:**
+- Trades from the last 2 days (Jan 17-18 if today is Jan 18)
+- Most recent trade in database
+- Total trade count
+
+**Expected output:**
+```
+📊 Checking trades for: username
+📅 Trades from Jan 17-18, 2026: 15
+📅 Most recent trade: 2026-01-18T14:30:00.000Z
+📊 Total trades in database: 1015
+```
+
+**If no recent trades:**
+- User may need to run "Sync Trades" manually
+- Check if broker has new activity
+- Verify auto-sync cron is running
+
