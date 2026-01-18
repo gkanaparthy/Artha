@@ -120,7 +120,7 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                                     <Button
                                         variant={"outline"}
                                         className={cn(
-                                            "flex-1 h-9 justify-start text-left font-normal text-xs sm:text-sm",
+                                            "flex-1 h-10 justify-start text-left font-normal text-xs sm:text-sm touch-manipulation",
                                             !filters.startDate && "text-muted-foreground"
                                         )}
                                     >
@@ -132,7 +132,7 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                                         )}
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
+                                <PopoverContent className="w-auto p-0 z-[100]" align="center" sideOffset={5}>
                                     <Calendar
                                         mode="single"
                                         selected={filters.startDate ? new Date(new Date(filters.startDate).getTime() + new Date(filters.startDate).getTimezoneOffset() * 60000) : undefined}
@@ -158,7 +158,7 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                                     <Button
                                         variant={"outline"}
                                         className={cn(
-                                            "flex-1 h-9 justify-start text-left font-normal text-xs sm:text-sm",
+                                            "flex-1 h-10 justify-start text-left font-normal text-xs sm:text-sm touch-manipulation",
                                             !filters.endDate && "text-muted-foreground"
                                         )}
                                     >
@@ -170,7 +170,7 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                                         )}
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
+                                <PopoverContent className="w-auto p-0 z-[100]" align="center" sideOffset={5}>
                                     <Calendar
                                         mode="single"
                                         selected={filters.endDate ? new Date(new Date(filters.endDate).getTime() + new Date(filters.endDate).getTimezoneOffset() * 60000) : undefined}
@@ -286,7 +286,7 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                             <Button
                                 variant={"outline"}
                                 className={cn(
-                                    "w-[130px] h-9 justify-start text-left font-normal",
+                                    "w-[130px] h-10 justify-start text-left font-normal touch-manipulation",
                                     !filters.startDate && "text-muted-foreground"
                                 )}
                             >
@@ -298,7 +298,7 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                                 )}
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className="w-auto p-0 z-[100]" align="center" sideOffset={5}>
                             <Calendar
                                 mode="single"
                                 selected={filters.startDate ? new Date(new Date(filters.startDate).getTime() + new Date(filters.startDate).getTimezoneOffset() * 60000) : undefined}
@@ -324,7 +324,7 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                             <Button
                                 variant={"outline"}
                                 className={cn(
-                                    "w-[130px] h-9 justify-start text-left font-normal",
+                                    "w-[130px] h-10 justify-start text-left font-normal touch-manipulation",
                                     !filters.endDate && "text-muted-foreground"
                                 )}
                             >
@@ -336,7 +336,7 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                                 )}
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className="w-auto p-0 z-[100]" align="center" sideOffset={5}>
                             <Calendar
                                 mode="single"
                                 selected={filters.endDate ? new Date(new Date(filters.endDate).getTime() + new Date(filters.endDate).getTimezoneOffset() * 60000) : undefined}
