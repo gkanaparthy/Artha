@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { safeDecrypt } from '@/lib/encryption';
 
 export async function GET() {
     try {
@@ -27,9 +28,15 @@ export async function GET() {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
+        // Decrypt account numbers before sending to frontend
+        const decryptedAccounts = user.brokerAccounts.map(account => ({
+            ...account,
+            accountNumber: account.accountNumber ? safeDecrypt(account.accountNumber) : null,
+        }));
+
         return NextResponse.json({
             ...user,
-            accounts: user.brokerAccounts
+            accounts: decryptedAccounts
         });
 
     } catch (error: unknown) {
