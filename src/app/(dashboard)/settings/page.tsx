@@ -81,6 +81,29 @@ export default function SettingsPage() {
     }
   }, [status]);
 
+  // Check for callback parameters (broker connection result)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+
+      if (params.get('broker_connected') === 'true') {
+        alert('✅ Broker connected successfully! Your trades are being synced.');
+        // Clean up URL
+        window.history.replaceState({}, '', '/settings');
+        // Refresh data to show new account
+        fetchUserData();
+      } else if (params.get('broker_error')) {
+        const error = params.get('broker_error');
+        alert(`❌ Failed to connect broker: ${error}\n\nPlease try again or contact support.`);
+        window.history.replaceState({}, '', '/settings');
+      } else if (params.get('error')) {
+        const error = params.get('error');
+        alert(`❌ Error: ${error}`);
+        window.history.replaceState({}, '', '/settings');
+      }
+    }
+  }, []);
+
   const handleConnectBroker = async () => {
     try {
       setConnecting(true);
@@ -101,12 +124,17 @@ export default function SettingsPage() {
       const registerData = await registerRes.json();
       console.log('[ConnectBroker] Registration successful:', registerData);
 
-      // Get connection link
+      // Get connection link with callback URL
       console.log('[ConnectBroker] Step 2: Getting connection link');
+
+      // Build the callback URL - SnapTrade will redirect here after OAuth
+      const callbackUrl = `${window.location.origin}/api/auth/snaptrade/callback`;
+      console.log('[ConnectBroker] Callback URL:', callbackUrl);
+
       const loginRes = await fetch("/api/auth/snaptrade/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ redirectUri: callbackUrl }),
       });
 
       if (!loginRes.ok) {
