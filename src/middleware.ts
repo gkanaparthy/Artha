@@ -6,15 +6,16 @@ export default auth((req) => {
   const isLoginPage = req.nextUrl.pathname === "/login";
   const isLandingPage = req.nextUrl.pathname === "/";
   const isAuthCallback = req.nextUrl.pathname.startsWith("/api/auth");
+  const isDebugApi = req.nextUrl.pathname.startsWith("/api/debug");
   const isPublicApi = req.nextUrl.pathname === "/api/health";
   const isCronApi = req.nextUrl.pathname.startsWith("/api/cron");
   const isPublicPage = req.nextUrl.pathname.startsWith("/privacy") ||
-                       req.nextUrl.pathname.startsWith("/terms") ||
-                       req.nextUrl.pathname.startsWith("/contact");
+    req.nextUrl.pathname.startsWith("/terms") ||
+    req.nextUrl.pathname.startsWith("/contact");
   const isDemoPage = req.nextUrl.pathname.startsWith("/demo");
 
-  // Allow auth callbacks, cron jobs, demo pages, and public APIs
-  if (isAuthCallback || isPublicApi || isCronApi || isPublicPage || isDemoPage) {
+  // Allow auth callbacks, cron jobs, demo pages, debug APIs, and public APIs
+  if (isAuthCallback || isPublicApi || isCronApi || isPublicPage || isDemoPage || isDebugApi) {
     return NextResponse.next();
   }
 
