@@ -60,10 +60,16 @@ export async function sendVerificationRequest({
     const from = provider.from || process.env.RESEND_FROM_EMAIL || "Artha <login@arthatrades.com>";
     const normalizedEmail = email.toLowerCase().trim();
 
+    // Check if API key exists
+    if (!process.env.RESEND_API_KEY) {
+        console.error('[Auth] RESEND_API_KEY is not set in environment variables');
+        throw new Error('Email service configuration error. Please contact support.');
+    }
+
     // Rate limiting check
     const rateCheck = checkRateLimit(normalizedEmail);
     if (!rateCheck.allowed) {
-        console.warn(`[Security] Rate limit exceeded for email: ${normalizedEmail.substring(0, 3)}***`);
+        console.error(`[Security] Rate limit exceeded for email: ${normalizedEmail.substring(0, 3)}***`);
         // Don't reveal rate limiting to prevent enumeration - just silently succeed
         // The user won't get an email but won't know why
         return;
@@ -73,6 +79,8 @@ export async function sendVerificationRequest({
     const maskedEmail = normalizedEmail.replace(/(.{2})(.*)(@.*)/, '$1***$3');
     const ipAddress = request?.headers?.get('x-forwarded-for') || 'unknown';
     console.log(`[Auth] Magic link requested for ${maskedEmail} from IP: ${ipAddress}`);
+    console.log(`[Auth] Sending from: ${from}`);
+    console.log(`[Auth] API key available: ${!!process.env.RESEND_API_KEY}`);
 
     try {
         await resend.emails.send({
