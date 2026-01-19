@@ -7,14 +7,21 @@ export async function POST() {
         const session = await auth();
 
         if (!session?.user?.id) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            console.error('[SnapTrade Register] No session or user ID');
+            return NextResponse.json({ error: 'Unauthorized - please sign in' }, { status: 401 });
         }
 
+        console.log('[SnapTrade Register] Registering user:', session.user.id);
         const result = await snapTradeService.registerUser(session.user.id);
+        console.log('[SnapTrade Register] Success:', result.userId);
         return NextResponse.json(result);
     } catch (error: unknown) {
-        console.error('Register error:', error);
+        console.error('[SnapTrade Register] Error:', error);
         const message = error instanceof Error ? error.message : 'Unknown error';
-        return NextResponse.json({ error: message }, { status: 500 });
+        const stack = error instanceof Error ? error.stack : undefined;
+        console.error('[SnapTrade Register] Error details:', { message, stack });
+        return NextResponse.json({
+            error: `Registration failed: ${message}. Please try again or contact support.`
+        }, { status: 500 });
     }
 }

@@ -86,16 +86,23 @@ export default function SettingsPage() {
       setConnecting(true);
 
       // Register user with SnapTrade
+      console.log('[ConnectBroker] Step 1: Registering user with SnapTrade');
       const registerRes = await fetch("/api/auth/snaptrade/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
 
       if (!registerRes.ok) {
-        throw new Error("Failed to register user");
+        const errorData = await registerRes.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('[ConnectBroker] Registration failed:', registerRes.status, errorData);
+        throw new Error(`Registration failed: ${errorData.error || registerRes.statusText}`);
       }
 
+      const registerData = await registerRes.json();
+      console.log('[ConnectBroker] Registration successful:', registerData);
+
       // Get connection link
+      console.log('[ConnectBroker] Step 2: Getting connection link');
       const loginRes = await fetch("/api/auth/snaptrade/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -103,14 +110,24 @@ export default function SettingsPage() {
       });
 
       if (!loginRes.ok) {
-        throw new Error("Failed to get connection link");
+        const errorData = await loginRes.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('[ConnectBroker] Login link failed:', loginRes.status, errorData);
+        throw new Error(`Failed to get connection link: ${errorData.error || loginRes.statusText}`);
       }
 
-      const { redirectURI } = await loginRes.json();
+      const loginData = await loginRes.json();
+      console.log('[ConnectBroker] Got connection link, redirecting...');
+
+      const { redirectURI } = loginData;
+      if (!redirectURI) {
+        throw new Error('No redirect URI received from server');
+      }
+
       window.location.href = redirectURI;
     } catch (e) {
-      console.error(e);
-      alert("Failed to connect broker. Please try again.");
+      console.error('[ConnectBroker] Error:', e);
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error occurred';
+      alert(`Failed to connect broker: ${errorMessage}\n\nPlease try again or contact support if the issue persists.`);
     } finally {
       setConnecting(false);
     }
