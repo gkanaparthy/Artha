@@ -10,6 +10,12 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        // Admin-only debug endpoint
+        const adminEmail = process.env.ADMIN_EMAIL;
+        if (!adminEmail || session.user.email !== adminEmail) {
+            return NextResponse.json({ error: 'Forbidden - Admin only' }, { status: 403 });
+        }
+
         const userId = session.user.id;
 
         // Get all broker accounts with trade counts

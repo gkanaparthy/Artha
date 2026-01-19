@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
 
 /**
  * Data Health Check Endpoint
@@ -34,6 +35,17 @@ interface UserIssue {
 
 export async function GET() {
     try {
+        // Verify admin access
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const adminEmail = process.env.ADMIN_EMAIL;
+        if (!adminEmail || session.user.email !== adminEmail) {
+            return NextResponse.json({ error: 'Forbidden - Admin only' }, { status: 403 });
+        }
+
         // Get all users with trades
         const users = await prisma.user.findMany({
             where: {

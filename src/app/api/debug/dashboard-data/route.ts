@@ -14,6 +14,12 @@ export async function GET() {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
         }
 
+        // Admin-only debug endpoint
+        const adminEmail = process.env.ADMIN_EMAIL;
+        if (!adminEmail || session.user.email !== adminEmail) {
+            return NextResponse.json({ error: 'Forbidden - Admin only' }, { status: 403 });
+        }
+
         const userId = session.user.id;
 
         // Check broker accounts

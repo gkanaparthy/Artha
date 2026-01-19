@@ -16,6 +16,12 @@ export async function POST() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Verify admin access for this destructive operation
+        const adminEmail = process.env.ADMIN_EMAIL;
+        if (!adminEmail || session.user.email !== adminEmail) {
+            return NextResponse.json({ error: 'Forbidden - Admin only' }, { status: 403 });
+        }
+
         // Get all trades for this user
         const trades = await prisma.trade.findMany({
             where: {

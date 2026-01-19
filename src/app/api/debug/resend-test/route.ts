@@ -1,8 +1,20 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { auth } from '@/lib/auth';
 
 export async function GET() {
     try {
+        // Admin-only debug endpoint
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const adminEmail = process.env.ADMIN_EMAIL;
+        if (!adminEmail || session.user.email !== adminEmail) {
+            return NextResponse.json({ error: 'Forbidden - Admin only' }, { status: 403 });
+        }
+
         // Check if env vars are available
         const apiKey = process.env.RESEND_API_KEY;
         const fromEmail = process.env.RESEND_FROM_EMAIL;
