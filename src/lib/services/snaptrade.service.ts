@@ -12,7 +12,11 @@ export class SnapTradeService {
             where: { id: localUserId },
         });
 
-        if (!user) throw new Error('Local user not found');
+        if (!user) {
+            // User session exists but user record doesn't - likely stale session from before DB migration/wipeout
+            console.error('[SnapTrade] User ID not found in database:', localUserId);
+            throw new Error('Your session is outdated. Please sign out and sign back in to continue.');
+        }
 
         if (user.snapTradeUserId && user.snapTradeUserSecret) {
             return {
@@ -54,8 +58,13 @@ export class SnapTradeService {
             where: { id: localUserId },
         });
 
+        if (!user) {
+            // User session exists but user record doesn't - likely stale session from before DB migration/wipeout
+            console.error('[SnapTrade] User ID not found in database:', localUserId);
+            throw new Error('Your session is outdated. Please sign out and sign back in to continue.');
+        }
+
         if (
-            !user ||
             !user.snapTradeUserId ||
             !user.snapTradeUserSecret
         ) {
