@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { snapTradeService } from '@/lib/services/snaptrade.service';
 import { auth } from '@/lib/auth';
+import { applyRateLimit } from '@/lib/ratelimit';
 
 /**
  * Fast broker connection sync - waits up to 20 seconds for sync to complete.
@@ -26,8 +27,12 @@ function timeout<T>(promise: Promise<T>, ms: number, timeoutResult: T): Promise<
     ]);
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
     try {
+        // Rate limit: 5 requests per minute for sync (expensive operation)
+        const rateLimitResponse = await applyRateLimit(request, 'sync');
+        if (rateLimitResponse) return rateLimitResponse;
+
         const session = await auth();
 
         if (!session?.user?.id) {

@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { snapTradeService } from '@/lib/services/snaptrade.service';
 import { auth } from '@/lib/auth';
+import { applyRateLimit } from '@/lib/ratelimit';
 
 /**
  * Helper that rejects after `ms` milliseconds.
@@ -23,8 +24,12 @@ function timeout<T>(promise: Promise<T>, ms: number, context: string): Promise<T
         });
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
     try {
+        // Rate limit: 5 requests per minute for sync (expensive operation)
+        const rateLimitResponse = await applyRateLimit(request, 'sync');
+        if (rateLimitResponse) return rateLimitResponse;
+
         const session = await auth();
 
         if (!session?.user?.id) {

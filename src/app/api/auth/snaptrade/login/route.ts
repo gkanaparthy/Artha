@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { snapTradeService } from '@/lib/services/snaptrade.service';
 import { auth } from '@/lib/auth';
+import { applyRateLimit } from '@/lib/ratelimit';
 
 export async function POST(req: NextRequest) {
     try {
+        // Rate limit: 10 requests per minute for auth endpoints
+        const rateLimitResponse = await applyRateLimit(req, 'auth');
+        if (rateLimitResponse) return rateLimitResponse;
+
         const session = await auth();
 
         if (!session?.user?.id) {
