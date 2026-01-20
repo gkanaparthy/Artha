@@ -58,8 +58,8 @@ export async function GET(req: Request) {
 
 export async function DELETE(req: NextRequest) {
     try {
-        // Rate limit: 5 requests per minute for delete operations
-        const rateLimitResponse = await applyRateLimit(req, 'sync');
+        // Rate limit: 30 requests per minute for single trade deletions
+        const rateLimitResponse = await applyRateLimit(req, 'delete');
         if (rateLimitResponse) return rateLimitResponse;
 
         const session = await auth();

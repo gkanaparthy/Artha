@@ -6,8 +6,8 @@ import { applyRateLimit } from "@/lib/ratelimit";
 // DELETE /api/trades/cleanup - Deletes all trades for the current user
 export async function DELETE(request: NextRequest) {
     try {
-        // Rate limit: 5 requests per minute for destructive operations
-        const rateLimitResponse = await applyRateLimit(request, 'sync');
+        // Rate limit: 5 requests per minute for destructive bulk operations
+        const rateLimitResponse = await applyRateLimit(request, 'destructive');
         if (rateLimitResponse) return rateLimitResponse;
 
         const session = await auth();
