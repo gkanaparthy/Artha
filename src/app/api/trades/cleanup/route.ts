@@ -1,10 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { applyRateLimit } from "@/lib/ratelimit";
 
-// DELETE /api/trades - Deletes all trades for the current user
-export async function DELETE() {
+// DELETE /api/trades/cleanup - Deletes all trades for the current user
+export async function DELETE(request: NextRequest) {
     try {
+        // Rate limit: 5 requests per minute for destructive operations
+        const rateLimitResponse = await applyRateLimit(request, 'sync');
+        if (rateLimitResponse) return rateLimitResponse;
+
         const session = await auth();
         if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

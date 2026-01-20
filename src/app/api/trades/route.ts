@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { applyRateLimit } from '@/lib/ratelimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,8 +56,12 @@ export async function GET(req: Request) {
 }
 
 
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest) {
     try {
+        // Rate limit: 5 requests per minute for delete operations
+        const rateLimitResponse = await applyRateLimit(req, 'sync');
+        if (rateLimitResponse) return rateLimitResponse;
+
         const session = await auth();
         if (!session?.user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
