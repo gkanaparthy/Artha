@@ -77,68 +77,82 @@ export async function GET(request: NextRequest) {
 
         console.log(`[CheckConnections] User ${user.email}: ${authList.length} connections`);
 
+        // Track local accounts that were matched to active SnapTrade authorizations
+        const matchedLocalAccountIds = new Set<string>();
+
         for (const auth of authList) {
           const isDisabled = auth.disabled === true;
           const brokerName = auth.brokerage?.name || 'Unknown';
 
           // Find matching local account
-          // First try by authorizationId (for accounts that have been checked before)
+          // First try by authorizationId
           let localAccount = user.brokerAccounts.find(
             acc => acc.authorizationId === auth.id
           );
 
-          // If not found by authorizationId, try to find by matching snapTradeAccountId
-          // SnapTrade authorizations don't directly expose account IDs in a way we can match,
-          // so we need to match based on broker name and creation timing
-          // For the initial population, we'll match the first unmatched account from this broker
+          // Fallback to broker name matching for initial population (Phase 1 legacy)
           if (!localAccount) {
-            // Find an account from this broker that doesn't have an authorizationId yet
             localAccount = user.brokerAccounts.find(
-              acc => !acc.authorizationId && acc.brokerName === brokerName
+              acc => !acc.authorizationId &&
+                acc.brokerName === brokerName &&
+                !matchedLocalAccountIds.has(acc.id)
             );
 
             if (localAccount) {
-              console.log(`[CheckConnections] Matched account ${localAccount.id} to authorization ${auth.id} by broker name`);
-            } else {
-              console.log(`[CheckConnections] No local account found for authorization ${auth.id} (${brokerName}), skipping`);
-              continue;
+              console.log(`[CheckConnections] Matched account ${localAccount.id} to auth ${auth.id} by broker name`);
             }
           }
 
-          // Check if status changed
-          const wasDisabled = localAccount.disabled;
-          const statusChanged = wasDisabled !== isDisabled;
+          if (localAccount) {
+            matchedLocalAccountIds.add(localAccount.id);
 
-          if (statusChanged) {
+            // Check if status changed
+            const wasDisabled = localAccount.disabled;
+            const statusChanged = wasDisabled !== isDisabled;
+
+            if (statusChanged) {
+              if (isDisabled) newlyDisabled++;
+              else newlyEnabled++;
+            }
+
             if (isDisabled) {
-              newlyDisabled++;
-              console.warn(
-                `[CheckConnections] Connection disabled: ${brokerName} for user ${user.email}`
-              );
-            } else {
-              newlyEnabled++;
-              console.log(
-                `[CheckConnections] Connection restored: ${brokerName} for user ${user.email}`
-              );
+              disabledAccounts++;
             }
-          }
 
-          if (isDisabled) {
-            disabledAccounts++;
+            // Update local account status
+            await prisma.brokerAccount.update({
+              where: { id: localAccount.id },
+              data: {
+                disabled: isDisabled,
+                disabledAt: isDisabled ? (wasDisabled ? localAccount.disabledAt : new Date()) : null,
+                disabledReason: isDisabled ? 'Connection broken - requires re-authentication' : null,
+                lastCheckedAt: new Date(),
+                authorizationId: auth.id,
+                brokerName: brokerName
+              }
+            });
           }
+        }
 
-          // Update local account status
+        // Handle accounts that were NOT in the SnapTrade list but have an authorizationId
+        // This means the authorization was likely deleted in SnapTrade
+        const missingAccounts = user.brokerAccounts.filter(
+          acc => acc.authorizationId && !matchedLocalAccountIds.has(acc.id) && !acc.disabled
+        );
+
+        for (const acc of missingAccounts) {
+          console.warn(`[CheckConnections] Account ${acc.id} (${acc.brokerName}) missing from SnapTrade, marking as disabled`);
           await prisma.brokerAccount.update({
-            where: { id: localAccount.id },
+            where: { id: acc.id },
             data: {
-              disabled: isDisabled,
-              disabledAt: isDisabled ? (wasDisabled ? localAccount.disabledAt : new Date()) : null,
-              disabledReason: isDisabled ? 'Connection broken - requires re-authentication' : null,
-              lastCheckedAt: new Date(),
-              authorizationId: auth.id, // Ensure we have the authorization ID
-              brokerName: brokerName // Update broker name in case it changed
+              disabled: true,
+              disabledAt: new Date(),
+              disabledReason: 'Connection removed or missing from provider',
+              lastCheckedAt: new Date()
             }
           });
+          newlyDisabled++;
+          disabledAccounts++;
         }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Unknown error';
