@@ -62,9 +62,13 @@ export async function GET(request: NextRequest) {
           continue;
         }
 
-        // Fetch brokerage authorizations from SnapTrade
+        if (!user.snapTradeUserId) {
+          console.warn(`[CheckConnections] User ${user.id} has no snapTradeUserId`);
+          continue;
+        }
+
         const authorizations = await snapTrade.connections.listBrokerageAuthorizations({
-          userId: user.snapTradeUserId!,
+          userId: user.snapTradeUserId,
           userSecret: decryptedSecret
         });
 

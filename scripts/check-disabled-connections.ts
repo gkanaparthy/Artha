@@ -43,6 +43,11 @@ async function checkDisabledConnections() {
         continue;
       }
 
+      if (!user.snapTradeUserId) {
+        console.log('  ⚠️  No SnapTrade User ID available, skipping\n');
+        continue;
+      }
+
       const decryptedSecret = safeDecrypt(user.snapTradeUserSecret);
       if (!decryptedSecret) {
         console.log('  ⚠️  Failed to decrypt secret, skipping\n');

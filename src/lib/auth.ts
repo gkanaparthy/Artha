@@ -5,7 +5,7 @@ import Resend from "next-auth/providers/resend";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
 import { sendVerificationRequest } from "./email";
-import { encrypt } from "./encryption";
+
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma) as ReturnType<typeof PrismaAdapter>,
@@ -58,6 +58,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     // Encrypt OAuth tokens before storing in database
     async linkAccount(message) {
       const accountId = message.account.id as string;
+
+      const { encrypt } = await import("./encryption");
 
       // Encrypt sensitive OAuth tokens
       const encryptedData: Record<string, string> = {};
