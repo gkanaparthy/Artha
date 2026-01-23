@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Loader2,
   Link2,
@@ -24,6 +25,8 @@ import {
   CheckCircle2,
   Moon,
   Sun,
+  AlertCircle,
+  Trash2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
@@ -34,6 +37,9 @@ interface Account {
   brokerName: string | null;
   snapTradeAccountId: string;
   createdAt: string;
+  disabled: boolean;
+  disabledAt: string | null;
+  disabledReason: string | null;
   _count: {
     trades: number;
   };
@@ -239,6 +245,10 @@ export default function SettingsPage() {
     );
   }
 
+  // Check if there are any disabled connections
+  const hasDisabledConnections = userData?.accounts.some(acc => acc.disabled) || false;
+  const disabledCount = userData?.accounts.filter(acc => acc.disabled).length || 0;
+
   return (
     <PageTransition>
       <div className="space-y-6 sm:space-y-8">
@@ -257,6 +267,26 @@ export default function SettingsPage() {
             <p className="text-sm sm:text-base text-muted-foreground">Manage your account and broker connections</p>
           </div>
         </motion.div>
+
+        {/* Warning Banner for Disabled Connections */}
+        {hasDisabledConnections && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Connection Issue Detected</AlertTitle>
+              <AlertDescription>
+                {disabledCount === 1
+                  ? 'One broker connection is disconnected.'
+                  : `${disabledCount} broker connections are disconnected.`}{' '}
+                Your trades may not be syncing. Please reconnect your {disabledCount === 1 ? 'account' : 'accounts'} below to continue receiving updates.
+              </AlertDescription>
+            </Alert>
+          </motion.div>
+        )}
 
         {/* User Info */}
         <AnimatedCard delay={0.1}>
@@ -412,18 +442,36 @@ export default function SettingsPage() {
                         <Badge variant="secondary" className="bg-muted/50 text-xs">
                           {account._count.trades} trades
                         </Badge>
-                        <Badge variant="outline" className="text-green-500 border-green-500/50 bg-green-500/10 text-xs">
-                          <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse" />
-                          Connected
-                        </Badge>
+                        {account.disabled ? (
+                          <Badge variant="outline" className="text-red-500 border-red-500/50 bg-red-500/10 text-xs">
+                            <AlertCircle className="h-3 w-3 mr-1.5" />
+                            Disconnected
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-green-500 border-green-500/50 bg-green-500/10 text-xs">
+                            <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse" />
+                            Connected
+                          </Badge>
+                        )}
+                        {account.disabled ? (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => alert('Reconnect feature coming soon! For now, please disconnect and reconnect manually.')}
+                            className="bg-blue-500 hover:bg-blue-600 text-white h-8 text-xs"
+                          >
+                            <RefreshCw className="h-3 w-3 mr-1.5" />
+                            Reconnect
+                          </Button>
+                        ) : null}
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDisconnect(account.id)}
                           className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                          title="Disconnect Broker"
+                          title={account.disabled ? "Delete Connection" : "Disconnect Broker"}
                         >
-                          <Unlink className="h-4 w-4" />
+                          {account.disabled ? <Trash2 className="h-4 w-4" /> : <Unlink className="h-4 w-4" />}
                         </Button>
                       </div>
                     </motion.div>

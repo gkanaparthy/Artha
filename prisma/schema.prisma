@@ -62,17 +62,27 @@ model VerificationToken {
 }
 
 model BrokerAccount {
-  id                 String   @id @default(cuid())
+  id                 String    @id @default(cuid())
   userId             String
   brokerName         String?
-  snapTradeAccountId String   @unique
+  snapTradeAccountId String    @unique
   accountNumber      String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
   meta               String?
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Connection status fields
+  disabled           Boolean   @default(false)
+  disabledAt         DateTime?
+  disabledReason     String?
+  lastSyncedAt       DateTime?
+  lastCheckedAt      DateTime?
+  authorizationId    String?
+
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   trades             Trade[]
 
+  @@index([userId, disabled])
   @@map("broker_accounts")
 }
 

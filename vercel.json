@@ -26,6 +26,10 @@
     {
       "path": "/api/cron/data-quality",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/check-connections",
+      "schedule": "0 */6 * * *"
     }
   ],
   "headers": [

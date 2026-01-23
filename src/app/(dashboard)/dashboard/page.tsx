@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PositionsTable } from "@/components/positions-table";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
     RefreshCw,
     TrendingUp,
@@ -13,8 +14,10 @@ import {
     Activity,
     LayoutDashboard,
     Wallet,
+    AlertCircle,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
 import { cn } from "@/lib/utils";
@@ -110,6 +113,7 @@ function MetricCard({
 
 export default function DashboardPage() {
     const { filters } = useFilters();
+    const router = useRouter();
     const [syncing, setSyncing] = useState(false);
     const [metrics, setMetrics] = useState<Metrics>({
         netPnL: 0,
@@ -130,6 +134,7 @@ export default function DashboardPage() {
     const [refreshKey, setRefreshKey] = useState(0);
     const [livePositions, setLivePositions] = useState<LivePositionsData | null>(null);
     const [liveLoading, setLiveLoading] = useState(false);
+    const [hasDisabledConnections, setHasDisabledConnections] = useState(false);
 
     // Fetch metrics whenever ANY filter changes
     const fetchMetrics = useCallback(async () => {
@@ -162,6 +167,20 @@ export default function DashboardPage() {
             console.error('Failed to fetch live positions:', e);
         } finally {
             setLiveLoading(false);
+        }
+    }, []);
+
+    // Check for disabled broker connections
+    const checkDisabledConnections = useCallback(async () => {
+        try {
+            const res = await fetch('/api/user');
+            if (res.ok) {
+                const data = await res.json();
+                const hasDisabled = data.accounts?.some((acc: { disabled: boolean }) => acc.disabled) || false;
+                setHasDisabledConnections(hasDisabled);
+            }
+        } catch (e) {
+            console.error('Failed to check connection status:', e);
         }
     }, []);
 
@@ -232,8 +251,8 @@ export default function DashboardPage() {
 
     // Refetch when filters change - parallel fetches for better performance
     useEffect(() => {
-        Promise.all([fetchMetrics(), fetchLivePositions()]);
-    }, [fetchMetrics, fetchLivePositions]);
+        Promise.all([fetchMetrics(), fetchLivePositions(), checkDisabledConnections()]);
+    }, [fetchMetrics, fetchLivePositions, checkDisabledConnections]);
 
     const formatCurrency = (value: number, showSign = false) => {
         const formatted = Math.abs(value).toLocaleString("en-US", {
@@ -286,6 +305,33 @@ export default function DashboardPage() {
                         {syncing ? "Syncing..." : "Sync Trades"}
                     </Button>
                 </motion.div>
+
+                {/* Warning Banner for Disabled Connections */}
+                {hasDisabledConnections && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Action Required</AlertTitle>
+                            <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                <span>
+                                    Your broker connection is disconnected. Trades are not syncing.
+                                </span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => router.push('/settings')}
+                                    className="shrink-0 border-white/20 hover:bg-white/10"
+                                >
+                                    Fix Now
+                                </Button>
+                            </AlertDescription>
+                        </Alert>
+                    </motion.div>
+                )}
 
                 {/* Metrics Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
