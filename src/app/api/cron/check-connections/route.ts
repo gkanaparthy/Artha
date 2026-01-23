@@ -78,17 +78,27 @@ export async function GET(request: NextRequest) {
           const brokerName = auth.brokerage?.name || 'Unknown';
 
           // Find matching local account
-          const localAccount = user.brokerAccounts.find(
+          // First try by authorizationId (for accounts that have been checked before)
+          let localAccount = user.brokerAccounts.find(
             acc => acc.authorizationId === auth.id
           );
 
-          // If not found by authorizationId, try to match by snapTradeAccountId
-          // This handles accounts created before authorizationId tracking
+          // If not found by authorizationId, try to find by matching snapTradeAccountId
+          // SnapTrade authorizations don't directly expose account IDs in a way we can match,
+          // so we need to match based on broker name and creation timing
+          // For the initial population, we'll match the first unmatched account from this broker
           if (!localAccount) {
-            // SnapTrade authorizations might reference multiple accounts
-            // For now, we'll create/update based on what we find
-            console.log(`[CheckConnections] No local account found for authorization ${auth.id}, skipping`);
-            continue;
+            // Find an account from this broker that doesn't have an authorizationId yet
+            localAccount = user.brokerAccounts.find(
+              acc => !acc.authorizationId && acc.brokerName === brokerName
+            );
+
+            if (localAccount) {
+              console.log(`[CheckConnections] Matched account ${localAccount.id} to authorization ${auth.id} by broker name`);
+            } else {
+              console.log(`[CheckConnections] No local account found for authorization ${auth.id} (${brokerName}), skipping`);
+              continue;
+            }
           }
 
           // Check if status changed
