@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +60,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [reconnecting, setReconnecting] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -93,18 +95,32 @@ export default function SettingsPage() {
       const params = new URLSearchParams(window.location.search);
 
       if (params.get('broker_connected') === 'true') {
-        alert('✅ Broker connected successfully! Your trades are being synced.');
+        toast.success('Broker connected successfully!', {
+          description: 'Your trades are being synced.'
+        });
         // Clean up URL
         window.history.replaceState({}, '', '/settings');
         // Refresh data to show new account
         fetchUserData();
+      } else if (params.get('broker_reconnected') === 'true') {
+        toast.success('Connection restored!', {
+          description: 'Your broker is reconnected and trades are syncing again.'
+        });
+        // Clean up URL
+        window.history.replaceState({}, '', '/settings');
+        // Refresh data to show updated account
+        fetchUserData();
       } else if (params.get('broker_error')) {
         const error = params.get('broker_error');
-        alert(`❌ Failed to connect broker: ${error}\n\nPlease try again or contact support.`);
+        toast.error('Failed to connect broker', {
+          description: error || 'Please try again or contact support.'
+        });
         window.history.replaceState({}, '', '/settings');
       } else if (params.get('error')) {
         const error = params.get('error');
-        alert(`❌ Error: ${error}`);
+        toast.error('Error', {
+          description: error || 'An unknown error occurred'
+        });
         window.history.replaceState({}, '', '/settings');
       }
     }
@@ -186,6 +202,54 @@ export default function SettingsPage() {
     } catch (e) {
       console.error(e);
       alert("Failed to disconnect broker. Please try again.");
+    }
+  };
+
+  const handleReconnect = async (accountId: string, brokerName: string) => {
+    try {
+      setReconnecting(accountId);
+
+      toast.loading(`Generating reconnection link for ${brokerName}...`, {
+        id: `reconnect-${accountId}`
+      });
+
+      const res = await fetch('/api/accounts/reconnect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountId })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        toast.error(data.error || 'Failed to generate reconnection link', {
+          id: `reconnect-${accountId}`,
+          description: data.details || 'Please try again or contact support.'
+        });
+        return;
+      }
+
+      // Show success message
+      toast.success('Redirecting to broker login...', {
+        id: `reconnect-${accountId}`,
+        description: `Log in to the SAME ${brokerName} account to preserve your trade history.`,
+        duration: 3000
+      });
+
+      // Redirect to SnapTrade OAuth flow
+      setTimeout(() => {
+        window.location.href = data.redirectURI;
+      }, 1000);
+
+    } catch (error) {
+      console.error('[Reconnect] Error:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      toast.error('Failed to reconnect', {
+        id: `reconnect-${accountId}`,
+        description: message
+      });
+    } finally {
+      setReconnecting(null);
     }
   };
 
@@ -457,10 +521,15 @@ export default function SettingsPage() {
                           <Button
                             variant="default"
                             size="sm"
-                            onClick={() => alert('Reconnect feature coming soon! For now, please disconnect and reconnect manually.')}
+                            onClick={() => handleReconnect(account.id, account.brokerName || 'Unknown')}
+                            disabled={reconnecting === account.id}
                             className="bg-blue-500 hover:bg-blue-600 text-white h-8 text-xs"
                           >
-                            <RefreshCw className="h-3 w-3 mr-1.5" />
+                            {reconnecting === account.id ? (
+                              <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-3 w-3 mr-1.5" />
+                            )}
                             Reconnect
                           </Button>
                         ) : null}

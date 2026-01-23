@@ -126,15 +126,30 @@ export class SnapTradeService {
 
         // 1. Get Accounts (to ensure we have them all)
         console.log('[SnapTrade Sync] Fetching accounts for user:', snapTradeUserId);
-        const accounts = await snapTrade.accountInformation.listUserAccounts({
-            userId: snapTradeUserId,
-            userSecret: snapTradeUserSecret,
-        });
-        console.log('[SnapTrade Sync] Found', accounts.data?.length || 0, 'accounts');
+
+        // Fetch both accounts and authorizations to link the authorizationId
+        const [accounts, authorizations] = await Promise.all([
+            snapTrade.accountInformation.listUserAccounts({
+                userId: snapTradeUserId,
+                userSecret: snapTradeUserSecret,
+            }),
+            snapTrade.connections.listBrokerageAuthorizations({
+                userId: snapTradeUserId,
+                userSecret: snapTradeUserSecret,
+            })
+        ]);
+
+        console.log('[SnapTrade Sync] Found', accounts.data?.length || 0, 'accounts and', authorizations.data?.length || 0, 'authorizations');
 
         // Update/Create Accounts in DB
         for (const acc of accounts.data || []) {
             console.log('[SnapTrade Sync] Account:', acc.id, acc.institution_name, 'Number:', acc.number);
+
+            // Find matching authorizationId for this account
+            // We match by the institution name from the auth object
+            const matchingAuth = (authorizations.data || []).find(
+                a => a.brokerage?.name === acc.institution_name
+            );
 
             // Encrypt account number (PII) before storing
             const encryptedAccountNumber = acc.number ? encrypt(acc.number) : null;
@@ -144,12 +159,21 @@ export class SnapTradeService {
                 update: {
                     brokerName: acc.institution_name,
                     accountNumber: encryptedAccountNumber,
+                    // Clear disabled status on successful sync (handles reconnect case)
+                    disabled: false,
+                    disabledAt: null,
+                    disabledReason: null,
+                    lastCheckedAt: new Date(),
+                    lastSyncedAt: new Date(),
+                    authorizationId: matchingAuth?.id || undefined, // Populate if found
                 },
                 create: {
                     userId: localUserId,
                     snapTradeAccountId: acc.id,
                     brokerName: acc.institution_name,
                     accountNumber: encryptedAccountNumber,
+                    lastSyncedAt: new Date(),
+                    authorizationId: matchingAuth?.id || null,
                 },
             });
         }

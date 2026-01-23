@@ -89,6 +89,9 @@ importers:
       snaptrade-typescript-sdk:
         specifier: ^9.0.158
         version: 9.0.158
+      sonner:
+        specifier: ^2.0.7
+        version: 2.0.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
@@ -2815,6 +2818,12 @@ packages:
   snaptrade-typescript-sdk@9.0.158:
     resolution: {integrity: sha512-fWn/uuQoE8Y/8IYeOxksCHICMJKuuFwXQ37orQAQz0+72nANsyaOuEOy84DZVymXeoPUQUmmTNgizZvlfDMSHA==}
     engines: {node: '>=10'}
+
+  sonner@2.0.7:
+    resolution: {integrity: sha512-W6ZN4p58k8aDKA4XPcx2hpIQXBRAgyiWVkYhT7CvK6D3iAu7xjvVyhQHg2/iaKJZ1XVJ4r7XuwGL+WGEK37i9w==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+      react-dom: ^18.0.0 || ^19.0.0 || ^19.0.0-rc
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -5774,6 +5783,11 @@ snapshots:
       axios: 1.10.0
     transitivePeerDependencies:
       - debug
+
+  sonner@2.0.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
+    dependencies:
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
 
   source-map-js@1.2.1: {}
 

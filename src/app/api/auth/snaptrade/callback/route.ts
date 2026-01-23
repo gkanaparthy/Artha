@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 /**
  * SnapTrade OAuth callback handler
@@ -36,6 +37,17 @@ export async function GET(req: NextRequest) {
         if (success === 'true' && brokerageAuthorizationId) {
             console.log('[SnapTrade Callback] Broker connected successfully');
 
+            // Check if this is a reconnect (existing account with this authorizationId)
+            const existingAccount = await prisma.brokerAccount.findFirst({
+                where: {
+                    userId: session.user.id,
+                    authorizationId: brokerageAuthorizationId
+                }
+            });
+
+            const isReconnect = !!existingAccount;
+            console.log('[SnapTrade Callback] Is reconnect:', isReconnect);
+
             // Trigger an immediate sync to fetch the broker account details
             try {
                 await fetch(new URL('/api/trades/sync', req.url).toString(), {
@@ -50,8 +62,10 @@ export async function GET(req: NextRequest) {
                 // Don't fail the whole callback if sync fails
             }
 
+            // Provide different feedback for reconnect vs new connection
+            const successParam = isReconnect ? 'broker_reconnected=true' : 'broker_connected=true';
             return NextResponse.redirect(
-                new URL('/settings?broker_connected=true', req.url)
+                new URL(`/settings?${successParam}`, req.url)
             );
         }
 
