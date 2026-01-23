@@ -49,23 +49,39 @@ export async function GET(req: NextRequest) {
             console.log('[SnapTrade Callback] Is reconnect:', isReconnect);
 
             // Trigger an immediate sync to fetch the broker account details
+            let syncSucceeded = false;
             try {
-                await fetch(new URL('/api/trades/sync', req.url).toString(), {
+                const syncResponse = await fetch(new URL('/api/trades/sync', req.url).toString(), {
                     method: 'POST',
                     headers: {
                         'Cookie': req.headers.get('cookie') || '',
                     },
                 });
-                console.log('[SnapTrade Callback] Sync triggered');
+                syncSucceeded = syncResponse.ok;
+                console.log('[SnapTrade Callback] Sync triggered, success:', syncSucceeded);
             } catch (syncError) {
                 console.error('[SnapTrade Callback] Sync failed:', syncError);
-                // Don't fail the whole callback if sync fails
+                syncSucceeded = false;
             }
 
-            // Provide different feedback for reconnect vs new connection
-            const successParam = isReconnect ? 'broker_reconnected=true' : 'broker_connected=true';
+            // Provide different feedback based on reconnect status and sync result
+            let params = new URLSearchParams();
+            if (isReconnect) {
+                if (syncSucceeded) {
+                    params.set('broker_reconnected', 'true');
+                } else {
+                    params.set('broker_reconnected_sync_pending', 'true');
+                }
+            } else {
+                if (syncSucceeded) {
+                    params.set('broker_connected', 'true');
+                } else {
+                    params.set('broker_connected_sync_pending', 'true');
+                }
+            }
+
             return NextResponse.redirect(
-                new URL(`/settings?${successParam}`, req.url)
+                new URL(`/settings?${params.toString()}`, req.url)
             );
         }
 

@@ -98,17 +98,25 @@ export default function SettingsPage() {
         toast.success('Broker connected successfully!', {
           description: 'Your trades are being synced.'
         });
-        // Clean up URL
         window.history.replaceState({}, '', '/settings');
-        // Refresh data to show new account
+        fetchUserData();
+      } else if (params.get('broker_connected_sync_pending') === 'true') {
+        toast.warning('Broker connected', {
+          description: 'Initial sync is pending. Please try "Sync All" manually or wait a few minutes.'
+        });
+        window.history.replaceState({}, '', '/settings');
         fetchUserData();
       } else if (params.get('broker_reconnected') === 'true') {
         toast.success('Connection restored!', {
           description: 'Your broker is reconnected and trades are syncing again.'
         });
-        // Clean up URL
         window.history.replaceState({}, '', '/settings');
-        // Refresh data to show updated account
+        fetchUserData();
+      } else if (params.get('broker_reconnected_sync_pending') === 'true') {
+        toast.warning('Connection restored', {
+          description: 'Reconnection successful but sync is pending. Use "Sync All" to update your trades.'
+        });
+        window.history.replaceState({}, '', '/settings');
         fetchUserData();
       } else if (params.get('broker_error')) {
         const error = params.get('broker_error');
