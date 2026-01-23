@@ -142,6 +142,8 @@ export class SnapTradeService {
         console.log('[SnapTrade Sync] Found', accounts.data?.length || 0, 'accounts and', authorizations.data?.length || 0, 'authorizations');
 
         // Update/Create Accounts in DB
+        const matchedLocalAccountIds = new Set<string>();
+
         for (const acc of accounts.data || []) {
             console.log('[SnapTrade Sync] Account:', acc.id, acc.institution_name, 'Number:', acc.number);
 
@@ -151,31 +153,61 @@ export class SnapTradeService {
                 a => a.brokerage?.name === acc.institution_name
             );
 
+            // Determine disabled status from the authorization
+            const isDisabled = matchingAuth?.disabled === true;
+
             // Encrypt account number (PII) before storing
             const encryptedAccountNumber = acc.number ? encrypt(acc.number) : null;
 
-            await prisma.brokerAccount.upsert({
+            const upsertedAccount = await prisma.brokerAccount.upsert({
                 where: { snapTradeAccountId: acc.id },
                 update: {
                     brokerName: acc.institution_name,
                     accountNumber: encryptedAccountNumber,
-                    // Clear disabled status on successful sync (handles reconnect case)
-                    disabled: false,
-                    disabledAt: null,
-                    disabledReason: null,
+                    // Clear/update disabled status based on actual authorization state
+                    disabled: isDisabled,
+                    disabledAt: isDisabled ? (user.brokerAccounts.find(a => a.snapTradeAccountId === acc.id)?.disabledAt || new Date()) : null,
+                    disabledReason: isDisabled ? 'Connection broken - requires re-authentication' : null,
                     lastCheckedAt: new Date(),
                     lastSyncedAt: new Date(),
-                    authorizationId: matchingAuth?.id || undefined, // Populate if found
+                    authorizationId: matchingAuth?.id || undefined,
                 },
                 create: {
                     userId: localUserId,
                     snapTradeAccountId: acc.id,
                     brokerName: acc.institution_name,
                     accountNumber: encryptedAccountNumber,
+                    disabled: isDisabled,
+                    disabledAt: isDisabled ? new Date() : null,
+                    disabledReason: isDisabled ? 'Connection broken - requires re-authentication' : null,
+                    lastCheckedAt: new Date(),
                     lastSyncedAt: new Date(),
                     authorizationId: matchingAuth?.id || null,
                 },
             });
+
+            matchedLocalAccountIds.add(upsertedAccount.id);
+        }
+
+        // Handle accounts that were NOT in the SnapTrade list but have an authorizationId
+        // This handles cases where an authorization was deleted in SnapTrade
+        const missingAccounts = user.brokerAccounts.filter(
+            acc => acc.authorizationId && !matchedLocalAccountIds.has(acc.id) && !acc.disabled
+        );
+
+        if (missingAccounts.length > 0) {
+            console.warn(`[SnapTrade Sync] Found ${missingAccounts.length} accounts missing from SnapTrade, marking as disabled`);
+            for (const acc of missingAccounts) {
+                await prisma.brokerAccount.update({
+                    where: { id: acc.id },
+                    data: {
+                        disabled: true,
+                        disabledAt: new Date(),
+                        disabledReason: 'Connection removed or missing from provider',
+                        lastCheckedAt: new Date()
+                    }
+                });
+            }
         }
 
         // 2. Fetch Activities (Trades)

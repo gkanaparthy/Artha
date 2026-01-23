@@ -26,7 +26,7 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        console.log("[Cron Sync] Starting scheduled sync for all users...");
+        console.log("[Cron Sync] Starting scheduled sync and connection health check for all users...");
 
         // Find all users with SnapTrade credentials
         const usersWithSnapTrade = await prisma.user.findMany({
