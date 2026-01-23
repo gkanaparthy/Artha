@@ -67,41 +67,40 @@ export async function GET(request: NextRequest) {
           continue;
         }
 
-        const authorizations = await snapTrade.connections.listBrokerageAuthorizations({
-          userId: user.snapTradeUserId,
-          userSecret: decryptedSecret
-        });
+        // Fetch both accounts and authorizations to properly link them
+        const [accounts, authorizations] = await Promise.all([
+          snapTrade.accountInformation.listUserAccounts({
+            userId: user.snapTradeUserId,
+            userSecret: decryptedSecret,
+          }),
+          snapTrade.connections.listBrokerageAuthorizations({
+            userId: user.snapTradeUserId,
+            userSecret: decryptedSecret
+          })
+        ]);
 
+        const accountsList = accounts.data || [];
         const authList = authorizations.data || [];
-        totalAccounts += authList.length;
 
-        console.log(`[CheckConnections] User ${user.email}: ${authList.length} connections`);
+        console.log(`[CheckConnections] User ${user.email}: ${accountsList.length} accounts, ${authList.length} authorizations`);
 
-        // Track local accounts that were matched to active SnapTrade authorizations
+        // Track local accounts that were matched to SnapTrade accounts
         const matchedLocalAccountIds = new Set<string>();
 
-        for (const auth of authList) {
-          const isDisabled = auth.disabled === true;
-          const brokerName = auth.brokerage?.name || 'Unknown';
+        // Loop through SnapTrade accounts and match them to local accounts
+        for (const acc of accountsList) {
+          // Find the authorization for this account using brokerage_authorization field
+          const authId = (acc as any).brokerage_authorization;
+          const matchingAuth = authList.find(a => a.id === authId);
+          const isDisabled = matchingAuth?.disabled === true;
+          const brokerName = acc.institution_name || 'Unknown';
 
-          // Find matching local account
-          // First try by authorizationId
-          let localAccount = user.brokerAccounts.find(
-            acc => acc.authorizationId === auth.id
+          totalAccounts++;
+
+          // Find matching local account by snapTradeAccountId
+          const localAccount = user.brokerAccounts.find(
+            a => a.snapTradeAccountId === acc.id
           );
-
-          // Fallback to broker name matching for initial population (Phase 1 legacy)
-          if (!localAccount) {
-            localAccount = user.brokerAccounts.find(
-              acc => !acc.authorizationId &&
-                acc.brokerName === brokerName &&
-                !matchedLocalAccountIds.has(acc.id)
-            );
-
-            if (localAccount) {
-              console.log(`[CheckConnections] Matched account ${localAccount.id} to auth ${auth.id} by broker name`);
-            }
-          }
 
           if (localAccount) {
             matchedLocalAccountIds.add(localAccount.id);
@@ -111,8 +110,13 @@ export async function GET(request: NextRequest) {
             const statusChanged = wasDisabled !== isDisabled;
 
             if (statusChanged) {
-              if (isDisabled) newlyDisabled++;
-              else newlyEnabled++;
+              if (isDisabled) {
+                newlyDisabled++;
+                console.warn(`[CheckConnections] Connection disabled: ${brokerName} (${acc.number}) for ${user.email}`);
+              } else {
+                newlyEnabled++;
+                console.log(`[CheckConnections] Connection restored: ${brokerName} (${acc.number}) for ${user.email}`);
+              }
             }
 
             if (isDisabled) {
@@ -127,17 +131,19 @@ export async function GET(request: NextRequest) {
                 disabledAt: isDisabled ? (wasDisabled ? localAccount.disabledAt : new Date()) : null,
                 disabledReason: isDisabled ? 'Connection broken - requires re-authentication' : null,
                 lastCheckedAt: new Date(),
-                authorizationId: auth.id,
+                authorizationId: authId,
                 brokerName: brokerName
               }
             });
+          } else {
+            console.warn(`[CheckConnections] SnapTrade account ${acc.id} not found in local DB for user ${user.email}`);
           }
         }
 
-        // Handle accounts that were NOT in the SnapTrade list but have an authorizationId
-        // This means the authorization was likely deleted in SnapTrade
+        // Handle local accounts that were NOT in the SnapTrade accounts list
+        // This means the account was deleted from SnapTrade
         const missingAccounts = user.brokerAccounts.filter(
-          acc => acc.authorizationId && !matchedLocalAccountIds.has(acc.id) && !acc.disabled
+          acc => !matchedLocalAccountIds.has(acc.id) && !acc.disabled
         );
 
         for (const acc of missingAccounts) {

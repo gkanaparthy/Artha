@@ -145,12 +145,14 @@ export class SnapTradeService {
         const matchedLocalAccountIds = new Set<string>();
 
         for (const acc of accounts.data || []) {
-            console.log('[SnapTrade Sync] Account:', acc.id, acc.institution_name, 'Number:', acc.number);
+            const authId = (acc as any).brokerage_authorization;
+            console.log('[SnapTrade Sync] Account:', acc.id, acc.institution_name, 'Number:', acc.number, '→ Auth:', authId);
 
-            // Find matching authorizationId for this account
-            // We match by the institution name from the auth object
+            // Find matching authorization using the brokerage_authorization field
+            // This field directly links the account to its authorization
+            // Note: One authorization can have multiple accounts (e.g., 3 Schwab accounts under 1 OAuth connection)
             const matchingAuth = (authorizations.data || []).find(
-                a => a.brokerage?.name === acc.institution_name
+                a => a.id === authId
             );
 
             // Determine disabled status from the authorization
