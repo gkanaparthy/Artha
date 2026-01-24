@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Sparkles, Trash2, BookOpen } from "lucide-react";
+import { Loader2, Sparkles, Trash2, BookOpen, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { TradeDetailSheet } from "@/components/trade-detail-sheet";
 import { motion } from "framer-motion";
@@ -138,6 +138,17 @@ export default function JournalPage() {
     getValueForField: getTradeSortValue,
   });
 
+  // Check if filters are hiding trades
+  const hasActiveFilters =
+    filters.symbol ||
+    filters.startDate ||
+    filters.endDate ||
+    filters.action !== "ALL" ||
+    filters.accountId !== "all" ||
+    filters.assetType !== "all";
+
+  const isFilteringTrades = hasActiveFilters && sortedTrades.length < trades.length;
+
   return (
     <PageTransition>
       <div className="space-y-6 sm:space-y-8">
@@ -179,6 +190,26 @@ export default function JournalPage() {
             )}
           />
         </AnimatedCard>
+
+        {/* Trade Count Indicator */}
+        {!loading && isFilteringTrades && (
+          <AnimatedCard delay={0.15}>
+            <div className="glass rounded-xl p-3 sm:p-4 border border-amber-500/20 bg-amber-500/5">
+              <div className="flex items-center gap-2 text-sm">
+                <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                <span className="text-muted-foreground">
+                  Showing <span className="font-semibold text-foreground">{sortedTrades.length}</span> of{" "}
+                  <span className="font-semibold text-foreground">{trades.length}</span> trades
+                  {trades.length - sortedTrades.length > 0 && (
+                    <span className="text-amber-600 dark:text-amber-400 ml-1">
+                      ({trades.length - sortedTrades.length} hidden by filters)
+                    </span>
+                  )}
+                </span>
+              </div>
+            </div>
+          </AnimatedCard>
+        )}
 
         {/* Table Card */}
         <AnimatedCard delay={0.2}>

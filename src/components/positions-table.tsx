@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Clock, TrendingUp, TrendingDown, Trash2, Calendar, DollarSign } from "lucide-react";
+import { Loader2, Clock, TrendingUp, TrendingDown, Trash2, Calendar, DollarSign, AlertCircle } from "lucide-react";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useFilters } from "@/contexts/filter-context";
@@ -71,6 +71,17 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
         defaultDirection: "desc",
         getValueForField: getSortValue,
     });
+
+    // Check if filters are hiding positions
+    const hasFiltersApplied =
+        filters.symbol ||
+        filters.startDate ||
+        filters.endDate ||
+        filters.status !== "all" ||
+        filters.accountId !== "all" ||
+        filters.assetType !== "all";
+
+    const isFilteringPositions = hasFiltersApplied && sortedPositions.length < allPositions.length;
 
     /* 
     // Merge live positions data with open positions
@@ -407,6 +418,24 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
                     ]
                 )}
             />
+
+            {/* Position Count Indicator */}
+            {!loading && isFilteringPositions && (
+                <div className="glass rounded-xl p-3 sm:p-4 border border-amber-500/20 bg-amber-500/5">
+                    <div className="flex items-center gap-2 text-sm">
+                        <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                        <span className="text-muted-foreground">
+                            Showing <span className="font-semibold text-foreground">{sortedPositions.length}</span> of{" "}
+                            <span className="font-semibold text-foreground">{allPositions.length}</span> positions
+                            {allPositions.length - sortedPositions.length > 0 && (
+                                <span className="text-amber-600 dark:text-amber-400 ml-1">
+                                    ({allPositions.length - sortedPositions.length} hidden by filters)
+                                </span>
+                            )}
+                        </span>
+                    </div>
+                </div>
+            )}
 
             {/* Mobile Card View */}
             <div className="md:hidden space-y-3">

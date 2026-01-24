@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useFilters } from "@/contexts/filter-context";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
     Select,
     SelectContent,
@@ -11,11 +12,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Search, Calendar as CalendarIcon, X, Filter } from "lucide-react";
+import { Search, Calendar as CalendarIcon, X, Filter, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface GlobalFilterBarProps {
     showStatusFilter?: boolean;
@@ -41,6 +43,67 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
         filters.status !== "all" ||
         filters.accountId !== "all" ||
         filters.assetType !== "all";
+
+    // Get active filter labels for display
+    const getActiveFilterLabels = () => {
+        const labels: Array<{ key: string; label: string; onRemove: () => void }> = [];
+
+        if (filters.symbol) {
+            labels.push({
+                key: 'symbol',
+                label: `Symbol: ${filters.symbol}`,
+                onRemove: () => setFilters(prev => ({ ...prev, symbol: '' }))
+            });
+        }
+
+        if (filters.startDate) {
+            labels.push({
+                key: 'startDate',
+                label: `From: ${format(new Date(filters.startDate), "MMM dd, yyyy")}`,
+                onRemove: () => setFilters(prev => ({ ...prev, startDate: '' }))
+            });
+        }
+
+        if (filters.endDate) {
+            labels.push({
+                key: 'endDate',
+                label: `To: ${format(new Date(filters.endDate), "MMM dd, yyyy")}`,
+                onRemove: () => setFilters(prev => ({ ...prev, endDate: '' }))
+            });
+        }
+
+        if (filters.accountId && filters.accountId !== 'all') {
+            const account = accounts.find(a => a.id === filters.accountId);
+            const accountLabel = account ? `${account.brokerName}` : 'Account';
+            labels.push({
+                key: 'accountId',
+                label: `Account: ${accountLabel}`,
+                onRemove: () => setFilters(prev => ({ ...prev, accountId: 'all' }))
+            });
+        }
+
+        if (filters.assetType && filters.assetType !== 'all') {
+            labels.push({
+                key: 'assetType',
+                label: `Type: ${filters.assetType === 'STOCK' ? 'Stocks' : 'Options'}`,
+                onRemove: () => setFilters(prev => ({ ...prev, assetType: 'all' }))
+            });
+        }
+
+        if (filters.status && filters.status !== 'all') {
+            const statusLabel = filters.status.charAt(0).toUpperCase() + filters.status.slice(1);
+            labels.push({
+                key: 'status',
+                label: `Status: ${statusLabel}`,
+                onRemove: () => setFilters(prev => ({ ...prev, status: 'all' }))
+            });
+        }
+
+        return labels;
+    };
+
+    const activeFilterLabels = getActiveFilterLabels();
+    const activeFilterCount = activeFilterLabels.length;
 
     return (
         <div className={cn("glass rounded-xl", className)}>
@@ -335,12 +398,58 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
 
                 {/* Clear Button */}
                 {hasActiveFilters && (
-                    <Button size="sm" variant="ghost" onClick={handleClearFilters}>
+                    <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleClearFilters}
+                        className="h-9"
+                    >
                         <X className="h-4 w-4 mr-1" />
-                        Clear
+                        Clear All Filters
                     </Button>
                 )}
             </div>
+
+            {/* Active Filters Indicator */}
+            {hasActiveFilters && (
+                <div className="border-t border-border/50 bg-muted/30 p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-sm">
+                            <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                            <span className="font-medium text-muted-foreground">
+                                {activeFilterCount} {activeFilterCount === 1 ? 'filter' : 'filters'} active
+                            </span>
+                        </div>
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleClearFilters}
+                            className="h-7 text-xs hidden md:flex"
+                        >
+                            <X className="h-3 w-3 mr-1" />
+                            Clear all
+                        </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {activeFilterLabels.map((filter) => (
+                            <Badge
+                                key={filter.key}
+                                variant="secondary"
+                                className="pr-1 gap-1 bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20"
+                            >
+                                <span className="text-xs">{filter.label}</span>
+                                <button
+                                    onClick={filter.onRemove}
+                                    className="ml-1 rounded-sm hover:bg-amber-500/30 p-0.5 transition-colors"
+                                    aria-label={`Remove ${filter.label} filter`}
+                                >
+                                    <X className="h-3 w-3" />
+                                </button>
+                            </Badge>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
