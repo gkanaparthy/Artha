@@ -21,6 +21,7 @@ model User {
   accounts            Account[]
   brokerAccounts      BrokerAccount[]
   sessions            Session[]
+  tradeGroups         TradeGroup[]
 }
 
 model Account {
@@ -79,8 +80,9 @@ model BrokerAccount {
   lastCheckedAt      DateTime?
   authorizationId    String?
 
-  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   trades             Trade[]
+  tradeGroups        TradeGroup[]
 
   @@index([userId, disabled])
   @@map("broker_accounts")
@@ -106,8 +108,9 @@ model Trade {
   snapTradeTradeId   String?       @unique
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
-  account            BrokerAccount @relation(fields: [accountId], references: [id])
-  tags               Tag[]         @relation("TagToTrade")
+  account            BrokerAccount   @relation(fields: [accountId], references: [id])
+  tags               Tag[]           @relation("TagToTrade")
+  groupLegs          TradeGroupLeg[]
 
   @@map("trades")
 }
@@ -119,4 +122,70 @@ model Tag {
   trades Trade[] @relation("TagToTrade")
 
   @@map("tags")
+}
+
+// Strategy types for multi-leg options grouping
+enum StrategyType {
+  VERTICAL_SPREAD_BULL_CALL
+  VERTICAL_SPREAD_BEAR_CALL
+  VERTICAL_SPREAD_BULL_PUT
+  VERTICAL_SPREAD_BEAR_PUT
+  IRON_CONDOR
+  IRON_BUTTERFLY
+  STRADDLE
+  STRANGLE
+  COVERED_CALL
+  PROTECTIVE_PUT
+  CUSTOM
+}
+
+// Trade groups for multi-leg options strategies
+model TradeGroup {
+  id               String       @id @default(cuid())
+  userId           String
+  name             String?
+  strategyType     StrategyType
+  underlyingSymbol String
+  accountId        String
+  openedAt         DateTime
+  closedAt         DateTime?
+  expirationDate   DateTime?
+  netPremium       Float        @default(0)
+  realizedPnL      Float        @default(0)
+  maxProfit        Float?
+  maxLoss          Float?
+  autoDetected     Boolean      @default(true)
+  confidence       Float?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account BrokerAccount   @relation(fields: [accountId], references: [id])
+  legs    TradeGroupLeg[]
+
+  @@index([userId, underlyingSymbol])
+  @@index([userId, openedAt])
+  @@map("trade_groups")
+}
+
+// Individual legs within a trade group
+model TradeGroupLeg {
+  id             String    @id @default(cuid())
+  groupId        String
+  tradeId        String
+  legNumber      Int
+  legType        String
+  strikePrice    Float?
+  expirationDate DateTime?
+  quantity       Int
+  entryPrice     Float
+  exitPrice      Float?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  group TradeGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  trade Trade      @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, tradeId])
+  @@map("trade_group_legs")
 }
