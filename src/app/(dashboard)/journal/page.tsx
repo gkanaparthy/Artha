@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -12,9 +13,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Sparkles, Trash2, BookOpen, AlertCircle } from "lucide-react";
+import { Loader2, Sparkles, Trash2, BookOpen, Layers, List, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { TradeDetailSheet } from "@/components/trade-detail-sheet";
+import { StrategyGroupCard } from "@/components/strategy-group-card";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
 import { cn } from "@/lib/utils";
@@ -22,9 +24,11 @@ import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { useSort } from "@/hooks/use-sort";
 import type { Trade } from "@/types/trading";
+import type { Strategy, StrategyLeg } from "@/types/strategy";
 import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "@/lib/export";
 
 type SortField = "timestamp" | "symbol" | "action" | "quantity" | "price" | "value";
+type ViewMode = "trades" | "strategies";
 
 // Get sort value for a trade based on field
 const getTradeSortValue = (t: Trade, field: SortField): string | number => {
@@ -40,9 +44,13 @@ const getTradeSortValue = (t: Trade, field: SortField): string | number => {
 };
 
 export default function JournalPage() {
+  const router = useRouter();
   const { filters } = useFilters();
+  const [viewMode, setViewMode] = useState<ViewMode>("trades");
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [strategies, setStrategies] = useState<(Strategy & { legs?: StrategyLeg[] })[]>([]);
   const [loading, setLoading] = useState(true);
+  const [strategiesLoading, setStrategiesLoading] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -60,9 +68,32 @@ export default function JournalPage() {
     }
   }, []);
 
+  const fetchStrategies = useCallback(async () => {
+    try {
+      setStrategiesLoading(true);
+      const params = new URLSearchParams();
+      if (filters.accountId && filters.accountId !== "all") {
+        params.append("accountId", filters.accountId);
+      }
+      const res = await fetch(`/api/strategies?${params.toString()}`);
+      const data = await res.json();
+      setStrategies(data.strategies || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setStrategiesLoading(false);
+    }
+  }, [filters.accountId]);
+
   useEffect(() => {
     fetchTrades();
   }, [fetchTrades]);
+
+  useEffect(() => {
+    if (viewMode === "strategies") {
+      fetchStrategies();
+    }
+  }, [viewMode, fetchStrategies]);
 
   const handleDelete = async (tradeId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -78,6 +109,28 @@ export default function JournalPage() {
     } catch (err) {
       console.error(err);
       alert("Error deleting trade");
+    }
+  };
+
+  const handleStrategyClick = (id: string) => {
+    router.push(`/journal/strategy/${id}`);
+  };
+
+  const handleStrategyUngroup = async (id: string) => {
+    if (!confirm("Are you sure you want to ungroup this strategy? The trades will remain but won't be grouped.")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/strategies/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setStrategies((prev) => prev.filter((s) => s.id !== id));
+      } else {
+        alert("Failed to ungroup strategy");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error ungrouping strategy");
     }
   };
 
@@ -149,6 +202,37 @@ export default function JournalPage() {
 
   const isFilteringTrades = hasActiveFilters && sortedTrades.length < trades.length;
 
+  // Filter strategies
+  const filteredStrategies = useMemo(() => {
+    let result = [...strategies];
+
+    // Filter by symbol (underlying symbol)
+    if (filters.symbol) {
+      const symbols = filters.symbol.split(',').map((s) => s.trim().toLowerCase()).filter((s) => s.length > 0);
+      if (symbols.length > 0) {
+        result = result.filter((s) =>
+          symbols.some(sym => s.underlyingSymbol.toLowerCase().includes(sym))
+        );
+      }
+    }
+
+    // Filter by date range (openedAt)
+    if (filters.startDate) {
+      const fromDate = new Date(filters.startDate);
+      result = result.filter((s) => new Date(s.openedAt) >= fromDate);
+    }
+    if (filters.endDate) {
+      const toDate = new Date(filters.endDate);
+      toDate.setHours(23, 59, 59, 999);
+      result = result.filter((s) => new Date(s.openedAt) <= toDate);
+    }
+
+    // Sort by openedAt descending
+    result.sort((a, b) => new Date(b.openedAt).getTime() - new Date(a.openedAt).getTime());
+
+    return result;
+  }, [strategies, filters]);
+
   return (
     <PageTransition>
       <div className="space-y-6 sm:space-y-8">
@@ -168,9 +252,43 @@ export default function JournalPage() {
               Review and manage your trading history
             </p>
           </div>
-          <Button onClick={() => fetchTrades && fetchTrades()} variant="outline" size="sm" className="hidden md:flex">
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* View Toggle */}
+            <div className="flex items-center bg-muted rounded-lg p-1">
+              <Button
+                variant={viewMode === "trades" ? "default" : "ghost"}
+                size="sm"
+                className={cn(
+                  "h-8 px-3 gap-1.5",
+                  viewMode === "trades" && "shadow-sm"
+                )}
+                onClick={() => setViewMode("trades")}
+              >
+                <List className="h-4 w-4" />
+                <span className="hidden sm:inline">Trades</span>
+              </Button>
+              <Button
+                variant={viewMode === "strategies" ? "default" : "ghost"}
+                size="sm"
+                className={cn(
+                  "h-8 px-3 gap-1.5",
+                  viewMode === "strategies" && "shadow-sm"
+                )}
+                onClick={() => setViewMode("strategies")}
+              >
+                <Layers className="h-4 w-4" />
+                <span className="hidden sm:inline">Strategies</span>
+              </Button>
+            </div>
+            <Button
+              onClick={() => viewMode === "trades" ? fetchTrades() : fetchStrategies()}
+              variant="outline"
+              size="sm"
+              className="hidden md:flex"
+            >
+              Refresh
+            </Button>
+          </div>
         </motion.div>
 
         {/* Global Filter Bar with Export */}
@@ -191,211 +309,259 @@ export default function JournalPage() {
           />
         </AnimatedCard>
 
-        {/* Trade Count Indicator */}
-        {!loading && isFilteringTrades && (
-          <AnimatedCard delay={0.15}>
-            <div className="glass rounded-xl p-3 sm:p-4 border border-amber-500/20 bg-amber-500/5">
-              <div className="flex items-center gap-2 text-sm">
-                <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
-                <span className="text-muted-foreground">
-                  Showing <span className="font-semibold text-foreground">{sortedTrades.length}</span> of{" "}
-                  <span className="font-semibold text-foreground">{trades.length}</span> trades
-                  {trades.length - sortedTrades.length > 0 && (
-                    <span className="text-amber-600 dark:text-amber-400 ml-1">
-                      ({trades.length - sortedTrades.length} hidden by filters)
-                    </span>
-                  )}
-                </span>
-              </div>
-            </div>
-          </AnimatedCard>
-        )}
-
-        {/* Table Card */}
-        <AnimatedCard delay={0.2}>
-          <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
-            <CardHeader className="pb-2 p-4 sm:p-6">
-              <CardTitle className="text-base sm:text-lg font-medium flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-amber-500" />
-                Recent Activity
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 sm:p-6 pt-0">
-              {/* Mobile Card View */}
-              <div className="md:hidden space-y-3">
-                {loading ? (
+        {/* Strategies View */}
+        {viewMode === "strategies" && (
+          <AnimatedCard delay={0.2}>
+            <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
+              <CardHeader className="pb-2 p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg font-medium flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-purple-500" />
+                  Strategy Groups
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 sm:p-6 pt-0">
+                {strategiesLoading ? (
                   <div className="flex justify-center py-12">
                     <Loader2 className="animate-spin h-6 w-6 text-primary" />
                   </div>
-                ) : sortedTrades.length === 0 ? (
+                ) : filteredStrategies.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
-                    No trades found matching your criteria.
+                    <Layers className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="mb-2">No strategies found.</p>
+                    <p className="text-sm">Strategies are auto-detected from your option trades or can be manually grouped.</p>
                   </div>
                 ) : (
-                  sortedTrades.map((trade, idx) => (
-                    <div
-                      key={trade.id}
-                      onClick={() => {
-                        setSelectedTrade(trade);
-                        setSheetOpen(true);
-                      }}
-                      className="bg-card border rounded-xl p-4 space-y-3 shadow-sm cursor-pointer hover:shadow-md transition-all"
-                    >
-                      {/* Header Row */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-base truncate">{trade.symbol}</h3>
-                          <p className="text-xs text-muted-foreground">{format(new Date(trade.timestamp), "MMM d, yyyy")}</p>
-                        </div>
-                        <Badge variant={
-                          trade.action.includes("BUY") || trade.action === "ASSIGNMENT" ? "outline" : "secondary"
-                        } className={cn(
-                          "font-mono uppercase text-xs shrink-0",
-                          (trade.action.includes("BUY") || trade.action === "ASSIGNMENT")
-                            ? "border-green-500 text-green-500 bg-green-500/10"
-                            : "text-red-500 bg-red-500/10"
-                        )}>
-                          {trade.action}
-                        </Badge>
-                      </div>
-
-                      {/* Stats Grid */}
-                      <div className="grid grid-cols-2 gap-3 pt-2 border-t">
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1">Quantity</p>
-                          <p className="text-sm font-medium font-mono">{trade.quantity}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1">Price</p>
-                          <p className="text-sm font-medium font-mono">${trade.price.toFixed(2)}</p>
-                        </div>
-                        <div className="col-span-2">
-                          <p className="text-xs text-muted-foreground mb-1">Total Value</p>
-                          <p className="text-base font-semibold font-mono">${(trade.quantity * trade.price).toFixed(2)}</p>
-                        </div>
-                      </div>
-
-                      {/* Delete Action */}
-                      <div className="pt-3 border-t">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={(e) => handleDelete(trade.id, e)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Trade
-                        </Button>
-                      </div>
-                    </div>
-                  ))
+                  <div className="space-y-3">
+                    {filteredStrategies.map((strategy, i) => (
+                      <motion.div
+                        key={strategy.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2, delay: i * 0.05 }}
+                      >
+                        <StrategyGroupCard
+                          strategy={strategy}
+                          onClick={handleStrategyClick}
+                          onUngroup={handleStrategyUngroup}
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
                 )}
-              </div>
+              </CardContent>
+            </Card>
+          </AnimatedCard>
+        )}
 
-              {/* Desktop Table View */}
-              <div className="hidden md:block rounded-md border bg-background">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="w-[180px] cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("timestamp")}>
-                        <div className="flex items-center gap-2">Date {getSortIcon("timestamp")}</div>
-                      </TableHead>
-                      <TableHead className="cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("symbol")}>
-                        <div className="flex items-center gap-2">Symbol {getSortIcon("symbol")}</div>
-                      </TableHead>
-                      <TableHead className="cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("action")}>
-                        <div className="flex items-center gap-2">Action {getSortIcon("action")}</div>
-                      </TableHead>
-                      <TableHead className="text-right cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("quantity")}>
-                        <div className="flex items-center justify-end gap-2">Quantity {getSortIcon("quantity")}</div>
-                      </TableHead>
-                      <TableHead className="text-right cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("price")}>
-                        <div className="flex items-center justify-end gap-2">Price {getSortIcon("price")}</div>
-                      </TableHead>
-                      <TableHead className="text-right cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("value")}>
-                        <div className="flex items-center justify-end gap-2">Value {getSortIcon("value")}</div>
-                      </TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+        {/* Trades Table Card */}
+        {viewMode === "trades" && (
+          <>
+            {/* Trade Count Indicator */}
+            {!loading && isFilteringTrades && (
+              <AnimatedCard delay={0.15}>
+                <div className="glass rounded-xl p-3 sm:p-4 border border-amber-500/20 bg-amber-500/5 mb-6">
+                  <div className="flex items-center gap-2 text-sm">
+                    <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                    <span className="text-muted-foreground">
+                      Showing <span className="font-semibold text-foreground">{sortedTrades.length}</span> of{" "}
+                      <span className="font-semibold text-foreground">{trades.length}</span> trades
+                      {trades.length - sortedTrades.length > 0 && (
+                        <span className="text-amber-600 dark:text-amber-400 ml-1">
+                          ({trades.length - sortedTrades.length} hidden by filters)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </AnimatedCard>
+            )}
+
+            <AnimatedCard delay={0.2}>
+              <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
+                <CardHeader className="pb-2 p-4 sm:p-6">
+                  <CardTitle className="text-base sm:text-lg font-medium flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-amber-500" />
+                    Recent Activity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3 sm:p-6 pt-0">
+                  {/* Mobile Card View */}
+                  <div className="md:hidden space-y-3">
                     {loading ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
-                          <div className="flex justify-center items-center">
-                            <Loader2 className="animate-spin h-6 w-6 text-primary" />
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                      <div className="flex justify-center py-12">
+                        <Loader2 className="animate-spin h-6 w-6 text-primary" />
+                      </div>
                     ) : sortedTrades.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                          No trades found matching your criteria.
-                        </TableCell>
-                      </TableRow>
+                      <div className="text-center py-12 text-muted-foreground">
+                        No trades found matching your criteria.
+                      </div>
                     ) : (
-                      sortedTrades.map((trade, i) => {
-                        // Limit animations to first 10 rows for performance
-                        const shouldAnimate = i < 10;
-                        return (
-                        <motion.tr
+                      sortedTrades.map((trade) => (
+                        <div
                           key={trade.id}
-                          className="table-row-hover cursor-pointer"
                           onClick={() => {
                             setSelectedTrade(trade);
                             setSheetOpen(true);
                           }}
-                          initial={shouldAnimate ? { opacity: 0, y: 10 } : false}
-                          animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
-                          transition={shouldAnimate ? { duration: 0.2, delay: i * 0.03 } : undefined}
+                          className="bg-card border rounded-xl p-4 space-y-3 shadow-sm cursor-pointer hover:shadow-md transition-all"
                         >
-                          <TableCell className="font-medium text-muted-foreground whitespace-nowrap">
-                            {format(new Date(trade.timestamp), "MMM d, yyyy")}
-                          </TableCell>
-                          <TableCell className="font-semibold">
-                            {trade.symbol}
-                          </TableCell>
-                          <TableCell>
+                          {/* Header Row */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-base truncate">{trade.symbol}</h3>
+                              <p className="text-xs text-muted-foreground">{format(new Date(trade.timestamp), "MMM d, yyyy")}</p>
+                            </div>
                             <Badge variant={
                               trade.action.includes("BUY") || trade.action === "ASSIGNMENT" ? "outline" : "secondary"
                             } className={cn(
-                              "font-mono uppercase text-xs",
+                              "font-mono uppercase text-xs shrink-0",
                               (trade.action.includes("BUY") || trade.action === "ASSIGNMENT")
                                 ? "border-green-500 text-green-500 bg-green-500/10"
                                 : "text-red-500 bg-red-500/10"
                             )}>
                               {trade.action}
                             </Badge>
-                          </TableCell>
-                          <TableCell className="text-right font-mono">
-                            {trade.quantity}
-                          </TableCell>
-                          <TableCell className="text-right font-mono">
-                            ${trade.price.toFixed(2)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-muted-foreground">
-                            ${(trade.quantity * trade.price).toFixed(2)}
-                          </TableCell>
-                          <TableCell className="text-right">
+                          </div>
+
+                          {/* Stats Grid */}
+                          <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Quantity</p>
+                              <p className="text-sm font-medium font-mono">{trade.quantity}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Price</p>
+                              <p className="text-sm font-medium font-mono">${trade.price.toFixed(2)}</p>
+                            </div>
+                            <div className="col-span-2">
+                              <p className="text-xs text-muted-foreground mb-1">Total Value</p>
+                              <p className="text-base font-semibold font-mono">${(trade.quantity * trade.price).toFixed(2)}</p>
+                            </div>
+                          </div>
+
+                          {/* Delete Action */}
+                          <div className="pt-3 border-t">
                             <Button
                               variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              size="sm"
+                              className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
                               onClick={(e) => handleDelete(trade.id, e)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Trade
                             </Button>
-                          </TableCell>
-                        </motion.tr>
-                        );
-                      })
+                          </div>
+                        </div>
+                      ))
                     )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </AnimatedCard>
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block rounded-md border bg-background">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50">
+                          <TableHead className="w-[180px] cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("timestamp")}>
+                            <div className="flex items-center gap-2">Date {getSortIcon("timestamp")}</div>
+                          </TableHead>
+                          <TableHead className="cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("symbol")}>
+                            <div className="flex items-center gap-2">Symbol {getSortIcon("symbol")}</div>
+                          </TableHead>
+                          <TableHead className="cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("action")}>
+                            <div className="flex items-center gap-2">Action {getSortIcon("action")}</div>
+                          </TableHead>
+                          <TableHead className="text-right cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("quantity")}>
+                            <div className="flex items-center justify-end gap-2">Quantity {getSortIcon("quantity")}</div>
+                          </TableHead>
+                          <TableHead className="text-right cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("price")}>
+                            <div className="flex items-center justify-end gap-2">Price {getSortIcon("price")}</div>
+                          </TableHead>
+                          <TableHead className="text-right cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("value")}>
+                            <div className="flex items-center justify-end gap-2">Value {getSortIcon("value")}</div>
+                          </TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loading ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="h-24 text-center">
+                              <div className="flex justify-center items-center">
+                                <Loader2 className="animate-spin h-6 w-6 text-primary" />
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ) : sortedTrades.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                              No trades found matching your criteria.
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          sortedTrades.map((trade, i) => {
+                            // Limit animations to first 10 rows for performance
+                            const shouldAnimate = i < 10;
+                            return (
+                              <motion.tr
+                                key={trade.id}
+                                className="table-row-hover cursor-pointer"
+                                onClick={() => {
+                                  setSelectedTrade(trade);
+                                  setSheetOpen(true);
+                                }}
+                                initial={shouldAnimate ? { opacity: 0, y: 10 } : false}
+                                animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
+                                transition={shouldAnimate ? { duration: 0.2, delay: i * 0.03 } : undefined}
+                              >
+                                <TableCell className="font-medium text-muted-foreground whitespace-nowrap">
+                                  {format(new Date(trade.timestamp), "MMM d, yyyy")}
+                                </TableCell>
+                                <TableCell className="font-semibold">
+                                  {trade.symbol}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={
+                                    trade.action.includes("BUY") || trade.action === "ASSIGNMENT" ? "outline" : "secondary"
+                                  } className={cn(
+                                    "font-mono uppercase text-xs",
+                                    (trade.action.includes("BUY") || trade.action === "ASSIGNMENT")
+                                      ? "border-green-500 text-green-500 bg-green-500/10"
+                                      : "text-red-500 bg-red-500/10"
+                                  )}>
+                                    {trade.action}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right font-mono">
+                                  {trade.quantity}
+                                </TableCell>
+                                <TableCell className="text-right font-mono">
+                                  ${trade.price.toFixed(2)}
+                                </TableCell>
+                                <TableCell className="text-right font-mono text-muted-foreground">
+                                  ${(trade.quantity * trade.price).toFixed(2)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                    onClick={(e) => handleDelete(trade.id, e)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                              </motion.tr>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </AnimatedCard>
+          </>
+        )}
 
         <TradeDetailSheet
           trade={selectedTrade}
