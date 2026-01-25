@@ -409,7 +409,7 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
                             <Badge
                               variant={
                                 trade.action.includes("BUY") ||
-                                trade.action === "ASSIGNMENT"
+                                  trade.action === "ASSIGNMENT"
                                   ? "outline"
                                   : "secondary"
                               }
