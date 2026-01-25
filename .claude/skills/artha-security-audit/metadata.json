@@ -1,0 +1,20 @@
+{
+  "name": "artha-security-audit",
+  "version": "1.0.0",
+  "author": "Artha Development Team",
+  "description": "Security audit for API routes, database access, and sensitive data handling",
+  "triggers": [
+    "security",
+    "auth",
+    "authentication",
+    "authorization",
+    "encryption",
+    "rls",
+    "api route",
+    "prisma",
+    "vulnerability"
+  ],
+  "category": "security",
+  "priority": "critical",
+  "lastUpdated": "2026-01-25"
+}

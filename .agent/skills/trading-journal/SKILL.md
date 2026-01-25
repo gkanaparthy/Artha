@@ -159,7 +159,8 @@ The core of the application is a FIFO (First-In, First-Out) lot matching engine 
 **Key Methods:**
 - `registerUser()` - Register user with SnapTrade
 - `generateConnectionLink()` - Get OAuth URL for broker connection
-- `syncTrades()` - Pull trades from all connected accounts
+- `syncTrades()` - Pull trades from last 3 years
+- `getPositions()` - Fetches LIVE positions directly from broker (source of truth for current holdings)
 
 **Important Details:**
 - **Sync Window**: The system syncs the last **3 years** of history (updated from 1 year to prevent orphaned trades)
@@ -222,6 +223,11 @@ Key models in `prisma/schema.prisma`:
   - `strikePrice`, `expiryDate`
   - `optionAction`: BUY_TO_OPEN, SELL_TO_CLOSE, etc.
   - `contractMultiplier`: 100 for standard options, 10 for mini options, 1 for stocks
+- **Strategy** - Groups of trades forming a single strategy (e.g. Vertical Spread)
+  - `type`: Strategy type (VERTICAL_SPREAD, IRON_CONDOR, etc.)
+  - `status`: OPEN or CLOSED
+  - `realizedPnL`: Calculated when all legs are closed
+- **StrategyLeg** - Linking table between Strategy and Trade
 
 ## Common Pitfalls & Gotchas
 
@@ -352,9 +358,11 @@ npx tsx scripts/calculate-ytd-pnl.ts --user "Suman" --json
 - `scripts/diagnose-orphaned-trades.ts` - Detects phantom positions
 - `scripts/check-recent-trades.ts` - Verifies recent sync activity
 - `scripts/verify-live-positions.ts` - Compares DB vs broker positions
-- `scripts/check-pl-actions.ts` - Debug P&L action types (in development)
-- `scripts/debug-api-structure.ts` - Inspect API response structure (in development)
-- `scripts/investigate-pl-trades.ts` - Investigate P&L calculations for specific trades (in development)
+- `scripts/check-pl-actions.ts` - Debug P&L action types
+- `scripts/investigate-pl-trades.ts` - Fast investigation of P&L for specific tickers
+- `scripts/simulate-metrics-pl.ts` - Simulates the metrics engine locally for debugging
+- `scripts/count-positions.ts` - Helper to count current open slots per user
+- `scripts/check-pl-owners.ts` - identifies who owns specific trades in the DB
 
 
 ## Monitoring Workflows
@@ -430,6 +438,8 @@ If last_trade is > 48 hours ago and it's a trading day, investigate sync issues.
 - Robust tracking and immediate reconnect support
 - Fixed critical bug in authorization-to-account matching logic
 - Consolidated connection health checking into main sync process (Vercel Hobby plan optimization)
+- **Multi-leg Options Strategy Grouping**: Added `strategy-detection.service.ts` to auto-detect iron condors, spreads, etc.
+- **Hybrid Positions Table**: Integrated live broker positions (`getPositions`) as the source of truth for current holdings while retaining FIFO for historical P&L.
 
 ## Common Workflows
 

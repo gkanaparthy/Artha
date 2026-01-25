@@ -1,0 +1,18 @@
+{
+  "name": "snaptrade-integration-validator",
+  "version": "1.0.0",
+  "author": "Artha Development Team",
+  "description": "Validate SnapTrade SDK usage patterns and field access",
+  "triggers": [
+    "snaptrade",
+    "snake_case",
+    "option",
+    "trade sync",
+    "authorization",
+    "broker connection",
+    "contract multiplier"
+  ],
+  "category": "integration",
+  "priority": "high",
+  "lastUpdated": "2026-01-25"
+}
