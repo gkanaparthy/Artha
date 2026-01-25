@@ -8,11 +8,16 @@ import {
   TrendingUp,
   TrendingDown,
   Target,
-  DollarSign,
-  BarChart3,
+  CircleDollarSign,
+  History,
   LayoutDashboard,
-  Wallet,
+  Briefcase,
   Activity,
+  Trophy,
+  ArrowUpRight,
+  ArrowDownRight,
+  Calculator,
+  Layers,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
@@ -326,7 +331,7 @@ export function DashboardView({
             value={formatCurrency(metrics.netPnL, true)}
             compactValue={formatCompactCurrency(metrics.netPnL, true)}
             subtitle="Based on filtered trades"
-            icon={DollarSign}
+            icon={CircleDollarSign}
             iconColor={getPnLColor(metrics.netPnL)}
             valueColor={getPnLColor(metrics.netPnL)}
             delay={0}
@@ -336,7 +341,7 @@ export function DashboardView({
             title="Win Rate"
             value={`${metrics.winRate}%`}
             subtitle={`${metrics.winningTrades}W / ${metrics.losingTrades}L`}
-            icon={Target}
+            icon={Trophy}
             iconColor={getWinRateColor(metrics.winRate)}
             valueColor={getWinRateColor(metrics.winRate)}
             delay={0.1}
@@ -346,7 +351,7 @@ export function DashboardView({
             value={formatCurrency(metrics.largestWin, true)}
             compactValue={formatCompactCurrency(metrics.largestWin, true)}
             subtitle="Best single trade"
-            icon={TrendingUp}
+            icon={ArrowUpRight}
             iconColor="text-gradient-green"
             valueColor="text-gradient-green"
             delay={0.2}
@@ -356,7 +361,7 @@ export function DashboardView({
             value={formatCurrency(metrics.largestLoss, true)}
             compactValue={formatCompactCurrency(metrics.largestLoss, true)}
             subtitle="Worst single trade"
-            icon={TrendingDown}
+            icon={ArrowDownRight}
             iconColor="text-gradient-red"
             valueColor="text-gradient-red"
             delay={0.3}
@@ -369,7 +374,7 @@ export function DashboardView({
             title="Total Trades"
             value={metrics.totalTrades}
             subtitle="Closed positions"
-            icon={BarChart3}
+            icon={History}
             iconColor="text-primary"
             delay={0.4}
           />
@@ -398,7 +403,7 @@ export function DashboardView({
             value={formatCurrency(metrics.avgTrade, true)}
             compactValue={formatCompactCurrency(metrics.avgTrade, true)}
             subtitle="Expected per trade"
-            icon={Target}
+            icon={Calculator}
             iconColor={getPnLColor(metrics.avgTrade)}
             valueColor={getPnLColor(metrics.avgTrade)}
             delay={0.7}
@@ -424,7 +429,7 @@ export function DashboardView({
                     : "—"
             }
             subtitle={isDemo ? "Sample data" : livePositions ? "Live from broker" : "Connect broker"}
-            icon={Wallet}
+            icon={Activity}
             iconColor={isDemo ? "text-gradient-green" : livePositions ? getPnLColor(filteredLiveMetrics.totalUnrealizedPnl) : "text-muted-foreground"}
             valueColor={isDemo ? "text-gradient-green" : livePositions ? getPnLColor(filteredLiveMetrics.totalUnrealizedPnl) : ""}
             delay={0.8}
@@ -437,7 +442,7 @@ export function DashboardView({
           <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-lg font-medium flex items-center gap-2">
-                <Activity className="h-5 w-5 text-primary" />
+                <Briefcase className="h-5 w-5 text-primary" />
                 Positions
               </CardTitle>
             </CardHeader>
