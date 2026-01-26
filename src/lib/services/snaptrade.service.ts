@@ -325,28 +325,60 @@ export class SnapTradeService {
 
             await prisma.$transaction(async (tx) => {
                 if (trade.id) {
-                    const existingBySnapTradeId = await tx.trade.findUnique({
+                    const existing = await tx.trade.findUnique({
                         where: { snapTradeTradeId: trade.id }
                     });
-                    if (existingBySnapTradeId) {
-                        await tx.trade.update({
-                            where: { id: existingBySnapTradeId.id },
-                            data: {
-                                timestamp: tradeTimestamp,
-                                symbol: tradeSymbol,
-                                universalSymbolId: isOption ? optionSymbol.id : trade.symbol?.id,
-                                type: isOption ? 'OPTION' : 'STOCK',
-                                optionType: optionSymbol?.option_type ? optionSymbol.option_type.trim() : null,
-                                strikePrice: optionSymbol?.strike_price || null,
-                                expiryDate: optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null,
-                                optionAction: optionAction ? optionAction.trim() : null,
-                                contractMultiplier: contractMultiplier,
-                            }
-                        });
+
+                    if (existing) {
+                        const expiryDate = optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null;
+
+                        // Check if anything HAS ACTUALLY CHANGED before blind updating (Bug Fix)
+                        const hasChanged =
+                            existing.symbol !== tradeSymbol ||
+                            existing.timestamp.getTime() !== tradeTimestamp.getTime() ||
+                            existing.quantity !== quantity ||
+                            existing.price !== (trade.price || 0) ||
+                            existing.action !== action.trim() ||
+                            existing.fees !== (trade.fee || 0) ||
+                            existing.currency !== (trade.currency?.code || 'USD') ||
+                            existing.type !== (isOption ? 'OPTION' : 'STOCK') ||
+                            existing.optionType !== (optionSymbol?.option_type ? optionSymbol.option_type.trim() : null) ||
+                            existing.strikePrice !== (optionSymbol?.strike_price || null) ||
+                            existing.expiryDate?.getTime() !== expiryDate?.getTime() ||
+                            existing.optionAction !== (optionAction ? optionAction.trim() : null) ||
+                            existing.contractMultiplier !== contractMultiplier;
+
+                        if (hasChanged) {
+                            console.log(`[SnapTrade Sync] Updating changed trade: ${trade.id} (${tradeSymbol})`);
+                            await tx.trade.update({
+                                where: { id: existing.id },
+                                data: {
+                                    timestamp: tradeTimestamp,
+                                    symbol: tradeSymbol,
+                                    universalSymbolId: isOption ? optionSymbol.id : trade.symbol?.id,
+                                    quantity: quantity,
+                                    price: trade.price || 0,
+                                    action: action.trim(),
+                                    fees: trade.fee || 0,
+                                    currency: trade.currency?.code || 'USD',
+                                    type: isOption ? 'OPTION' : 'STOCK',
+                                    optionType: optionSymbol?.option_type ? optionSymbol.option_type.trim() : null,
+                                    strikePrice: optionSymbol?.strike_price || null,
+                                    expiryDate: expiryDate,
+                                    optionAction: optionAction ? optionAction.trim() : null,
+                                    contractMultiplier: contractMultiplier,
+                                }
+                            });
+                            affectedGroups.add(`${account.id}:${tradeSymbol}`);
+                            count++;
+                        } else {
+                            skippedTrades++;
+                        }
                         return;
                     }
                 }
 
+                // New trade
                 await tx.trade.create({
                     data: {
                         accountId: account.id,
@@ -367,10 +399,9 @@ export class SnapTradeService {
                         expiryDate: optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null,
                     },
                 });
+                affectedGroups.add(`${account.id}:${tradeSymbol}`);
+                count++;
             });
-
-            affectedGroups.add(`${account.id}:${tradeSymbol}`);
-            count++;
         }
 
         // RECALCULATE KEYS FOR AFFECTED GROUPS (Bug #35)
