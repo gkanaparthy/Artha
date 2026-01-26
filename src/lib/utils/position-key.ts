@@ -73,12 +73,27 @@ export function parsePositionKey(key: string): {
  * URL-safe encoding for the position key
  */
 export function encodePositionKey(key: string): string {
-    return Buffer.from(key).toString('base64url');
+    // Base64url is not supported in all browser Buffer polyfills
+    // Fall back to standard base64 and manual character replacement
+    return Buffer.from(key).toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
 }
 
 /**
  * URL-safe decoding for the position key
  */
 export function decodePositionKey(encodedKey: string): string {
-    return Buffer.from(encodedKey, 'base64url').toString('utf8');
+    // Restore base64 standard characters before decoding
+    let base64 = encodedKey
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+
+    // Add padding if missing
+    while (base64.length % 4) {
+        base64 += '=';
+    }
+
+    return Buffer.from(base64, 'base64').toString('utf8');
 }
