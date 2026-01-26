@@ -10,7 +10,8 @@ async function main() {
     const verificationTokenCount = await prisma.verificationToken.count();
     const brokerAccountCount = await prisma.brokerAccount.count();
     const tradeCount = await prisma.trade.count();
-    const tagCount = await prisma.tag.count();
+    const tagDefinitionCount = await prisma.tagDefinition.count();
+    const positionTagCount = await prisma.positionTag.count();
 
     console.log('Row counts:');
     console.log(`User: ${userCount}`);
@@ -19,7 +20,8 @@ async function main() {
     console.log(`VerificationToken: ${verificationTokenCount}`);
     console.log(`BrokerAccount: ${brokerAccountCount}`);
     console.log(`Trade: ${tradeCount}`);
-    console.log(`Tag: ${tagCount}`);
+    console.log(`TagDefinition: ${tagDefinitionCount}`);
+    console.log(`PositionTag: ${positionTagCount}`);
 }
 
 main()

@@ -1,11 +1,6 @@
-/**
- * Field-Level Encryption for Sensitive Data
- * 
- * Uses AES-256-GCM encryption with authenticated encryption
- * to protect sensitive fields like SnapTrade secrets.
- */
+// Note: We use require('crypto') inside functions to avoid top-level Node.js imports
+// which break Next.js Edge Runtime (middleware).
 
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12; // GCM recommended IV length
@@ -31,10 +26,11 @@ function getEncryptionKey(): Buffer {
  * @returns Encrypted string in format: iv:authTag:ciphertext (all hex-encoded)
  */
 export function encrypt(plaintext: string): string {
+    const crypto = require('crypto');
     const key = getEncryptionKey();
-    const iv = randomBytes(IV_LENGTH);
+    const iv = crypto.randomBytes(IV_LENGTH);
 
-    const cipher = createCipheriv(ALGORITHM, key, iv);
+    const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
 
     let encrypted = cipher.update(plaintext, 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -51,6 +47,7 @@ export function encrypt(plaintext: string): string {
  * @returns The original plaintext string
  */
 export function decrypt(encryptedData: string): string {
+    const crypto = require('crypto');
     const key = getEncryptionKey();
 
     const parts = encryptedData.split(':');
@@ -63,7 +60,7 @@ export function decrypt(encryptedData: string): string {
     const iv = Buffer.from(ivHex, 'hex');
     const authTag = Buffer.from(authTagHex, 'hex');
 
-    const decipher = createDecipheriv(ALGORITHM, key, iv);
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
     decipher.setAuthTag(authTag);
 
     let decrypted = decipher.update(ciphertext, 'hex', 'utf8');

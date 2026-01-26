@@ -38,12 +38,10 @@ async function main() {
     // 2. Migrate Trade table (Optional if backfill is run, but good for safety)
     const tradesWithKeys = await prisma.trade.findMany({
         where: {
-            positionKey: {
-                not: null,
-                not: {
-                    startsWith: 'v1|'
-                }
-            } as any // Bypass lint for now if needed
+            AND: [
+                { positionKey: { not: null } },
+                { positionKey: { not: { startsWith: 'v1|' } } }
+            ]
         }
     });
 
