@@ -362,7 +362,7 @@ Artha includes built-in data quality monitoring:
 - [x] Admin data quality monitoring
 - [x] Trade tagging and notes
 - [x] Automated broken connection alerts
-- [ ] AI-Powered Trade Analysis (Insights)
+- [x] AI-Powered Trade Analysis (Insights)
 - [ ] Custom trade entry (manual trades)
 - [ ] Import from CSV/Excel
 - [ ] Multiple currency support

@@ -34,7 +34,7 @@ const getRedis = () => {
 };
 
 // Different rate limit configurations for different use cases
-export type RateLimitType = 'api' | 'auth' | 'sync' | 'delete' | 'destructive' | 'admin';
+export type RateLimitType = 'api' | 'auth' | 'sync' | 'delete' | 'destructive' | 'admin' | 'insights';
 
 const rateLimitConfigs: Record<RateLimitType, { requests: number; window: string }> = {
     // General API calls: 100 requests per minute
@@ -54,6 +54,9 @@ const rateLimitConfigs: Record<RateLimitType, { requests: number; window: string
 
     // Admin endpoints: 20 requests per minute
     admin: { requests: 20, window: '1 m' },
+
+    // AI Insights: 10 requests per hour (expensive)
+    insights: { requests: 10, window: '1 h' },
 };
 
 // Create rate limiters (lazy initialization)

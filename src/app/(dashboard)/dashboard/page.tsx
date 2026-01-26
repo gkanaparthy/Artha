@@ -25,6 +25,7 @@ import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "@/lib/export";
 import { TagPerformance } from "@/components/tag-performance";
+import { AIInsightsCard } from "@/components/ai-insights-card";
 
 interface Metrics {
     netPnL: number;
@@ -136,7 +137,6 @@ export default function DashboardPage() {
         closedTrades: [],
     });
     const [livePositions, setLivePositions] = useState<LivePositionsData | null>(null);
-    const [liveLoading, setLiveLoading] = useState(false);
     const [hasDisabledConnections, setHasDisabledConnections] = useState(false);
     const [allPositions, setAllPositions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -199,7 +199,6 @@ export default function DashboardPage() {
     // Fetch live positions with current market prices
     const fetchLivePositions = useCallback(async () => {
         try {
-            setLiveLoading(true);
             const res = await fetch('/api/positions');
             if (res.ok) {
                 const data: LivePositionsData = await res.json();
@@ -208,7 +207,7 @@ export default function DashboardPage() {
         } catch (e) {
             console.error('Failed to fetch live positions:', e);
         } finally {
-            setLiveLoading(false);
+            // liveLoading removed
         }
     }, []);
 
@@ -226,38 +225,7 @@ export default function DashboardPage() {
         }
     }, []);
 
-    // Filter live positions based on active UI filters
-    const filteredLiveMetrics = useMemo(() => {
-        if (!livePositions?.positions) return { totalUnrealizedPnl: 0 };
 
-        let filtered = livePositions.positions;
-
-        // Apply symbol filter (substring match like the rest of the app)
-        if (filters.symbol) {
-            const symbols = filters.symbol.split(',').map(s => s.trim().toLowerCase()).filter(s => s.length > 0);
-            if (symbols.length > 0) {
-                filtered = filtered.filter(p =>
-                    symbols.some(s => p.symbol.toLowerCase().includes(s))
-                );
-            }
-        }
-
-        // Apply account filter
-        if (filters.accountId && filters.accountId !== 'all') {
-            filtered = filtered.filter(p => p.accountId === filters.accountId);
-        }
-
-        // Apply asset type filter
-        if (filters.assetType && filters.assetType !== 'all') {
-            filtered = filtered.filter(p => p.type === filters.assetType);
-        }
-
-        const totalUnrealizedPnl = filtered.reduce((sum, p) => sum + (p.openPnl || 0), 0);
-
-        return {
-            totalUnrealizedPnl
-        };
-    }, [livePositions, filters.symbol, filters.accountId, filters.assetType, filters.tagIds]);
 
 
     // Update metrics when PositionsTable applies client-side filters (status filter)
@@ -457,6 +425,16 @@ export default function DashboardPage() {
                         delay={0.7}
                     />
                 </div>
+
+
+                {/* AI Insights Section */}
+                <AnimatedCard delay={0.8}>
+                    <AIInsightsCard
+                        startDate={filters.startDate}
+                        endDate={filters.endDate}
+                        accountId={filters.accountId}
+                    />
+                </AnimatedCard>
 
 
                 {/* Positions Table */}
