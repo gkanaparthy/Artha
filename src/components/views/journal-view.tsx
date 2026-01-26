@@ -152,7 +152,7 @@ function MobileTradeCard({
 }
 
 export function JournalView({ initialTrades, isDemo = false }: JournalViewProps) {
-  const { filters } = useFilters();
+  const { filters, refreshKey } = useFilters();
   const [trades, setTrades] = useState<Trade[]>(initialTrades || []);
   const [loading, setLoading] = useState(!isDemo);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
@@ -178,7 +178,7 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
     if (!isDemo) {
       fetchTrades();
     }
-  }, [fetchTrades, isDemo]);
+  }, [fetchTrades, isDemo, refreshKey]);
 
   const handleDelete = async (tradeId: string, e: React.MouseEvent) => {
     e.stopPropagation();

@@ -148,7 +148,7 @@ export function ReportsView({
   initialMetrics,
   isDemo = false,
 }: ReportsViewProps) {
-  const { filters } = useFilters();
+  const { filters, refreshKey } = useFilters();
   const [metrics, setMetrics] = useState<ExtendedMetrics | null>(
     initialMetrics
       ? { ...initialMetrics, mtdPnL: initialMetrics.netPnL * 0.4, ytdPnL: initialMetrics.netPnL }
@@ -185,7 +185,7 @@ export function ReportsView({
     if (!isDemo) {
       fetchMetrics();
     }
-  }, [fetchMetrics, isDemo]);
+  }, [fetchMetrics, isDemo, refreshKey]);
 
   if (loading) {
     return (

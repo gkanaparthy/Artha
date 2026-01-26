@@ -123,8 +123,7 @@ export function DashboardView({
   initialPositions,
   isDemo = false,
 }: DashboardViewProps) {
-  const { filters } = useFilters();
-  const [syncing, setSyncing] = useState(false);
+  const { filters, refreshKey, syncing } = useFilters();
   const [metrics, setMetrics] = useState<Metrics>(
     initialMetrics || {
       netPnL: 0,
@@ -144,7 +143,6 @@ export function DashboardView({
       closedTrades: [],
     }
   );
-  const [refreshKey, setRefreshKey] = useState(0);
   const [livePositions, setLivePositions] = useState<LivePositionsData | null>(null);
   const [liveLoading, setLiveLoading] = useState(false);
   const [allPositions, setAllPositions] = useState<DisplayPosition[]>(initialPositions || []);
@@ -255,24 +253,6 @@ export function DashboardView({
     return { totalUnrealizedPnl };
   }, [livePositions, filters.symbol, filters.accountId, filters.assetType]);
 
-  const handleSync = async () => {
-    if (isDemo) return; // Don't sync in demo mode
-
-    try {
-      setSyncing(true);
-      await fetch("/api/trades/sync", {
-        method: "POST",
-      });
-      fetchMetrics();
-      fetchLivePositions();
-      setRefreshKey((k) => k + 1);
-    } catch (e) {
-      console.error(e);
-      alert("Sync failed");
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   // Update metrics when PositionsTable applies client-side filters
   const handleMetricsUpdate = useCallback(
@@ -293,13 +273,13 @@ export function DashboardView({
     [isDemo]
   );
 
-  // Refetch when filters change (non-demo mode only)
+  // Refetch when filters or global refreshKey change (non-demo mode only)
   useEffect(() => {
     if (!isDemo) {
       fetchMetrics();
       fetchLivePositions();
     }
-  }, [fetchMetrics, fetchLivePositions, isDemo]);
+  }, [fetchMetrics, fetchLivePositions, isDemo, refreshKey]);
 
   const formatCurrency = (value: number, showSign = false) => {
     const formatted = Math.abs(value).toLocaleString("en-US", {
@@ -350,16 +330,6 @@ export function DashboardView({
                 : "Your trading performance at a glance"}
             </p>
           </div>
-          {!isDemo && (
-            <Button
-              onClick={handleSync}
-              disabled={syncing}
-              className="gap-2 btn-primary w-full sm:w-auto h-10 sm:h-11"
-            >
-              <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
-              {syncing ? "Syncing..." : "Sync Trades"}
-            </Button>
-          )}
         </motion.div>
 
         {/* Global Filter Bar */}
@@ -509,7 +479,7 @@ export function DashboardView({
             </CardHeader>
             <CardContent>
               <PositionsTable
-                key={refreshKey}
+                key={isDemo ? undefined : refreshKey}
                 onMetricsUpdate={isDemo ? undefined : handleMetricsUpdate}
                 initialPositions={initialPositions}
                 positions={allPositions}

@@ -115,9 +115,8 @@ function MetricCard({
 }
 
 export default function DashboardPage() {
-    const { filters } = useFilters();
+    const { filters, refreshKey, syncing } = useFilters();
     const router = useRouter();
-    const [syncing, setSyncing] = useState(false);
     const [metrics, setMetrics] = useState<Metrics>({
         netPnL: 0,
         winRate: 0,
@@ -135,7 +134,6 @@ export default function DashboardPage() {
         openPositionsCount: 0,
         closedTrades: [],
     });
-    const [refreshKey, setRefreshKey] = useState(0);
     const [livePositions, setLivePositions] = useState<LivePositionsData | null>(null);
     const [liveLoading, setLiveLoading] = useState(false);
     const [hasDisabledConnections, setHasDisabledConnections] = useState(false);
@@ -258,22 +256,6 @@ export default function DashboardPage() {
         };
     }, [livePositions, filters.symbol, filters.accountId, filters.assetType]);
 
-    const handleSync = async () => {
-        try {
-            setSyncing(true);
-            await fetch("/api/trades/sync", {
-                method: "POST",
-            });
-            // Fetch in parallel after sync completes
-            await Promise.all([fetchMetrics(), fetchLivePositions()]);
-            setRefreshKey((k) => k + 1);
-        } catch (e) {
-            console.error(e);
-            alert("Sync failed");
-        } finally {
-            setSyncing(false);
-        }
-    };
 
     // Update metrics when PositionsTable applies client-side filters (status filter)
     const handleMetricsUpdate = useCallback((newMetrics: Metrics) => {
@@ -290,10 +272,10 @@ export default function DashboardPage() {
         }));
     }, []);
 
-    // Refetch when filters change - parallel fetches for better performance
+    // Refetch when filters or global refreshKey change
     useEffect(() => {
         Promise.all([fetchMetrics(), fetchLivePositions(), checkDisabledConnections()]);
-    }, [fetchMetrics, fetchLivePositions, checkDisabledConnections]);
+    }, [fetchMetrics, fetchLivePositions, checkDisabledConnections, refreshKey]);
 
     const formatCurrency = (value: number, showSign = false) => {
         const formatted = Math.abs(value).toLocaleString("en-US", {
@@ -337,14 +319,6 @@ export default function DashboardPage() {
                             Your trading performance at a glance
                         </p>
                     </div>
-                    <Button
-                        onClick={handleSync}
-                        disabled={syncing}
-                        className="gap-2 btn-primary w-full sm:w-auto h-10 sm:h-11"
-                    >
-                        <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
-                        {syncing ? "Syncing..." : "Sync Trades"}
-                    </Button>
                 </motion.div>
 
                 {/* Global Filter Bar */}
@@ -372,31 +346,33 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Warning Banner for Disabled Connections */}
-                {hasDisabledConnections && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3 }}
-                    >
-                        <Alert variant="destructive">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Action Required</AlertTitle>
-                            <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                                <span>
-                                    Your broker connection is disconnected. Trades are not syncing.
-                                </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => router.push('/settings')}
-                                    className="shrink-0 border-white/20 hover:bg-white/10"
-                                >
-                                    Fix Now
-                                </Button>
-                            </AlertDescription>
-                        </Alert>
-                    </motion.div>
-                )}
+                {
+                    hasDisabledConnections && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Action Required</AlertTitle>
+                                <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                    <span>
+                                        Your broker connection is disconnected. Trades are not syncing.
+                                    </span>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => router.push('/settings')}
+                                        className="shrink-0 border-white/20 hover:bg-white/10"
+                                    >
+                                        Fix Now
+                                    </Button>
+                                </AlertDescription>
+                            </Alert>
+                        </motion.div>
+                    )
+                }
 
                 {/* Metrics Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -500,7 +476,7 @@ export default function DashboardPage() {
                         </CardContent>
                     </Card>
                 </AnimatedCard>
-            </div>
-        </PageTransition>
+            </div >
+        </PageTransition >
     );
 }

@@ -29,6 +29,10 @@ interface FilterContextType {
     resetFilters: () => void;
     accounts: Account[];
     setAccounts: (accounts: Account[]) => void;
+    refreshKey: number;
+    triggerRefresh: () => void;
+    syncing: boolean;
+    setSyncing: (syncing: boolean) => void;
 }
 
 const defaultFilters: FilterState = {
@@ -72,7 +76,13 @@ function loadFiltersFromStorage(): FilterState {
 export function FilterProvider({ children }: { children: ReactNode }) {
     const [filters, setFilters] = useState<FilterState>(loadFiltersFromStorage);
     const [accounts, setAccounts] = useState<Account[]>([]);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [syncing, setSyncing] = useState(false);
     const isMounted = useRef(false);
+
+    const triggerRefresh = useCallback(() => {
+        setRefreshKey(prev => prev + 1);
+    }, []);
 
     // Fetch accounts on mount
     useEffect(() => {
@@ -106,7 +116,17 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     }, []);
 
     return (
-        <FilterContext.Provider value={{ filters, setFilters, resetFilters, accounts, setAccounts: setAccountsStable }}>
+        <FilterContext.Provider value={{
+            filters,
+            setFilters,
+            resetFilters,
+            accounts,
+            setAccounts: setAccountsStable,
+            refreshKey,
+            triggerRefresh,
+            syncing,
+            setSyncing
+        }}>
             {children}
         </FilterContext.Provider>
     );

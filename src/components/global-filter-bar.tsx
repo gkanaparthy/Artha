@@ -74,7 +74,8 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
 
         if (filters.accountId && filters.accountId !== 'all') {
             const account = accounts.find(a => a.id === filters.accountId);
-            const accountLabel = account ? `${account.brokerName}` : 'Account';
+            const last4 = account ? (account.accountNumber ? account.accountNumber.slice(-4) : account.snapTradeAccountId.slice(-4)) : '';
+            const accountLabel = account ? `${account.brokerName} (${last4})` : 'Account';
             labels.push({
                 key: 'accountId',
                 label: `Account: ${accountLabel}`,
@@ -253,11 +254,16 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Accounts</SelectItem>
-                            {accounts.map((account) => (
-                                <SelectItem key={account.id} value={account.id} className="text-xs">
-                                    {account.brokerName || "Unknown"}
-                                </SelectItem>
-                            ))}
+                            {accounts.map((account) => {
+                                const last4 = account.accountNumber
+                                    ? account.accountNumber.slice(-4)
+                                    : account.snapTradeAccountId.slice(-4);
+                                return (
+                                    <SelectItem key={account.id} value={account.id} className="text-xs">
+                                        {account.brokerName || "Unknown"} ({last4})
+                                    </SelectItem>
+                                );
+                            })}
                         </SelectContent>
                     </Select>
                 )}
