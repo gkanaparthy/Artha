@@ -133,7 +133,11 @@ export default function JournalPage() {
     if (selectedPositionKeys.size > 0) {
       setSelectedPositionKeys(new Set());
     } else {
-      const keys = new Set(sortedTrades.map(t => t.positionKey).filter(Boolean) as string[]);
+      // Fix: Include all trades in selection logic if they are in the view (Bug #9)
+      // Note: We use trade.id as a fallback for selection if positionKey is missing
+      // but the bulk tagging API needs positionKeys. 
+      // For UX consistency, we select everything displayed.
+      const keys = new Set(sortedTrades.map(t => t.positionKey || `id:${t.id}`).filter(Boolean) as string[]);
       setSelectedPositionKeys(keys);
     }
   };
@@ -267,9 +271,10 @@ export default function JournalPage() {
       result = result.filter(t => {
         const tradeTagIds = t.tags?.map(tag => tag.id) || [];
         if (filters.tagFilterMode === 'all') {
-          return filters.tagIds.every(id => tradeTagIds.includes(id));
+          // Bug #6: [].every() is always true, so we must check if trade actually has tags
+          return tradeTagIds.length > 0 && filters.tagIds.every(id => tradeTagIds.includes(id));
         } else {
-          return filters.tagIds.some(id => tradeTagIds.includes(id));
+          return tradeTagIds.length > 0 && filters.tagIds.some(id => tradeTagIds.includes(id));
         }
       });
     }
@@ -292,7 +297,8 @@ export default function JournalPage() {
     filters.endDate ||
     filters.action !== "ALL" ||
     filters.accountId !== "all" ||
-    filters.assetType !== "all";
+    filters.assetType !== "all" ||
+    (filters.tagIds && filters.tagIds.length > 0); // Fix Bug #10
 
   const isFilteringTrades = hasActiveFilters && sortedTrades.length < trades.length;
 
@@ -559,7 +565,7 @@ export default function JournalPage() {
                             <input
                               type="checkbox"
                               className="rounded border-gray-300 focus:ring-primary h-4 w-4"
-                              checked={selectedPositionKeys.size > 0 && selectedPositionKeys.size === new Set(sortedTrades.map(t => t.positionKey).filter(Boolean)).size}
+                              checked={selectedPositionKeys.size > 0 && selectedPositionKeys.size === new Set(sortedTrades.map(t => t.positionKey || `id:${t.id}`)).size}
                               onChange={toggleAll}
                             />
                           </TableHead>
@@ -620,8 +626,8 @@ export default function JournalPage() {
                                   <input
                                     type="checkbox"
                                     className="rounded border-gray-300 focus:ring-primary h-4 w-4"
-                                    checked={trade.positionKey ? selectedPositionKeys.has(trade.positionKey) : false}
-                                    onChange={() => toggleSelection(trade.positionKey)}
+                                    checked={selectedPositionKeys.has(trade.positionKey || `id:${trade.id}`)}
+                                    onChange={() => toggleSelection(trade.positionKey || `id:${trade.id}`)}
                                   />
                                 </TableCell>
                                 <TableCell className="font-medium text-muted-foreground whitespace-nowrap">
@@ -700,7 +706,8 @@ export default function JournalPage() {
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 glass border border-primary/20 shadow-2xl rounded-full px-6 py-3 flex items-center gap-6"
+            // Bug #19: Better mobile positioning (bottom-20 on mobile to clear nav)
+            className="fixed bottom-20 sm:bottom-8 left-1/2 -translate-x-1/2 z-50 glass border border-primary/20 shadow-2xl rounded-full px-6 py-3 flex items-center gap-6"
           >
             <div className="flex flex-col">
               <span className="text-sm font-bold">{selectedPositionKeys.size} positions selected</span>

@@ -23,16 +23,26 @@ export function parsePositionKey(key: string): {
             // Fallback for old colon-based keys if necessary, or just fail
             // For chaos recovery, we might want to try legacy parse here
             if (key.includes(':')) {
-                const oldParts = key.split(':');
-                if (oldParts.length >= 3) {
-                    const openedAtStr = oldParts.slice(-3).join(':');
+                // Legacy format: {accountId}:{symbol}:{openedAtISO}
+                // Bug #8: Symbols can contain colons. We should look for the ISO date pattern at the end.
+                // ISO date example: 2024-01-15T09:30:00.000Z
+                const isoDateRegex = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.+/;
+                const match = key.match(isoDateRegex);
+
+                if (match) {
+                    const openedAtStr = match[0];
                     const openedAt = new Date(openedAtStr);
                     if (!isNaN(openedAt.getTime())) {
-                        return {
-                            accountId: oldParts[0],
-                            symbol: oldParts.slice(1, -3).join(':'),
-                            openedAt
-                        };
+                        // The part before the timestamp is accountId:symbol
+                        const prefix = key.slice(0, match.index! - 1); // remove trailing colon
+                        const firstColonIndex = prefix.indexOf(':');
+                        if (firstColonIndex !== -1) {
+                            return {
+                                accountId: prefix.slice(0, firstColonIndex),
+                                symbol: prefix.slice(firstColonIndex + 1),
+                                openedAt
+                            };
+                        }
                     }
                 }
             }

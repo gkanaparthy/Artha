@@ -20,10 +20,10 @@ model User {
   updatedAt           DateTime        @updatedAt
   accounts            Account[]
   brokerAccounts      BrokerAccount[]
-  sessions            Session[]
-  tradeGroups         TradeGroup[]
-  tagDefinitions      TagDefinition[]
   positionTags        PositionTag[]
+  sessions            Session[]
+  tagDefinitions      TagDefinition[]
+  tradeGroups         TradeGroup[]
 }
 
 model Account {
@@ -65,33 +65,30 @@ model VerificationToken {
 }
 
 model BrokerAccount {
-  id                 String    @id @default(cuid())
+  id                 String       @id @default(cuid())
   userId             String
   brokerName         String?
-  snapTradeAccountId String    @unique
+  snapTradeAccountId String       @unique
   accountNumber      String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
   meta               String?
-
-  // Connection status fields
-  disabled           Boolean   @default(false)
+  authorizationId    String?
+  disabled           Boolean      @default(false)
   disabledAt         DateTime?
   disabledReason     String?
-  lastSyncedAt       DateTime?
   lastCheckedAt      DateTime?
-  authorizationId    String?
-
+  lastSyncedAt       DateTime?
   user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  trades             Trade[]
   tradeGroups        TradeGroup[]
+  trades             Trade[]
 
   @@index([userId, disabled])
   @@map("broker_accounts")
 }
 
 model Trade {
-  id                 String        @id @default(cuid())
+  id                 String          @id @default(cuid())
   accountId          String
   symbol             String
   universalSymbolId  String?
@@ -99,39 +96,113 @@ model Trade {
   price              Float
   action             String
   timestamp          DateTime
-  fees               Float         @default(0)
-  currency           String        @default("USD")
+  fees               Float           @default(0)
+  currency           String          @default("USD")
   type               String
   optionType         String?
   strikePrice        Float?
   expiryDate         DateTime?
   optionAction       String?
-  contractMultiplier Int           @default(1)
-  snapTradeTradeId   String?       @unique
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  contractMultiplier Int             @default(1)
+  snapTradeTradeId   String?         @unique
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
   positionKey        String?
-  account            BrokerAccount @relation(fields: [accountId], references: [id])
-  tags               Tag[]         @relation("TagToTrade")
   groupLegs          TradeGroupLeg[]
+  account            BrokerAccount   @relation(fields: [accountId], references: [id])
 
   @@index([accountId])
   @@index([symbol])
   @@index([timestamp])
   @@index([positionKey])
+  @@index([accountId, positionKey])
   @@map("trades")
 }
 
-model Tag {
-  id     String  @id @default(cuid())
-  name   String  @unique
-  color  String  @default("#000000")
-  trades Trade[] @relation("TagToTrade")
+model TagDefinition {
+  id          String        @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  category    TagCategory
+  color       String        @default("#6B7280")
+  icon        String?
+  isDefault   Boolean       @default(false)
+  isArchived  Boolean       @default(false)
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  usages      PositionTag[]
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("tags")
+  @@unique([userId, name])
+  @@index([userId, category])
+  @@index([userId, isArchived])
+  @@map("tag_definitions")
 }
 
-// Strategy types for multi-leg options grouping
+model PositionTag {
+  id              String        @id @default(cuid())
+  positionKey     String
+  tagDefinitionId String
+  userId          String
+  createdAt       DateTime      @default(now())
+  tagDefinition   TagDefinition @relation(fields: [tagDefinitionId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([positionKey, tagDefinitionId])
+  @@index([userId, positionKey])
+  @@index([tagDefinitionId])
+  @@map("position_tags")
+}
+
+model TradeGroup {
+  id               String          @id @default(cuid())
+  userId           String
+  name             String?
+  strategyType     StrategyType
+  underlyingSymbol String
+  accountId        String
+  openedAt         DateTime
+  closedAt         DateTime?
+  expirationDate   DateTime?
+  netPremium       Float           @default(0)
+  realizedPnL      Float           @default(0)
+  maxProfit        Float?
+  maxLoss          Float?
+  autoDetected     Boolean         @default(true)
+  confidence       Float?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  legs             TradeGroupLeg[]
+  account          BrokerAccount   @relation(fields: [accountId], references: [id])
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, underlyingSymbol])
+  @@index([userId, openedAt])
+  @@map("trade_groups")
+}
+
+model TradeGroupLeg {
+  id             String     @id @default(cuid())
+  groupId        String
+  tradeId        String
+  legNumber      Int
+  legType        String
+  strikePrice    Float?
+  expirationDate DateTime?
+  quantity       Int
+  entryPrice     Float
+  exitPrice      Float?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  group          TradeGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  trade          Trade      @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, tradeId])
+  @@map("trade_group_legs")
+}
+
 enum StrategyType {
   VERTICAL_SPREAD_BULL_CALL
   VERTICAL_SPREAD_BEAR_CALL
@@ -147,105 +218,8 @@ enum StrategyType {
 }
 
 enum TagCategory {
-  SETUP       // Trading setups/strategies
-  MISTAKE     // Rule violations and errors
-  EMOTION     // Emotional states during trade
-  CUSTOM      // User-defined tags
-}
-
-// ============================================
-// TAG DEFINITION (User-scoped)
-// ============================================
-model TagDefinition {
-  id          String      @id @default(cuid())
-  userId      String
-  name        String
-  description String?
-  category    TagCategory
-  color       String      @default("#6B7280")
-  icon        String?     // Optional emoji or icon name
-  isDefault   Boolean     @default(false)  // System-provided starter tag
-  isArchived  Boolean     @default(false)  // Soft delete
-  sortOrder   Int         @default(0)      // For custom ordering
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  usages      PositionTag[]
-
-  @@unique([userId, name])  // Unique per user, not globally
-  @@index([userId, category])
-  @@index([userId, isArchived])
-  @@map("tag_definitions")
-}
-
-// ============================================
-// POSITION TAG (Many-to-many junction)
-// ============================================
-model PositionTag {
-  id              String    @id @default(cuid())
-  positionKey     String    // Composite key: "{accountId}:{symbol}:{openedAt}"
-  tagDefinitionId String
-  userId          String    // Denormalized for RLS
-  notes           String?   // Optional note specific to this tagging
-  createdAt       DateTime  @default(now())
-
-  tagDefinition   TagDefinition @relation(fields: [tagDefinitionId], references: [id], onDelete: Cascade)
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([positionKey, tagDefinitionId])
-  @@index([userId, positionKey])
-  @@index([tagDefinitionId])
-  @@map("position_tags")
-}
-
-// Trade groups for multi-leg options strategies
-model TradeGroup {
-  id               String       @id @default(cuid())
-  userId           String
-  name             String?
-  strategyType     StrategyType
-  underlyingSymbol String
-  accountId        String
-  openedAt         DateTime
-  closedAt         DateTime?
-  expirationDate   DateTime?
-  netPremium       Float        @default(0)
-  realizedPnL      Float        @default(0)
-  maxProfit        Float?
-  maxLoss          Float?
-  autoDetected     Boolean      @default(true)
-  confidence       Float?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-
-  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  account BrokerAccount   @relation(fields: [accountId], references: [id])
-  legs    TradeGroupLeg[]
-
-  @@index([userId, underlyingSymbol])
-  @@index([userId, openedAt])
-  @@map("trade_groups")
-}
-
-// Individual legs within a trade group
-model TradeGroupLeg {
-  id             String    @id @default(cuid())
-  groupId        String
-  tradeId        String
-  legNumber      Int
-  legType        String
-  strikePrice    Float?
-  expirationDate DateTime?
-  quantity       Int
-  entryPrice     Float
-  exitPrice      Float?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  group TradeGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  trade Trade      @relation(fields: [tradeId], references: [id], onDelete: Cascade)
-
-  @@unique([groupId, tradeId])
-  @@map("trade_group_legs")
+  SETUP
+  MISTAKE
+  EMOTION
+  CUSTOM
 }

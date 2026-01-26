@@ -39,7 +39,13 @@ export async function POST(req: Request) {
             count += result.count;
         }
 
-        return NextResponse.json({ success: true, count });
+        return NextResponse.json({
+            success: true,
+            count, // backward compatibility
+            created: count,
+            skipped: data.length - count,
+            total: data.length
+        });
     } catch (error) {
         console.error('Error bulk tagging positions:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

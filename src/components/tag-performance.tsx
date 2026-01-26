@@ -104,9 +104,8 @@ export function TagPerformance() {
 
     const totalMistakeCost = categoryStats[TagCategory.MISTAKE].reduce((sum, s) => sum + s.totalPnL, 0);
     const totalSetupPnL = categoryStats[TagCategory.SETUP].reduce((sum, s) => sum + s.totalPnL, 0);
-    // Note: totalPnL from metrics might be different from sum of tags if some trades are untagged.
-    // For "What If", we want to show: current tagged P&L vs (current tagged P&L - mistakes).
-    const currentTaggedPnL = data.reduce((sum, s) => sum + (s.category === TagCategory.MISTAKE ? 0 : s.totalPnL), 0) + totalMistakeCost;
+    // currentTaggedPnL should be the sum of all tagged P&L (Bug #7)
+    const currentTaggedPnL = data.reduce((sum, s) => sum + s.totalPnL, 0);
 
     return (
         <div className="space-y-6">

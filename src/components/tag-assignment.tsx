@@ -33,6 +33,11 @@ let cachedTags: TagDefinition[] | null = null;
 let cachedTagsTimestamp = 0;
 const TAGS_CACHE_DURATION = 30000; // 30 seconds
 
+export function clearTagCache() {
+    cachedTags = null;
+    cachedTagsTimestamp = 0;
+}
+
 export function TagAssignment({ positionKey, className }: TagAssignmentProps) {
     const [positionTags, setPositionTags] = useState<PositionTag[]>([]);
     const [allTags, setAllTags] = useState<TagDefinition[]>(cachedTags || []);
@@ -227,9 +232,12 @@ export function TagAssignment({ positionKey, className }: TagAssignmentProps) {
                                         </div>
                                         {tags.map((tag) => {
                                             const isSelected = positionTags.some(pt => pt.tagDefinitionId === tag.id);
+                                            const isProcessing = saving || removingId === tag.id;
+
                                             return (
                                                 <button
                                                     key={tag.id}
+                                                    disabled={isProcessing}
                                                     onClick={() => {
                                                         if (isSelected) {
                                                             handleRemoveTag(tag.id);
@@ -239,14 +247,24 @@ export function TagAssignment({ positionKey, className }: TagAssignmentProps) {
                                                     }}
                                                     className={cn(
                                                         "w-full flex items-center justify-between px-2 py-1.5 text-sm rounded-md transition-colors",
-                                                        isSelected ? "bg-primary/10 text-primary" : "hover:bg-accent"
+                                                        isSelected ? "bg-primary/10 text-primary" : "hover:bg-accent",
+                                                        isProcessing && "opacity-50 cursor-not-allowed"
                                                     )}
                                                 >
                                                     <div className="flex items-center gap-2">
                                                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
                                                         <span>{tag.name}</span>
                                                     </div>
-                                                    {isSelected && <Check className="h-4 w-4" />}
+                                                    {isSelected && (
+                                                        removingId === tag.id ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                                        ) : (
+                                                            <Check className="h-4 w-4" />
+                                                        )
+                                                    )}
+                                                    {!isSelected && saving && (
+                                                        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                                                    )}
                                                 </button>
                                             );
                                         })}

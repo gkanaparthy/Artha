@@ -68,18 +68,16 @@ export async function GET(req: Request) {
         (filters as any).tagDefs = defMap;
 
         // 3. Use robust FIFO engine
-        const { filteredTrades } = calculateMetricsFromTrades(trades, filters);
+        const { filteredTrades, filteredOpenPositions } = calculateMetricsFromTrades(trades, filters);
 
         // 4. Aggregate by Tag
         const tagAnalytics: Record<string, any> = {};
 
-        // filteredTrades contains only Closed Trades that match the date filter.
-        // Each trade has a 'tags' array attached by the FIFO engine.
+        // Helper to aggregate stats
+        const aggregate = (item: any, pnl: number, isClosed: boolean) => {
+            if (!item.tags || item.tags.length === 0) return;
 
-        for (const trade of filteredTrades) {
-            if (!trade.tags || trade.tags.length === 0) continue;
-
-            for (const tag of trade.tags) {
+            for (const tag of item.tags) {
                 if (!tagAnalytics[tag.id]) {
                     tagAnalytics[tag.id] = {
                         id: tag.id,
@@ -95,11 +93,25 @@ export async function GET(req: Request) {
                 }
 
                 const stats = tagAnalytics[tag.id];
-                stats.totalPnL += trade.pnl;
-                stats.tradeCount += 1; // This is per closed trade segment
-                if (trade.pnl > 0) stats.winCount += 1;
-                else stats.lossCount += 1;
+                stats.totalPnL += pnl;
+                stats.tradeCount += 1;
+                if (isClosed) {
+                    if (pnl > 0) stats.winCount += 1;
+                    else if (pnl < 0) stats.lossCount += 1;
+                }
             }
+        };
+
+        // Aggregate closed trades
+        for (const trade of filteredTrades) {
+            aggregate(trade, trade.pnl, true);
+        }
+
+        // Aggregate open positions (Bug #29)
+        for (const pos of filteredOpenPositions) {
+            // For now, open positions have 0 realized P&L 
+            // but we count them in tradeCount
+            aggregate(pos, 0, false);
         }
 
         // Finalize stats

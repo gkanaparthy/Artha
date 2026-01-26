@@ -2,12 +2,16 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { TagCategory } from '@prisma/client';
+import { applyRateLimit } from '@/lib/ratelimit';
 
 export async function PATCH(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const rateLimitResponse = await applyRateLimit(req, 'api');
+        if (rateLimitResponse) return rateLimitResponse;
+
         const session = await auth();
         if (!session?.user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -73,6 +77,9 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const rateLimitResponse = await applyRateLimit(req, 'delete');
+        if (rateLimitResponse) return rateLimitResponse;
+
         const session = await auth();
         if (!session?.user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

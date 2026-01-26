@@ -260,20 +260,15 @@ export class SnapTradeService {
         console.log('[SnapTrade Sync] Total activities received:', tradeData.length);
 
         let count = 0;
+        const affectedGroups = new Set<string>(); // accountId:symbol
 
         for (const trade of tradeData) {
-            // Filter only "trade" types (BUY/SELL)
-            // SnapTrade "type" can be DIVIDEND, etc.
-            // We are interested in BUY, SELL, maybe others.
-            // Meaningful types: BUY, SELL, SPLIT, ASSIGNMENT, EXERCISES
-
             const action = trade.type?.toUpperCase();
             if (!action) {
                 skippedTrades++;
                 continue;
             }
 
-            // Check if this trade is on the permanent blocklist
             const tradeId = trade.id;
             const blockCheck = await import('../tradeBlocklist').then(m => m.isTradeBlocked(tradeId));
             if (blockCheck.blocked) {
@@ -282,11 +277,8 @@ export class SnapTradeService {
                 continue;
             }
 
-            // Ensure account exists locally (it should from step 1)
-            // Use _accountId we attached, or fall back to trade.account?.id for old API
             const snapTradeAccountId = trade._accountId || trade.account?.id;
             if (!snapTradeAccountId) {
-                console.log('[SnapTrade Sync] Skipping trade - no account ID:', trade.id);
                 skippedTrades++;
                 continue;
             }
@@ -299,7 +291,6 @@ export class SnapTradeService {
                 continue;
             }
 
-            // Parse trade date - SnapTrade may use snake_case or camelCase depending on SDK version
             const rawTradeDate = trade.trade_date || trade.tradeDate;
             const rawSettlementDate = trade.settlement_date || trade.settlementDate;
 
@@ -309,52 +300,35 @@ export class SnapTradeService {
             } else if (rawSettlementDate) {
                 tradeTimestamp = new Date(rawSettlementDate);
             } else {
-                console.warn('[SnapTrade Sync] Trade missing date, skipping:', trade.id, 'Raw data:', JSON.stringify(trade));
-                skippedTrades++;
-                continue; // Skip trades without valid dates instead of using import date
-            }
-
-            // Validate the parsed date
-            if (isNaN(tradeTimestamp.getTime())) {
-                console.warn('[SnapTrade Sync] Invalid date for trade:', trade.id, 'Raw values:', { rawTradeDate, rawSettlementDate });
                 skippedTrades++;
                 continue;
             }
 
-            // SnapTrade SDK uses snake_case for all fields
-            // option_symbol contains option details, symbol contains stock details
+            if (isNaN(tradeTimestamp.getTime())) {
+                skippedTrades++;
+                continue;
+            }
+
             const optionSymbol = trade.option_symbol;
             const isOption = !!optionSymbol;
 
-            // For options, use the OCC ticker from option_symbol; for stocks, use symbol
             const tradeSymbol = isOption
                 ? (optionSymbol.ticker || trade.symbol?.symbol || 'UNKNOWN')
                 : (trade.symbol?.symbol || trade.symbol?.raw_symbol || 'UNKNOWN');
 
-            // Contract multiplier: 100 for standard options, 10 for mini options, 1 for stocks
             const contractMultiplier = isOption
                 ? (optionSymbol.is_mini_option ? 10 : 100)
                 : 1;
 
-            // Option action (BUY_TO_OPEN, SELL_TO_CLOSE, etc.) is in trade.option_type
             const optionAction = trade.option_type || null;
-
             const quantity = trade.units || 0;
 
-            console.log('[SnapTrade Sync] Processing trade:', trade.id, 'Date:', tradeTimestamp.toISOString(), 'Symbol:', tradeSymbol, 'Type:', isOption ? 'OPTION' : 'STOCK', 'Multiplier:', contractMultiplier);
-
-            // Use transaction for atomic check-and-insert to prevent race conditions
-            const result = await prisma.$transaction(async (tx) => {
-                // Primary deduplication: Check by snapTradeTradeId (unique identifier from SnapTrade)
-                // This is the only reliable way to identify duplicates - content-based dedup
-                // was causing legitimate trades to be skipped (e.g., multiple partial fills
-                // with same qty/price at same time)
+            await prisma.$transaction(async (tx) => {
                 if (trade.id) {
                     const existingBySnapTradeId = await tx.trade.findUnique({
                         where: { snapTradeTradeId: trade.id }
                     });
                     if (existingBySnapTradeId) {
-                        // Update the existing trade with latest data
                         await tx.trade.update({
                             where: { id: existingBySnapTradeId.id },
                             data: {
@@ -362,42 +336,51 @@ export class SnapTradeService {
                                 symbol: tradeSymbol,
                                 universalSymbolId: isOption ? optionSymbol.id : trade.symbol?.id,
                                 type: isOption ? 'OPTION' : 'STOCK',
-                                optionType: optionSymbol?.option_type || null,
+                                optionType: optionSymbol?.option_type ? optionSymbol.option_type.trim() : null,
                                 strikePrice: optionSymbol?.strike_price || null,
                                 expiryDate: optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null,
-                                optionAction: optionAction,
+                                optionAction: optionAction ? optionAction.trim() : null,
                                 contractMultiplier: contractMultiplier,
                             }
                         });
-                        return { skipped: false, updated: true, tradeId: existingBySnapTradeId.id };
+                        return;
                     }
                 }
 
-                // Create new trade
-                const newTrade = await tx.trade.create({
+                await tx.trade.create({
                     data: {
                         accountId: account.id,
                         symbol: tradeSymbol,
                         universalSymbolId: isOption ? optionSymbol.id : trade.symbol?.id,
                         quantity: quantity,
-                        price: trade.price || 0, // Keep original price for storage
-                        action: action,
+                        price: trade.price || 0,
+                        action: action.trim(),
                         timestamp: tradeTimestamp,
                         fees: trade.fee || 0,
                         currency: trade.currency?.code || 'USD',
                         type: isOption ? 'OPTION' : 'STOCK',
-                        snapTradeTradeId: trade.id || null, // Handle undefined/null explicitly
+                        snapTradeTradeId: trade.id || null,
                         contractMultiplier: contractMultiplier,
-                        optionAction: optionAction,
-                        optionType: optionSymbol?.option_type || null,
+                        optionAction: optionAction ? optionAction.trim() : null,
+                        optionType: optionSymbol?.option_type ? optionSymbol.option_type.trim() : null,
                         strikePrice: optionSymbol?.strike_price || null,
                         expiryDate: optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null,
                     },
                 });
-                return { skipped: false, created: true, tradeId: newTrade.id };
             });
 
+            affectedGroups.add(`${account.id}:${tradeSymbol}`);
             count++;
+        }
+
+        // RECALCULATE KEYS FOR AFFECTED GROUPS (Bug #35)
+        if (affectedGroups.size > 0) {
+            console.log(`[SnapTrade Sync] Recalculating position keys for ${affectedGroups.size} groups...`);
+            const { tradeGroupingService } = await import('./trade-grouping.service');
+            for (const group of affectedGroups) {
+                const [accId, sym] = group.split(':');
+                await tradeGroupingService.recalculatePositionKeys(accId, sym);
+            }
         }
 
         const accountCount = accounts.data?.length || 0;

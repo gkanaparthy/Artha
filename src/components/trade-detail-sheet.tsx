@@ -27,6 +27,8 @@ import { format } from "date-fns";
 import { useState } from "react";
 import { TagAssignment } from "./tag-assignment";
 
+import { generatePositionKey } from "@/lib/utils/position-key";
+
 interface Trade {
   id: string;
   symbol: string;
@@ -59,8 +61,8 @@ export function TradeDetailSheet({
 }: TradeDetailSheetProps) {
   if (!trade) return null;
 
-  // Use the canonical positionKey if available, otherwise fallback to legacy construction for robustness (though all trades should have keys now)
-  const positionKey = trade.positionKey || `${trade.accountId}:${trade.symbol}:${trade.timestamp}`;
+  // Use the canonical positionKey if available, otherwise fallback to versioned construction (Bug #1)
+  const positionKey = trade.positionKey || generatePositionKey(trade.accountId, trade.symbol, new Date(trade.timestamp));
   const value = trade.price * trade.quantity;
   const isBuy = trade.action.includes("BUY") || trade.action === "ASSIGNMENT";
 

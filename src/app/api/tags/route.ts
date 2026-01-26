@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { TagCategory } from '@prisma/client';
+import { applyRateLimit } from '@/lib/ratelimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,11 @@ export async function GET() {
             where: {
                 userId: session.user.id,
                 isArchived: false,
+            },
+            include: {
+                _count: {
+                    select: { usages: true }
+                }
             },
             orderBy: [
                 { category: 'asc' },
@@ -33,6 +39,9 @@ export async function GET() {
 
 export async function POST(req: Request) {
     try {
+        const rateLimitResponse = await applyRateLimit(req, 'api');
+        if (rateLimitResponse) return rateLimitResponse;
+
         const session = await auth();
         if (!session?.user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -43,6 +52,13 @@ export async function POST(req: Request) {
 
         if (!name || !category) {
             return NextResponse.json({ error: 'Name and category are required' }, { status: 400 });
+        }
+
+        // Bug #24: Validate icon is a single character (standard emoji) or empty
+        if (icon && icon.length > 2) { // 2 for surrogate pairs/emojis
+            // Use a regex to check for single emoji if possible, or just length
+            // Most emojis are 1 or 2 characters in JS length
+            return NextResponse.json({ error: 'Icon must be a single emoji/character' }, { status: 400 });
         }
 
         // Verify valid category

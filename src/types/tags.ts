@@ -18,6 +18,9 @@ export interface TagDefinition {
     sortOrder: number;
     createdAt: Date;
     updatedAt: Date;
+    _count?: {
+        usages: number;
+    };
 }
 
 export interface PositionTag {

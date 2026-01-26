@@ -1501,6 +1501,33 @@ describe('Edge Cases', () => {
 
 ---
 
+## Part 13: Technical Maintenance & Safeguards
+
+The implementation of this system highlighted several critical technical requirements for long-term stability and developer vigilance.
+
+### 13.1 Code Replacement Safety (Vigilance)
+**🚨 CRITICAL:** When editing core logic files (like `SnapTradeService.ts`), NEVER use placeholders like `// ... logic` or `// (previous code)`.
+- **Reason:** The `replace_file_content` tool performs a literal replacement. Using placeholders effectively deletes the omitted code, breaking critical features like trade deduplication or symbol parsing.
+- **Safeguard:** Always provide the full, expanded code block for all functionality within the target range.
+
+### 13.2 Position Key Consistency
+All trades must be grouped into position segments using the centralized `TradeGroupingService`.
+- **Mechanism:** The service uses a net-quantity tracker (including short positions and option expirations) to identify when a position is "Flat" (0 quantity).
+- **Mandatory Hook:** Every trade ingestion path (Live Sync, Manual Data Import, etc.) MUST call `tradeGroupingService.recalculatePositionKeys(accountId, symbol)` immediately after saving trades.
+- **Key Format:** Use the `v1` versioned key: `v1|accountId|symbol|openedAtTimestamp`.
+
+### 13.3 Performance Architecture
+As users accumulate thousands of trades, O(N²) operations will crash the browser/server.
+- **Rule:** Never perform `.filter()` or `.find()` inside a loop over trades.
+- **Solution:** Pre-group data into a `Map` or `Set` before the main processing loop.
+- **Caching:** Cache `TagDefinition` lookups in UI components (see `tag-assignment.tsx`) to avoid redundant API calls.
+
+### 13.4 Migration Discipline
+Any change to the position-key format or tagging logic must be accompanied by a migration script (`scripts/migrate-*.ts`).
+- **Policy:** Never leave orphaned tags. If logic changes, backfill ALL historical trade keys before declaring the feature "updated".
+
+---
+
 ## Summary
 
 This tagging system addresses the core problems traders face:
@@ -1513,4 +1540,4 @@ This tagging system addresses the core problems traders face:
 
 The position-based approach (vs trade-based) simplifies the mental model and makes analysis more meaningful. The category system keeps tags organized as the collection grows.
 
-**Next Step:** Begin Phase 1 - Database schema changes
+**Final Status:** All implementation phases completed. System is robust and self-healing via recurring position key recalculation.

@@ -532,3 +532,28 @@ if (token !== process.env.CRON_SECRET) {
 }
 ```
 
+## 🚨 TOP PRIORITY: Developer Safeguards & Hazard Avoidance
+
+To prevent critical system failures and data loss, adhere to these "Vigilance Lessons" learned during complex feature migrations:
+
+### 1. Zero Tolerance for Code Placeholders
+**NEVER** use comments like `// ... rest of logic` or `// (previous code)` in a `replace_file_content` call.
+*   **Risk**: The tool performs a literal string replacement. These placeholders literally delete the existing logic they are meant to "skip", leading to broken sync engines, data silos, and silent failures.
+*   **Action**: Always provide the **complete, expanded code block** for the entire range you are replacing.
+
+### 2. Trade Grouping Continuity
+Any trade ingestion (SnapTrade Sync, CSV Import, etc.) MUST be followed by a position key recalculation.
+*   **Mechanism**: Use `tradeGroupingService.recalculatePositionKeys(accountId, symbol)`.
+*   **Rationale**: Position-based tagging depends on consistent `positionKey` boundaries. Without immediate recalculation, new trades will be invisible to the tagging system or misgrouped.
+
+### 3. O(N²) Loop Prevention
+Processing thousands of trades requires Map-based lookups.
+*   **Anti-Pattern**: Using `.filter()` or `.find()` inside a loop over trades.
+*   **Pattern**: Pre-group into a `Map<string, T[]>` before processing. This is mandatory for Journal and Analytics APIs to remain performant.
+
+### 4. Schema Evolution Protocol
+Changing unique identifiers (like the `v1|...` position key) is a "Nuclear Event".
+*   **Requirement**: Never update a key format without also creating a `scripts/migrate-*.ts` script to port existing data.
+*   **Verification**: Run a count of orphaned tags before and after migration to ensure zero data loss.
+
+

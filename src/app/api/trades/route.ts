@@ -58,14 +58,18 @@ export async function GET(req: Request) {
             }
         });
 
-        // Map tags to trades
+        // Map tags to trades efficiently (Bug #26)
+        const tagsByPositionKey = new Map<string, any[]>();
+        positionTags.forEach(pt => {
+            const list = tagsByPositionKey.get(pt.positionKey) || [];
+            list.push(pt.tagDefinition);
+            tagsByPositionKey.set(pt.positionKey, list);
+        });
+
         const tradesWithTags = trades.map(trade => {
-            const tags = positionTags
-                .filter(pt => pt.positionKey === trade.positionKey)
-                .map(pt => pt.tagDefinition);
             return {
                 ...trade,
-                tags // Replace or augment existing tags
+                tags: trade.positionKey ? (tagsByPositionKey.get(trade.positionKey) || []) : []
             };
         });
 

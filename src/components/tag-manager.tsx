@@ -48,6 +48,7 @@ import { toast } from "sonner";
 import { motion, Reorder } from "framer-motion";
 import { TagCategory, TagDefinition } from "@/types/tags";
 import { cn } from "@/lib/utils";
+import { clearTagCache } from "./tag-assignment";
 
 interface TagManagerProps {
     initialCategory?: TagCategory;
@@ -120,6 +121,7 @@ export function TagManager({ initialCategory = TagCategory.SETUP }: TagManagerPr
             toast.success(editingTag ? "Tag updated" : "Tag created");
             setIsDialogOpen(false);
             setEditingTag(null);
+            clearTagCache(); // Bug #12: Invalidate cache
             fetchTags();
         } catch (error: any) {
             toast.error(error.message);
@@ -127,12 +129,22 @@ export function TagManager({ initialCategory = TagCategory.SETUP }: TagManagerPr
     };
 
     const handleArchive = async (id: string) => {
+        const tag = tags.find(t => t.id === id);
+        const usageCount = tag?._count?.usages || 0;
+
+        if (usageCount > 0) {
+            if (!confirm(`This tag is currently used on ${usageCount} positions. Archiving it will hide it from the journal but keep historical data. Continue?`)) {
+                return;
+            }
+        }
+
         try {
             const res = await fetch(`/api/tags/${id}`, {
                 method: "DELETE"
             });
             if (!res.ok) throw new Error("Failed to archive tag");
             toast.success("Tag archived");
+            clearTagCache(); // Bug #12: Invalidate cache
             fetchTags();
         } catch (error) {
             toast.error("Failed to archive tag");
@@ -162,6 +174,11 @@ export function TagManager({ initialCategory = TagCategory.SETUP }: TagManagerPr
         });
         setIsDialogOpen(true);
     };
+
+    // Bug #17: Clear search when switching categories
+    useEffect(() => {
+        setSearchTerm("");
+    }, [activeCategory]);
 
     const handleReorder = async (newOrder: TagDefinition[]) => {
         // Optimistic update
@@ -299,6 +316,12 @@ export function TagManager({ initialCategory = TagCategory.SETUP }: TagManagerPr
                                                 {tag.isDefault && (
                                                     <Badge variant="secondary" className="text-[10px] py-0 px-1.5 uppercase font-bold tracking-tight opacity-70">
                                                         Default
+                                                    </Badge>
+                                                )}
+                                                {/* Bug #22: Usage count badge */}
+                                                {tag._count && tag._count.usages > 0 && (
+                                                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-normal opacity-50">
+                                                        {tag._count.usages} uses
                                                     </Badge>
                                                 )}
                                             </div>
