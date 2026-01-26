@@ -354,6 +354,7 @@ export function PositionsTable({
                             <TableHead className="text-right cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("return")}>
                                 <div className="flex items-center justify-end gap-2">Return {getSortIcon("return")}</div>
                             </TableHead>
+                            <TableHead>Tags</TableHead>
                             <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("broker")}>
                                 <div className="flex items-center gap-2">Broker {getSortIcon("broker")}</div>
                             </TableHead>
@@ -470,6 +471,21 @@ export function PositionsTable({
                                             ) : (
                                                 <span className="text-muted-foreground">—</span>
                                             )}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex gap-1 flex-wrap max-w-[100px]">
+                                                {position.tags && position.tags.map(tag => (
+                                                    <div
+                                                        key={tag.id}
+                                                        className="w-2 h-2 rounded-full shrink-0"
+                                                        style={{ backgroundColor: tag.color }}
+                                                        title={tag.name}
+                                                    />
+                                                ))}
+                                                {(!position.tags || position.tags.length === 0) && (
+                                                    <span className="text-[10px] text-muted-foreground opacity-30">—</span>
+                                                )}
+                                            </div>
                                         </TableCell>
                                         <TableCell className="text-muted-foreground text-sm">
                                             {position.broker}

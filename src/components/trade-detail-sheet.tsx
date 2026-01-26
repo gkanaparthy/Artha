@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
+import { TagAssignment } from "./tag-assignment";
 
 interface Trade {
   id: string;
@@ -39,6 +40,7 @@ interface Trade {
     brokerName: string | null;
   };
   tags: { id: string; name: string; color: string }[];
+  accountId: string;
 }
 
 interface TradeDetailSheetProps {
@@ -53,22 +55,12 @@ export function TradeDetailSheet({
   trade,
   open,
   onOpenChange,
-  onTagAdd,
-  onTagRemove,
 }: TradeDetailSheetProps) {
-  const [newTag, setNewTag] = useState("");
-
   if (!trade) return null;
 
+  const positionKey = `${trade.accountId}:${trade.symbol}:${trade.timestamp}`;
   const value = trade.price * trade.quantity;
-  const isBuy = trade.action === "BUY";
-
-  const handleAddTag = () => {
-    if (newTag.trim() && onTagAdd) {
-      onTagAdd(trade.id, newTag.trim());
-      setNewTag("");
-    }
-  };
+  const isBuy = trade.action.includes("BUY") || trade.action === "ASSIGNMENT";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -76,9 +68,8 @@ export function TradeDetailSheet({
         <SheetHeader>
           <div className="flex items-center gap-3">
             <div
-              className={`h-12 w-12 rounded-lg flex items-center justify-center ${
-                isBuy ? "bg-green-500/20" : "bg-red-500/20"
-              }`}
+              className={`h-12 w-12 rounded-lg flex items-center justify-center ${isBuy ? "bg-green-500/20" : "bg-red-500/20"
+                }`}
             >
               {isBuy ? (
                 <TrendingUp className="h-6 w-6 text-green-500" />
@@ -165,50 +156,11 @@ export function TradeDetailSheet({
                 Tags
               </h3>
 
-              <div className="flex flex-wrap gap-2">
-                {trade.tags && trade.tags.length > 0 ? (
-                  trade.tags.map((tag) => (
-                    <Badge
-                      key={tag.id}
-                      variant="secondary"
-                      className="pl-2 pr-1 py-1 flex items-center gap-1"
-                      style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
-                    >
-                      {tag.name}
-                      {onTagRemove && (
-                        <button
-                          onClick={() => onTagRemove(trade.id, tag.id)}
-                          className="ml-1 hover:bg-black/10 rounded-full p-0.5"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-sm text-muted-foreground">No tags</span>
-                )}
-              </div>
+              <TagAssignment positionKey={positionKey} />
 
-              {onTagAdd && (
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add a tag..."
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddTag();
-                      }
-                    }}
-                    className="flex-1"
-                  />
-                  <Button size="sm" variant="outline" onClick={handleAddTag}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
+              <p className="text-[10px] text-muted-foreground italic">
+                Tags are applied to this position based on symbol and date.
+              </p>
             </div>
 
             <Separator />

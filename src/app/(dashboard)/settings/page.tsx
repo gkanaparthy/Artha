@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
+import Link from "next/link";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +29,7 @@ import {
   Sun,
   AlertCircle,
   Trash2,
+  Tags,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
@@ -555,6 +557,40 @@ export default function SettingsPage() {
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </AnimatedCard>
+
+        {/* Trade Tags Management */}
+        <AnimatedCard delay={0.25}>
+          <Card className="card-hover overflow-hidden border-blue-500/20 bg-gradient-to-br from-card to-blue-500/5">
+            <CardHeader className="p-4 sm:p-6 pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                    <Tags className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base sm:text-lg">Trade Tags</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">Manage setups, mistakes, and emotions</CardDescription>
+                  </div>
+                </div>
+                <Link href="/settings/tags">
+                  <Button variant="outline" size="sm" className="h-9">
+                    Manage Tags
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <p className="text-sm text-muted-foreground mb-3">
+                Organize your trades by strategy, identify recurring mistakes, and track your emotional state.
+              </p>
+              <div className="flex gap-2">
+                <Badge variant="secondary" className="bg-green-500/10 text-green-600 dark:text-green-400 border-none">Setups</Badge>
+                <Badge variant="secondary" className="bg-red-500/10 text-red-600 dark:text-red-400 border-none">Mistakes</Badge>
+                <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-none">Emotions</Badge>
+              </div>
             </CardContent>
           </Card>
         </AnimatedCard>

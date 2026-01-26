@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "@/lib/export";
+import { TagPerformance } from "@/components/tag-performance";
 
 interface Metrics {
     netPnL: number;
@@ -150,6 +151,8 @@ export default function DashboardPage() {
             if (filters.endDate) params.append("endDate", filters.endDate);
             if (filters.accountId && filters.accountId !== 'all') params.append("accountId", filters.accountId);
             if (filters.assetType && filters.assetType !== 'all') params.append("assetType", filters.assetType);
+            if (filters.tagIds && filters.tagIds.length > 0) params.append("tagIds", filters.tagIds.join(","));
+            if (filters.tagFilterMode) params.append("tagFilterMode", filters.tagFilterMode);
 
             const res = await fetch(`/api/metrics?${params.toString()}`);
             const data = await res.json();
@@ -476,6 +479,17 @@ export default function DashboardPage() {
                         </CardContent>
                     </Card>
                 </AnimatedCard>
+
+                {/* Tag Insights */}
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5 text-purple-500" />
+                        <h2 className="text-xl font-semibold">Tag Insights</h2>
+                    </div>
+                    <AnimatedCard delay={0.8}>
+                        <TagPerformance />
+                    </AnimatedCard>
+                </div>
             </div >
         </PageTransition >
     );

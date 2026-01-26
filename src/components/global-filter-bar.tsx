@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
+import { TagFilterDropdown } from "@/components/tag-filter-dropdown";
 
 interface GlobalFilterBarProps {
     showStatusFilter?: boolean;
@@ -42,7 +43,8 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
         filters.endDate ||
         filters.status !== "all" ||
         filters.accountId !== "all" ||
-        filters.assetType !== "all";
+        filters.assetType !== "all" ||
+        (filters.tagIds && filters.tagIds.length > 0);
 
     // Get active filter labels for display
     const getActiveFilterLabels = () => {
@@ -97,6 +99,14 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                 key: 'status',
                 label: `Status: ${statusLabel}`,
                 onRemove: () => setFilters(prev => ({ ...prev, status: 'all' }))
+            });
+        }
+
+        if (filters.tagIds && filters.tagIds.length > 0) {
+            labels.push({
+                key: 'tagIds',
+                label: `${filters.tagIds.length} Tags (${filters.tagFilterMode})`,
+                onRemove: () => setFilters(prev => ({ ...prev, tagIds: [] }))
             });
         }
 
@@ -298,6 +308,9 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                         }));
                     }}
                 />
+
+                {/* Tag Filter */}
+                <TagFilterDropdown />
 
                 {/* Status Filter (Optional) */}
                 {showStatusFilter && (

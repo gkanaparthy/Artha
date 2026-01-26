@@ -39,6 +39,28 @@ DELETE FROM ... (without WHERE)   # Deletes all rows
 
 **If schema changes require destructive actions, STOP and ask the user first.**
 
+## Pre-Task Checklist
+
+**Before completing any task, run these mandatory checks:**
+
+1. **Security Audit**
+   - Check for SQL injection vulnerabilities
+   - Check for shell injection vulnerabilities
+   - Check for path traversal vulnerabilities
+   - Verify all user inputs are validated and sanitized
+
+2. **Code Quality**
+   - Run the test suite
+   - Check for TypeScript type errors
+   - Run ESLint and fix any linting errors
+
+3. **Commands**
+   ```bash
+   pnpm test        # Run test suite
+   pnpm build       # Check for type errors
+   pnpm lint        # Check for lint errors
+   ```
+
 ## Architecture
 
 ### Route Structure

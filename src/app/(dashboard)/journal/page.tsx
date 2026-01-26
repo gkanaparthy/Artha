@@ -15,7 +15,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Sparkles, Trash2, BookOpen, Layers, List, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import { TradeDetailSheet } from "@/components/trade-detail-sheet";
+import { TagPicker } from "@/components/tag-picker";
 import { StrategyGroupCard } from "@/components/strategy-group-card";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
@@ -53,6 +55,8 @@ export default function JournalPage() {
   const [strategiesLoading, setStrategiesLoading] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [selectedPositionKeys, setSelectedPositionKeys] = useState<Set<string>>(new Set());
+  const [isBulkTagging, setIsBulkTagging] = useState(false);
 
   const fetchTrades = useCallback(async () => {
     try {
@@ -109,6 +113,84 @@ export default function JournalPage() {
     } catch (err) {
       console.error(err);
       alert("Error deleting trade");
+    }
+  };
+
+  const toggleSelection = (positionKey: string | null) => {
+    if (!positionKey) return;
+    setSelectedPositionKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(positionKey)) {
+        next.delete(positionKey);
+      } else {
+        next.add(positionKey);
+      }
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selectedPositionKeys.size > 0) {
+      setSelectedPositionKeys(new Set());
+    } else {
+      const keys = new Set(sortedTrades.map(t => t.positionKey).filter(Boolean) as string[]);
+      setSelectedPositionKeys(keys);
+    }
+  };
+
+  const handleBulkTag = async (tagDefId: string) => {
+    if (selectedPositionKeys.size === 0) return;
+
+    try {
+      setIsBulkTagging(true);
+      const res = await fetch('/api/positions/bulk-tag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          positionKeys: Array.from(selectedPositionKeys),
+          tagDefinitionIds: [tagDefId]
+        })
+      });
+
+      if (res.ok) {
+        toast.success(`Applied tag to ${selectedPositionKeys.size} positions`);
+        fetchTrades(); // Refresh to show new tags
+        setSelectedPositionKeys(new Set());
+      } else {
+        toast.error("Failed to apply bulk tag");
+      }
+    } catch (error) {
+      toast.error("Error bulk tagging");
+    } finally {
+      setIsBulkTagging(false);
+    }
+  };
+
+  const handleBulkClear = async () => {
+    if (selectedPositionKeys.size === 0) return;
+    if (!confirm(`Clear all tags for ${selectedPositionKeys.size} positions?`)) return;
+
+    try {
+      setIsBulkTagging(true);
+      const res = await fetch('/api/positions/bulk-untag-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          positionKeys: Array.from(selectedPositionKeys)
+        })
+      });
+
+      if (res.ok) {
+        toast.success(`Cleared tags for ${selectedPositionKeys.size} positions`);
+        fetchTrades();
+        setSelectedPositionKeys(new Set());
+      } else {
+        toast.error("Failed to clear tags");
+      }
+    } catch (error) {
+      toast.error("Error clearing tags");
+    } finally {
+      setIsBulkTagging(false);
     }
   };
 
@@ -178,6 +260,18 @@ export default function JournalPage() {
     // Filter by asset type
     if (filters.assetType && filters.assetType !== "all") {
       result = result.filter(t => t.type === filters.assetType);
+    }
+
+    // Filter by tags
+    if (filters.tagIds && filters.tagIds.length > 0) {
+      result = result.filter(t => {
+        const tradeTagIds = t.tags?.map(tag => tag.id) || [];
+        if (filters.tagFilterMode === 'all') {
+          return filters.tagIds.every(id => tradeTagIds.includes(id));
+        } else {
+          return filters.tagIds.some(id => tradeTagIds.includes(id));
+        }
+      });
     }
 
     return result;
@@ -461,6 +555,14 @@ export default function JournalPage() {
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-muted/50">
+                          <TableHead className="w-[40px]">
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 focus:ring-primary h-4 w-4"
+                              checked={selectedPositionKeys.size > 0 && selectedPositionKeys.size === new Set(sortedTrades.map(t => t.positionKey).filter(Boolean)).size}
+                              onChange={toggleAll}
+                            />
+                          </TableHead>
                           <TableHead className="w-[180px] cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("timestamp")}>
                             <div className="flex items-center gap-2">Date {getSortIcon("timestamp")}</div>
                           </TableHead>
@@ -470,6 +572,7 @@ export default function JournalPage() {
                           <TableHead className="cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("action")}>
                             <div className="flex items-center gap-2">Action {getSortIcon("action")}</div>
                           </TableHead>
+                          <TableHead>Tags</TableHead>
                           <TableHead className="text-right cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("quantity")}>
                             <div className="flex items-center justify-end gap-2">Quantity {getSortIcon("quantity")}</div>
                           </TableHead>
@@ -513,6 +616,14 @@ export default function JournalPage() {
                                 animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
                                 transition={shouldAnimate ? { duration: 0.2, delay: i * 0.03 } : undefined}
                               >
+                                <TableCell onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    type="checkbox"
+                                    className="rounded border-gray-300 focus:ring-primary h-4 w-4"
+                                    checked={trade.positionKey ? selectedPositionKeys.has(trade.positionKey) : false}
+                                    onChange={() => toggleSelection(trade.positionKey)}
+                                  />
+                                </TableCell>
                                 <TableCell className="font-medium text-muted-foreground whitespace-nowrap">
                                   {format(new Date(trade.timestamp), "MMM d, yyyy")}
                                 </TableCell>
@@ -530,6 +641,21 @@ export default function JournalPage() {
                                   )}>
                                     {trade.action}
                                   </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex gap-1 flex-wrap max-w-[150px]">
+                                    {trade.tags && trade.tags.map(tag => (
+                                      <div
+                                        key={tag.id}
+                                        className="w-2 h-2 rounded-full shrink-0"
+                                        style={{ backgroundColor: tag.color }}
+                                        title={tag.name}
+                                      />
+                                    ))}
+                                    {(!trade.tags || trade.tags.length === 0) && (
+                                      <span className="text-[10px] text-muted-foreground opacity-30">—</span>
+                                    )}
+                                  </div>
                                 </TableCell>
                                 <TableCell className="text-right font-mono">
                                   {trade.quantity}
@@ -568,6 +694,46 @@ export default function JournalPage() {
           open={sheetOpen}
           onOpenChange={setSheetOpen}
         />
+
+        {/* Bulk Action Toolbar */}
+        {selectedPositionKeys.size > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 glass border border-primary/20 shadow-2xl rounded-full px-6 py-3 flex items-center gap-6"
+          >
+            <div className="flex flex-col">
+              <span className="text-sm font-bold">{selectedPositionKeys.size} positions selected</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Bulk Actions</span>
+            </div>
+
+            <div className="h-8 w-px bg-border mx-2" />
+
+            <div className="flex items-center gap-2">
+              <TagPicker onSelect={handleBulkTag} disabled={isBulkTagging} />
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full h-9 border-destructive color-destructive hover:bg-destructive/10 text-destructive gap-2"
+                onClick={handleBulkClear}
+                disabled={isBulkTagging}
+              >
+                <Trash2 className="h-4 w-4" />
+                Clear Tags
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground"
+                onClick={() => setSelectedPositionKeys(new Set())}
+              >
+                Cancel
+              </Button>
+            </div>
+          </motion.div>
+        )}
       </div>
     </PageTransition>
   );

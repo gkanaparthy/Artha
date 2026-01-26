@@ -21,6 +21,8 @@ interface FilterState {
     action: FilterAction;
     accountId: string;
     assetType: FilterAssetType;
+    tagIds: string[];
+    tagFilterMode: 'any' | 'all';
 }
 
 interface FilterContextType {
@@ -43,6 +45,8 @@ const defaultFilters: FilterState = {
     action: "ALL",
     accountId: "all",
     assetType: "all",
+    tagIds: [],
+    tagFilterMode: 'any',
 };
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
@@ -52,7 +56,7 @@ function loadFiltersFromStorage(): FilterState {
     if (typeof window === 'undefined') return defaultFilters;
 
     try {
-        const saved = localStorage.getItem("dashboard_filters_v3");
+        const saved = localStorage.getItem("dashboard_filters_v4");
         if (saved) {
             const parsed = JSON.parse(saved);
             if (parsed && typeof parsed === 'object') {
@@ -64,6 +68,8 @@ function loadFiltersFromStorage(): FilterState {
                     action: ['ALL', 'BUY', 'SELL'].includes(parsed.action) ? parsed.action : 'ALL',
                     accountId: typeof parsed.accountId === 'string' ? parsed.accountId : 'all',
                     assetType: ['all', 'STOCK', 'OPTION'].includes(parsed.assetType) ? parsed.assetType : 'all',
+                    tagIds: Array.isArray(parsed.tagIds) ? parsed.tagIds : [],
+                    tagFilterMode: ['any', 'all'].includes(parsed.tagFilterMode) ? parsed.tagFilterMode : 'any',
                 };
             }
         }
@@ -103,7 +109,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     // Persist to localStorage when filters change (skip initial render)
     useEffect(() => {
         if (isMounted.current) {
-            localStorage.setItem("dashboard_filters_v3", JSON.stringify(filters));
+            localStorage.setItem("dashboard_filters_v4", JSON.stringify(filters));
         } else {
             isMounted.current = true;
         }

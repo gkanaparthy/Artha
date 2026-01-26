@@ -40,14 +40,36 @@ export async function GET(req: Request) {
                 timestamp: 'desc'
             },
             include: {
-                tags: true,
                 account: {
                     select: { brokerName: true }
                 }
             }
         });
 
-        return NextResponse.json({ trades });
+        // Fetch position tags for these trades
+        const positionKeys = Array.from(new Set(trades.map(t => t.positionKey).filter(Boolean)));
+        const positionTags = await prisma.positionTag.findMany({
+            where: {
+                positionKey: { in: positionKeys as string[] },
+                userId: session.user.id
+            },
+            include: {
+                tagDefinition: true
+            }
+        });
+
+        // Map tags to trades
+        const tradesWithTags = trades.map(trade => {
+            const tags = positionTags
+                .filter(pt => pt.positionKey === trade.positionKey)
+                .map(pt => pt.tagDefinition);
+            return {
+                ...trade,
+                tags // Replace or augment existing tags
+            };
+        });
+
+        return NextResponse.json({ trades: tradesWithTags });
     } catch (error: unknown) {
         console.error('Get Trades error:', error);
         const message = error instanceof Error ? error.message : 'Unknown error';
