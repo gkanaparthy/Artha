@@ -26,6 +26,7 @@ import { cn, formatCompactCurrency } from "@/lib/utils";
 import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { useSort } from "@/hooks/use-sort";
+import { exportToExcel } from "@/lib/export";
 import type { Trade } from "@/types/trading";
 
 interface JournalViewProps {
@@ -262,11 +263,6 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
   return (
     <PageTransition>
       <div className="space-y-6 sm:space-y-8 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6">
-        {/* Global Filter Bar */}
-        <AnimatedCard delay={0.1}>
-          <GlobalFilterBar />
-        </AnimatedCard>
-
         {/* Header */}
         <motion.div
           className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4"
@@ -301,6 +297,26 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
             </Button>
           )}
         </motion.div>
+
+        {/* Global Filter Bar */}
+        <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md pb-4 -mx-4 px-4 md:-mx-8 md:px-8">
+          <AnimatedCard delay={0.1}>
+            <GlobalFilterBar
+              onExport={() => exportToExcel(
+                filteredTrades,
+                'trades',
+                [
+                  { key: 'timestamp', header: 'Date', formatter: (val: any) => format(new Date(val), "yyyy-MM-dd") },
+                  { key: 'symbol', header: 'Symbol' },
+                  { key: 'action', header: 'Action' },
+                  { key: 'quantity', header: 'Quantity' },
+                  { key: 'price', header: 'Price', formatter: (val: any) => Number(val).toFixed(2) },
+                  { key: 'fees', header: 'Fees', formatter: (val: any) => Number(val).toFixed(2) },
+                ]
+              )}
+            />
+          </AnimatedCard>
+        </div>
         {/* Table Card - Desktop */}
         <AnimatedCard delay={0.2} className="hidden md:block">
           <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">

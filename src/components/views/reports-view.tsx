@@ -368,11 +368,6 @@ export function ReportsView({
   return (
     <PageTransition>
       <div className="space-y-6 sm:space-y-8 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6">
-        {/* Global Filter Bar */}
-        <AnimatedCard delay={0.05}>
-          <GlobalFilterBar />
-        </AnimatedCard>
-
         {/* Header */}
         <motion.div
           className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4"
@@ -418,6 +413,13 @@ export function ReportsView({
             </Button>
           </div>
         </motion.div>
+
+        {/* Global Filter Bar */}
+        <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md pb-4 -mx-4 px-4 md:-mx-8 md:px-8">
+          <AnimatedCard delay={0.05}>
+            <GlobalFilterBar />
+          </AnimatedCard>
+        </div>
 
         {/* Calendar View */}
         {viewType === "calendar" && (

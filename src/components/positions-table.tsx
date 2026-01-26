@@ -58,12 +58,32 @@ const getSortValue = (p: DisplayPosition, field: SortField): string | number => 
     }
 };
 
-export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = false, livePositions }: PositionsTableProps) {
+export function PositionsTable({
+    onMetricsUpdate,
+    initialPositions,
+    isDemo = false,
+    livePositions: _livePositions, // Handled by parent now
+    positions: externalPositions,
+    loading: externalLoading
+}: PositionsTableProps & { positions?: DisplayPosition[], loading?: boolean }) {
     const { filters } = useFilters();
-    const [allPositions, setAllPositions] = useState<DisplayPosition[]>(initialPositions || []);
-    const [filteredPositions, setFilteredPositions] = useState<DisplayPosition[]>(initialPositions || []);
-    const [loading, setLoading] = useState(!isDemo);
-    const [rawMetrics, setRawMetrics] = useState<Metrics | null>(null);
+    const [allPositions, setAllPositions] = useState<DisplayPosition[]>(externalPositions || initialPositions || []);
+    const [filteredPositions, setFilteredPositions] = useState<DisplayPosition[]>(externalPositions || initialPositions || []);
+    const [loading, setLoading] = useState(externalLoading ?? !isDemo);
+
+    // Update internal state when external props change
+    useEffect(() => {
+        if (externalPositions) {
+            setAllPositions(externalPositions);
+            setFilteredPositions(externalPositions);
+        }
+    }, [externalPositions]);
+
+    useEffect(() => {
+        if (externalLoading !== undefined) {
+            setLoading(externalLoading);
+        }
+    }, [externalLoading]);
 
     const { sortedData: sortedPositions, handleSort, getSortIcon } = useSort<DisplayPosition, SortField>({
         data: filteredPositions,
@@ -72,7 +92,7 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
         getValueForField: getSortValue,
     });
 
-    // Check if filters are hiding positions
+    // Check if filters are hiding positions (for indicator)
     const hasFiltersApplied =
         filters.symbol ||
         filters.startDate ||
@@ -83,176 +103,19 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
 
     const isFilteringPositions = hasFiltersApplied && sortedPositions.length < allPositions.length;
 
-    /* 
-    // Merge live positions data with open positions
-    const positionsWithLiveData = useMemo(() => {
-        if (!livePositions || livePositions.length === 0) {
-            return sortedPositions;
-        }
-
-        // Create a lookup map for live positions by symbol
-        const liveMap = new Map<string, LivePosition>();
-        for (const live of livePositions) {
-            // Key by symbol (could also include accountId for more precision)
-            liveMap.set(live.symbol, live);
-        }
-
-        return sortedPositions.map(position => {
-            if (position.status !== 'open') {
-                return position;
-            }
-
-            // Try to find matching live position
-            const liveData = liveMap.get(position.symbol);
-            if (liveData) {
-                return {
-                    ...position,
-                    livePrice: liveData.price,
-                    unrealizedPnl: liveData.openPnl,
-                    marketValue: liveData.marketValue,
-                };
-            }
-
-            return position;
-        });
-    }, [sortedPositions, livePositions]);
-    */
     const positionsWithLiveData = sortedPositions;
-
-    const applyFilters = useCallback((positions: DisplayPosition[], metrics: Metrics | null) => {
-        let filtered = positions;
-
-        // Status Filter
-        if (filters.status === "winners") {
-            filtered = filtered.filter(p => p.status === "closed" && (p.pnl ?? 0) > 0);
-        } else if (filters.status === "losers") {
-            filtered = filtered.filter(p => p.status === "closed" && (p.pnl ?? 0) < 0);
-        } else if (filters.status === "open") {
-            filtered = filtered.filter(p => p.status === "open");
-        }
-
-        // Account Filter
-        if (filters.accountId && filters.accountId !== "all") {
-            filtered = filtered.filter(p => p.accountId === filters.accountId);
-        }
-
-        // Asset Type Filter
-        if (filters.assetType && filters.assetType !== "all") {
-            filtered = filtered.filter(p => p.type === filters.assetType);
-        }
-
-        setFilteredPositions(filtered);
-
-        // Update parent metrics based on filtered closed positions only
-        if (onMetricsUpdate && metrics) {
-            const closedFiltered = filtered.filter(p => p.status === "closed");
-            const winningTrades = closedFiltered.filter(t => (t.pnl ?? 0) > 0);
-            const losingTrades = closedFiltered.filter(t => (t.pnl ?? 0) < 0);
-            const totalWins = winningTrades.reduce((sum, t) => sum + (t.pnl ?? 0), 0);
-            const totalLosses = Math.abs(losingTrades.reduce((sum, t) => sum + (t.pnl ?? 0), 0));
-
-            onMetricsUpdate({
-                ...metrics,
-                netPnL: Math.round(closedFiltered.reduce((sum, t) => sum + (t.pnl ?? 0), 0) * 100) / 100,
-                totalTrades: closedFiltered.length,
-                winningTrades: winningTrades.length,
-                losingTrades: losingTrades.length,
-                winRate: closedFiltered.length > 0 ? Math.round((winningTrades.length / closedFiltered.length) * 1000) / 10 : 0,
-                avgWin: winningTrades.length > 0 ? Math.round((totalWins / winningTrades.length) * 100) / 100 : 0,
-                avgLoss: losingTrades.length > 0 ? Math.round((totalLosses / losingTrades.length) * 100) / 100 : 0,
-                profitFactor: totalLosses > 0 ? Math.round((totalWins / totalLosses) * 100) / 100 : totalWins > 0 ? null : 0,
-            });
-        }
-    }, [filters.status, filters.accountId, filters.assetType, onMetricsUpdate]);
-
-    const fetchPositions = useCallback(async () => {
-        // In demo mode, just apply filters to initial positions
-        if (isDemo) {
-            if (initialPositions) {
-                applyFilters(initialPositions, null);
-            }
-            return;
-        }
-
-        try {
-            setLoading(true);
-            const params = new URLSearchParams();
-
-            // Apply all filters server-side
-            if (filters.symbol) params.append("symbol", filters.symbol);
-            if (filters.startDate) params.append("startDate", filters.startDate);
-            if (filters.endDate) params.append("endDate", filters.endDate);
-            if (filters.accountId && filters.accountId !== 'all') params.append("accountId", filters.accountId);
-            if (filters.assetType && filters.assetType !== 'all') params.append("assetType", filters.assetType);
-
-            const res = await fetch(`/api/metrics?${params.toString()}`);
-            const data: Metrics = await res.json();
-            setRawMetrics(data);
-
-            const closedDisplayPositions: DisplayPosition[] = (data.closedTrades || []).map(p => ({
-                symbol: p.symbol,
-                quantity: p.quantity,
-                entryPrice: p.entryPrice,
-                exitPrice: p.exitPrice,
-                pnl: p.pnl,
-                openedAt: p.openedAt,
-                closedAt: p.closedAt,
-                broker: p.broker,
-                accountId: p.accountId,
-                status: "closed" as const,
-                type: p.type,
-            }));
-
-            const openDisplayPositions: DisplayPosition[] = (data.openPositions || []).map(p => ({
-                symbol: p.symbol,
-                quantity: p.quantity,
-                entryPrice: p.entryPrice,
-                exitPrice: null,
-                pnl: null,
-                openedAt: p.openedAt,
-                closedAt: null,
-                broker: p.broker,
-                accountId: p.accountId,
-                status: "open" as const,
-                tradeId: p.tradeId,
-                type: p.type,
-            }));
-
-            const combined = [...openDisplayPositions, ...closedDisplayPositions];
-            setAllPositions(combined);
-
-            // Apply client-side filters
-            applyFilters(combined, data);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
-    }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType, applyFilters, isDemo, initialPositions]);
-
-    // Refetch when any filter changes
-    useEffect(() => {
-        fetchPositions();
-    }, [fetchPositions]);
-
-    useEffect(() => {
-        if (allPositions.length > 0 || rawMetrics) {
-            applyFilters(allPositions, rawMetrics);
-        }
-    }, [filters.status, filters.accountId, filters.assetType, allPositions, rawMetrics, applyFilters]);
 
     // Handle Delete (disabled in demo mode)
     const handleDelete = async (tradeId: string) => {
-        if (isDemo) return; // Disabled in demo mode
+        if (isDemo) return;
         if (!confirm("Are you sure you want to delete this position? This will delete the underlying trade.")) return;
 
         try {
             const res = await fetch(`/api/trades?id=${tradeId}`, { method: "DELETE" });
-            if (res.ok) {
-                fetchPositions();
-            } else {
+            if (!res.ok) {
                 alert("Failed to delete position");
             }
+            // Parent should refetch data after deletion
         } catch (e) {
             console.error(e);
             alert("Error deleting position");
@@ -399,39 +262,17 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
 
     return (
         <div className="space-y-4">
-            {/* Global Filter Bar with Export */}
-            <GlobalFilterBar
-                onExport={() => exportToExcel(
-                    sortedPositions,
-                    'positions',
-                    [
-                        { key: 'symbol', header: 'Symbol' },
-                        { key: 'status', header: 'Status' },
-                        { key: 'type', header: 'Type' },
-                        { key: 'broker', header: 'Broker' },
-                        { key: 'quantity', header: 'Quantity' },
-                        { key: 'entryPrice', header: 'Entry Price', formatter: formatCurrencyForExport },
-                        { key: 'exitPrice', header: 'Exit Price', formatter: formatCurrencyForExport },
-                        { key: 'pnl', header: 'P&L', formatter: formatCurrencyForExport },
-                        { key: 'openedAt', header: 'Entry Date', formatter: formatDateForExport },
-                        { key: 'closedAt', header: 'Exit Date', formatter: formatDateForExport },
-                    ]
-                )}
-            />
-
-            {/* Position Count Indicator */}
+            {/* Filter indicator moved to Dashboard level or kept here as a subtle info box */}
             {!loading && isFilteringPositions && (
-                <div className="glass rounded-xl p-3 sm:p-4 border border-amber-500/20 bg-amber-500/5">
-                    <div className="flex items-center gap-2 text-sm">
-                        <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                <div className="glass rounded-xl p-3 border border-amber-500/20 bg-amber-500/5">
+                    <div className="flex items-center gap-2 text-xs">
+                        <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                         <span className="text-muted-foreground">
                             Showing <span className="font-semibold text-foreground">{sortedPositions.length}</span> of{" "}
                             <span className="font-semibold text-foreground">{allPositions.length}</span> positions
-                            {allPositions.length - sortedPositions.length > 0 && (
-                                <span className="text-amber-600 dark:text-amber-400 ml-1">
-                                    ({allPositions.length - sortedPositions.length} hidden by filters)
-                                </span>
-                            )}
+                            <span className="text-amber-600 dark:text-amber-400 ml-1">
+                                ({allPositions.length - sortedPositions.length} hidden by filters)
+                            </span>
                         </span>
                     </div>
                 </div>
@@ -459,7 +300,7 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden md:block rounded-xl border-0 px-2">
+            <div className="hidden md:block rounded-xl border-0 px-1">
                 <Table className="border-separate border-spacing-y-2">
                     <TableHeader>
                         <TableRow className="hover:bg-transparent border-none">
@@ -518,7 +359,6 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
                         ) : (
                             positionsWithLiveData.map((position, idx) => {
                                 const isOpen = position.status === "open";
-                                // For open positions, we don't show P&L anymore as requested
                                 const displayPnl = isOpen ? null : position.pnl;
                                 const displayPrice = isOpen ? null : position.exitPrice;
                                 const returnPct = !isOpen && displayPrice && position.entryPrice
@@ -526,7 +366,6 @@ export function PositionsTable({ onMetricsUpdate, initialPositions, isDemo = fal
                                     : null;
                                 const isProfit = (displayPnl ?? 0) >= 0;
 
-                                // Limit animations to first 10 rows for performance
                                 const shouldAnimate = idx < 10;
 
                                 return (

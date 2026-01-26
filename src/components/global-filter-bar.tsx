@@ -59,7 +59,7 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
         if (filters.startDate) {
             labels.push({
                 key: 'startDate',
-                label: `From: ${format(new Date(filters.startDate), "MMM dd, yyyy")}`,
+                label: `From: ${format(new Date(filters.startDate + 'T00:00:00'), "MMM dd, yyyy")}`,
                 onRemove: () => setFilters(prev => ({ ...prev, startDate: '' }))
             });
         }
@@ -67,7 +67,7 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
         if (filters.endDate) {
             labels.push({
                 key: 'endDate',
-                label: `To: ${format(new Date(filters.endDate), "MMM dd, yyyy")}`,
+                label: `To: ${format(new Date(filters.endDate + 'T00:00:00'), "MMM dd, yyyy")}`,
                 onRemove: () => setFilters(prev => ({ ...prev, endDate: '' }))
             });
         }

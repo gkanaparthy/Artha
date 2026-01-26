@@ -28,7 +28,8 @@ export default function DashboardLayout({
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-background/40 backdrop-blur-[2px] z-10 relative pt-14 md:pt-0">
           <Header />
-          <main className="flex-1 overflow-auto p-4 md:p-6 scroll-smooth">
+
+          <main className="flex-1 overflow-auto p-4 md:p-6 scroll-smooth pt-2">
             {children}
           </main>
         </div>

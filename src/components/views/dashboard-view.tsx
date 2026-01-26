@@ -25,6 +25,7 @@ import { PageTransition, AnimatedCard } from "@/components/motion";
 import { cn, formatCompactCurrency } from "@/lib/utils";
 import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
+import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "@/lib/export";
 import type { Metrics, DisplayPosition } from "@/types/trading";
 
 interface DashboardViewProps {
@@ -146,12 +147,15 @@ export function DashboardView({
   const [refreshKey, setRefreshKey] = useState(0);
   const [livePositions, setLivePositions] = useState<LivePositionsData | null>(null);
   const [liveLoading, setLiveLoading] = useState(false);
+  const [allPositions, setAllPositions] = useState<DisplayPosition[]>(initialPositions || []);
+  const [loading, setLoading] = useState(!isDemo);
 
   // Fetch metrics whenever ANY filter changes (only in non-demo mode)
   const fetchMetrics = useCallback(async () => {
     if (isDemo) return; // Don't fetch in demo mode
 
     try {
+      setLoading(true);
       const params = new URLSearchParams();
       if (filters.symbol) params.append("symbol", filters.symbol);
       if (filters.startDate) params.append("startDate", filters.startDate);
@@ -164,8 +168,41 @@ export function DashboardView({
       const res = await fetch(`/api/metrics?${params.toString()}`);
       const data = await res.json();
       setMetrics(data);
+
+      const closedDisplayPositions: DisplayPosition[] = (data.closedTrades || []).map((p: any) => ({
+        symbol: p.symbol,
+        quantity: p.quantity,
+        entryPrice: p.entryPrice,
+        exitPrice: p.exitPrice,
+        pnl: p.pnl,
+        openedAt: p.openedAt,
+        closedAt: p.closedAt,
+        broker: p.broker,
+        accountId: p.accountId,
+        status: "closed" as const,
+        type: p.type,
+      }));
+
+      const openDisplayPositions: DisplayPosition[] = (data.openPositions || []).map((p: any) => ({
+        symbol: p.symbol,
+        quantity: p.quantity,
+        entryPrice: p.entryPrice,
+        exitPrice: null,
+        pnl: null,
+        openedAt: p.openedAt,
+        closedAt: null,
+        broker: p.broker,
+        accountId: p.accountId,
+        status: "open" as const,
+        tradeId: p.tradeId,
+        type: p.type,
+      }));
+
+      setAllPositions([...openDisplayPositions, ...closedDisplayPositions]);
     } catch (e) {
       console.error(e);
+    } finally {
+      setLoading(false);
     }
   }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType, isDemo]);
 
@@ -290,11 +327,6 @@ export function DashboardView({
   return (
     <PageTransition>
       <div className="space-y-6 sm:space-y-8 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6">
-        {/* Global Filter Bar */}
-        <AnimatedCard delay={0.1}>
-          <GlobalFilterBar />
-        </AnimatedCard>
-
         {/* Header */}
         <motion.div
           className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4"
@@ -329,6 +361,30 @@ export function DashboardView({
             </Button>
           )}
         </motion.div>
+
+        {/* Global Filter Bar */}
+        <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md pb-4 -mx-4 px-4 md:-mx-8 md:px-8">
+          <AnimatedCard delay={0.1}>
+            <GlobalFilterBar
+              onExport={() => exportToExcel(
+                allPositions,
+                'positions',
+                [
+                  { key: 'symbol', header: 'Symbol' },
+                  { key: 'status', header: 'Status' },
+                  { key: 'type', header: 'Type' },
+                  { key: 'broker', header: 'Broker' },
+                  { key: 'quantity', header: 'Quantity' },
+                  { key: 'entryPrice', header: 'Entry Price', formatter: formatCurrencyForExport },
+                  { key: 'exitPrice', header: 'Exit Price', formatter: formatCurrencyForExport },
+                  { key: 'pnl', header: 'P&L', formatter: formatCurrencyForExport },
+                  { key: 'openedAt', header: 'Entry Date', formatter: formatDateForExport },
+                  { key: 'closedAt', header: 'Exit Date', formatter: formatDateForExport },
+                ]
+              )}
+            />
+          </AnimatedCard>
+        </div>
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <MetricCard
@@ -456,6 +512,8 @@ export function DashboardView({
                 key={refreshKey}
                 onMetricsUpdate={isDemo ? undefined : handleMetricsUpdate}
                 initialPositions={initialPositions}
+                positions={allPositions}
+                loading={loading}
                 isDemo={isDemo}
                 livePositions={livePositions?.positions}
               />
