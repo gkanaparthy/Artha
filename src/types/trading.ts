@@ -146,6 +146,7 @@ export interface ClosedTrade {
   accountId: string;
   type: string;
   multiplier: number;
+  positionKey?: string | null;
   tags?: { id: string; name: string; color: string; category: string; icon: string | null }[];
 }
 
@@ -163,5 +164,6 @@ export interface OpenPositionInternal {
   currentValue: number;
   tradeId: string;
   type: string;
+  positionKey?: string | null;
   tags?: { id: string; name: string; color: string; category: string; icon: string | null }[];
 }

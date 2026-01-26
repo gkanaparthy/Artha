@@ -83,18 +83,14 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
         return tagIds.map((id: string) => defMap.get(id)).filter(Boolean) as { id: string; name: string; color: string; category: string; icon: string | null }[];
     };
 
-    // 0. Deduplicate trades using SnapTrade's unique trade ID
     const seen = new Set<string>();
     const uniqueTrades = trades.filter(trade => {
-        if (!trade.snapTradeTradeId) {
-            // console.warn('[FIFO] Trade missing snapTradeTradeId:', trade.id);
+        // Prefer snapTradeTradeId for deduplication, but fallback to DB id to ensure no trades are lost
+        const dedupeId = trade.snapTradeTradeId || trade.id;
+        if (seen.has(dedupeId)) {
             return false;
         }
-        if (seen.has(trade.snapTradeTradeId)) {
-            // console.warn('[FIFO] Duplicate trade detected:', trade.snapTradeTradeId);
-            return false;
-        }
-        seen.add(trade.snapTradeTradeId);
+        seen.add(dedupeId);
         return true;
     });
 
@@ -201,6 +197,7 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                         accountId: matchLot.accountId,
                         type: matchLot.type,
                         multiplier: lotMultiplier,
+                        positionKey: matchLot.positionKey,
                         tags: getTagsForItem({
                             symbol: keyDetails.get(key)?.symbol || trade.symbol,
                             accountId: matchLot.accountId,
@@ -248,6 +245,7 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                         accountId: matchLot.accountId,
                         type: matchLot.type,
                         multiplier: lotMultiplier,
+                        positionKey: matchLot.positionKey,
                         tags: getTagsForItem({
                             symbol: keyDetails.get(key)?.symbol || trade.symbol,
                             accountId: matchLot.accountId,
@@ -348,11 +346,12 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                 currentValue: lot.price * lot.quantity * lot.multiplier,
                 tradeId: lot.tradeId,
                 type: lot.type,
+                positionKey: lot.positionKey,
                 tags: getTagsForItem({
                     symbol: keyDetails.get(key)?.symbol || key,
                     accountId: lot.accountId,
                     openedAt: lot.date,
-                    positionKey: lot.positionKey // Added positionKey
+                    positionKey: lot.positionKey
                 })
             });
         }
@@ -382,7 +381,13 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                     currentValue: lot.price * -lot.quantity * lot.multiplier,
                     tradeId: lot.tradeId,
                     type: lot.type,
-                    tags: getTagsForItem({ symbol: keyDetails.get(key)?.symbol || key, accountId: lot.accountId, openedAt: lot.date })
+                    positionKey: lot.positionKey,
+                    tags: getTagsForItem({
+                        symbol: keyDetails.get(key)?.symbol || key,
+                        accountId: lot.accountId,
+                        openedAt: lot.date,
+                        positionKey: lot.positionKey
+                    })
                 });
             }
         }
@@ -422,9 +427,17 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
         }
         if (filters.tagIds && filters.tagIds.length > 0 && 'positionTags' in (filters as object)) {
             const ptMap = (filters as unknown as Record<string, unknown>).positionTags as Map<string, string[]>;
-            const filterByTags = (item: { symbol: string, accountId: string, openedAt: Date }) => {
-                const v1Key = `v1|${item.accountId}|${item.symbol}|${item.openedAt.getTime()}`;
-                let itemTagIds = ptMap.get(v1Key);
+            const filterByTags = (item: { symbol: string, accountId: string, openedAt: Date, positionKey?: string | null }) => {
+                let itemTagIds: string[] | undefined;
+
+                if (item.positionKey) {
+                    itemTagIds = ptMap.get(item.positionKey);
+                }
+
+                if (!itemTagIds) {
+                    const v1Key = `v1|${item.accountId}|${item.symbol}|${item.openedAt.getTime()}`;
+                    itemTagIds = ptMap.get(v1Key);
+                }
 
                 if (!itemTagIds) {
                     const legacyKey = `${item.accountId}:${item.symbol}:${item.openedAt.toISOString()}`;

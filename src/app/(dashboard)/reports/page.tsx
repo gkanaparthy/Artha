@@ -152,7 +152,7 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType]);
+  }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType, filters.tagIds, filters.tagFilterMode]);
 
   useEffect(() => {
     fetchMetrics();

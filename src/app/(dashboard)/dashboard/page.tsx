@@ -194,7 +194,7 @@ export default function DashboardPage() {
         } finally {
             setLoading(false);
         }
-    }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType]);
+    }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType, filters.tagIds, filters.tagFilterMode]);
 
     // Fetch live positions with current market prices
     const fetchLivePositions = useCallback(async () => {
@@ -257,7 +257,7 @@ export default function DashboardPage() {
         return {
             totalUnrealizedPnl
         };
-    }, [livePositions, filters.symbol, filters.accountId, filters.assetType]);
+    }, [livePositions, filters.symbol, filters.accountId, filters.assetType, filters.tagIds]);
 
 
     // Update metrics when PositionsTable applies client-side filters (status filter)
