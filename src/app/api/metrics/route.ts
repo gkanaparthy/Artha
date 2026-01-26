@@ -655,11 +655,9 @@ export async function GET(req: NextRequest) {
         });
 
         const filters: FilterOptions = {};
-        if (startDate) filters.startDate = new Date(startDate);
+        if (startDate) filters.startDate = new Date(startDate + 'T00:00:00');
         if (endDate) {
-            const end = new Date(endDate);
-            end.setHours(23, 59, 59, 999);
-            filters.endDate = end;
+            filters.endDate = new Date(endDate + 'T23:59:59');
         }
         if (symbol) filters.symbol = symbol;
         if (accountId) filters.accountId = accountId;

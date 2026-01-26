@@ -36,13 +36,15 @@ function Calendar({
                     "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
                 ),
                 weekday: `${defaultClassNames.weekday} text-muted-foreground font-normal text-[0.8rem]`,
-                day: `${defaultClassNames.day}`,
                 day_button: cn(
                     buttonVariants({ variant: "ghost" }),
-                    "h-9 w-9 p-0 font-normal aria-selected:opacity-100"
+                    "h-9 w-9 p-0 font-normal transition-none"
                 ),
+                range_start: "bg-primary text-primary-foreground rounded-r-none rounded-l-md",
+                range_end: "bg-primary text-primary-foreground rounded-l-none rounded-r-md",
+                range_middle: "bg-primary/20 text-foreground font-medium rounded-none hover:bg-primary/30",
                 selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                today: "bg-accent text-accent-foreground",
+                today: "bg-accent/40 text-accent-foreground font-bold",
                 outside: "text-muted-foreground opacity-50",
                 disabled: "text-muted-foreground opacity-50",
                 hidden: "invisible",

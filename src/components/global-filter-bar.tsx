@@ -228,16 +228,16 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                 )}
             </div>
 
-            {/* Desktop View - Original Layout */}
-            <div className="hidden md:flex flex-wrap items-center gap-3 p-4">
+            {/* Desktop View - Compact One-Line Layout */}
+            <div className="hidden md:flex items-center gap-2 p-2 px-3 overflow-x-auto no-scrollbar">
                 {/* Symbol Search */}
-                <div className="flex items-center gap-2 min-w-[180px] flex-1 max-w-[250px]">
-                    <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex items-center gap-2 min-w-[140px] flex-1 max-w-[200px] relative">
+                    <Search className="absolute left-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                     <Input
-                        placeholder="Filter by symbol..."
+                        placeholder="Search Symbol"
                         value={filters.symbol}
                         onChange={(e) => setFilters(prev => ({ ...prev, symbol: e.target.value }))}
-                        className="h-9"
+                        className="h-8 pl-8 text-xs bg-background/50 border-border/50 focus:bg-background"
                         aria-label="Filter trades by symbol"
                     />
                 </div>
@@ -248,14 +248,14 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                         value={filters.accountId}
                         onValueChange={(value) => setFilters(prev => ({ ...prev, accountId: value }))}
                     >
-                        <SelectTrigger className="w-[180px] h-9">
+                        <SelectTrigger className="w-[140px] h-8 text-xs bg-background/50 border-border/50">
                             <SelectValue placeholder="All Accounts" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Accounts</SelectItem>
                             {accounts.map((account) => (
-                                <SelectItem key={account.id} value={account.id}>
-                                    {account.brokerName || "Unknown"} ({account.accountNumber ? `****${account.accountNumber.slice(-4)}` : account.snapTradeAccountId.slice(-4)})
+                                <SelectItem key={account.id} value={account.id} className="text-xs">
+                                    {account.brokerName || "Unknown"}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -269,18 +269,19 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                         setFilters(prev => ({ ...prev, assetType: value }))
                     }
                 >
-                    <SelectTrigger className="w-[110px] h-9">
+                    <SelectTrigger className="w-[100px] h-8 text-xs bg-background/50 border-border/50">
                         <SelectValue placeholder="Type" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="STOCK">Stocks</SelectItem>
-                        <SelectItem value="OPTION">Options</SelectItem>
+                        <SelectItem value="all" className="text-xs">All Types</SelectItem>
+                        <SelectItem value="STOCK" className="text-xs">Stocks</SelectItem>
+                        <SelectItem value="OPTION" className="text-xs">Options</SelectItem>
                     </SelectContent>
                 </Select>
 
                 {/* Date Range */}
                 <DateRangePicker
+                    className="shrink-0"
                     from={filters.startDate ? new Date(filters.startDate + 'T00:00:00') : undefined}
                     to={filters.endDate ? new Date(filters.endDate + 'T00:00:00') : undefined}
                     onSelect={(range) => {
@@ -300,81 +301,64 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                             setFilters(prev => ({ ...prev, status: value }))
                         }
                     >
-                        <SelectTrigger className="w-[120px] h-9">
+                        <SelectTrigger className="w-[110px] h-8 text-xs bg-background/50 border-border/50">
                             <SelectValue placeholder="Status" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Status</SelectItem>
-                            <SelectItem value="open">Open</SelectItem>
-                            <SelectItem value="winners">Winners</SelectItem>
-                            <SelectItem value="losers">Losers</SelectItem>
+                            <SelectItem value="all" className="text-xs">All Status</SelectItem>
+                            <SelectItem value="open" className="text-xs">Open</SelectItem>
+                            <SelectItem value="winners" className="text-xs">Winners</SelectItem>
+                            <SelectItem value="losers" className="text-xs">Losers</SelectItem>
                         </SelectContent>
                     </Select>
                 )}
 
                 <div className="flex-1" />
 
-                {/* Export Button */}
-                {onExport && (
-                    <Button variant="outline" size="sm" onClick={onExport} className="h-9">
-                        {exportLabel}
-                    </Button>
-                )}
+                <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Export Button */}
+                    {onExport && (
+                        <Button variant="outline" size="sm" onClick={onExport} className="h-8 text-xs px-3">
+                            {exportLabel}
+                        </Button>
+                    )}
 
-                {/* Clear Button */}
-                {hasActiveFilters && (
-                    <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={handleClearFilters}
-                        className="h-9"
-                    >
-                        <X className="h-4 w-4 mr-1" />
-                        Clear All Filters
-                    </Button>
-                )}
-            </div>
-
-            {/* Active Filters Indicator */}
-            {hasActiveFilters && (
-                <div className="border-t border-border/50 bg-muted/30 p-3 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 text-sm">
-                            <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
-                            <span className="font-medium text-muted-foreground">
-                                {activeFilterCount} {activeFilterCount === 1 ? 'filter' : 'filters'} active
-                            </span>
-                        </div>
+                    {/* Clear Button */}
+                    {hasActiveFilters && (
                         <Button
                             size="sm"
                             variant="ghost"
                             onClick={handleClearFilters}
-                            className="h-7 text-xs hidden md:flex"
+                            className="h-8 text-xs px-2 text-muted-foreground hover:text-foreground"
                         >
-                            <X className="h-3 w-3 mr-1" />
-                            Clear all
+                            <X className="h-3.5 w-3.5 mr-1" />
+                            Clear
                         </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {activeFilterLabels.map((filter) => (
-                            <Badge
-                                key={filter.key}
-                                variant="secondary"
-                                className="pr-1 gap-1 bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20"
+                    )}
+                </div>
+            </div>
+
+            {/* Active Filters Bar - Slimmer version */}
+            {hasActiveFilters && (
+                <div className="hidden md:flex border-t border-border/30 px-3 py-1.5 gap-2 items-center flex-wrap">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mr-1">Active:</span>
+                    {activeFilterLabels.map((filter) => (
+                        <div
+                            key={filter.key}
+                            className="flex items-center gap-1.5 bg-primary/5 text-primary border border-primary/10 rounded-full pl-2 pr-1 py-0.5 text-[10px] font-medium transition-colors hover:bg-primary/10"
+                        >
+                            {filter.label}
+                            <button
+                                onClick={filter.onRemove}
+                                className="rounded-full hover:bg-primary/20 p-0.5 transition-colors"
                             >
-                                <span className="text-xs">{filter.label}</span>
-                                <button
-                                    onClick={filter.onRemove}
-                                    className="ml-1 rounded-sm hover:bg-amber-500/30 p-0.5 transition-colors"
-                                    aria-label={`Remove ${filter.label} filter`}
-                                >
-                                    <X className="h-3 w-3" />
-                                </button>
-                            </Badge>
-                        ))}
-                    </div>
+                                <X className="h-2.5 w-2.5" />
+                            </button>
+                        </div>
+                    ))}
                 </div>
             )}
+
         </div>
     );
 }

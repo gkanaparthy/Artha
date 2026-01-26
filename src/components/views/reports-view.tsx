@@ -349,7 +349,7 @@ export function ReportsView({
       value: Math.max(
         0,
         100 -
-          (metrics.netPnL > 0 ? (maxDrawdown / metrics.netPnL) * 100 : 0)
+        (metrics.netPnL > 0 ? (maxDrawdown / metrics.netPnL) * 100 : 0)
       ),
       fullMark: 100,
     },
@@ -368,6 +368,11 @@ export function ReportsView({
   return (
     <PageTransition>
       <div className="space-y-6 sm:space-y-8 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6">
+        {/* Global Filter Bar */}
+        <AnimatedCard delay={0.05}>
+          <GlobalFilterBar />
+        </AnimatedCard>
+
         {/* Header */}
         <motion.div
           className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4"
@@ -413,11 +418,6 @@ export function ReportsView({
             </Button>
           </div>
         </motion.div>
-
-        {/* Global Filter Bar */}
-        <AnimatedCard delay={0.05}>
-          <GlobalFilterBar />
-        </AnimatedCard>
 
         {/* Calendar View */}
         {viewType === "calendar" && (
@@ -1128,8 +1128,8 @@ export function ReportsView({
                                     symbol.winRate >= 60
                                       ? "text-green-500"
                                       : symbol.winRate >= 50
-                                      ? "text-amber-500"
-                                      : "text-red-500"
+                                        ? "text-amber-500"
+                                        : "text-red-500"
                                   )}
                                 >
                                   {symbol.winRate}%

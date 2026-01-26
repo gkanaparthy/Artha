@@ -231,12 +231,11 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
 
     // Filter by date range
     if (filters.startDate) {
-      const fromDate = new Date(filters.startDate);
+      const fromDate = new Date(filters.startDate + 'T00:00:00');
       result = result.filter((t) => new Date(t.timestamp) >= fromDate);
     }
     if (filters.endDate) {
-      const toDate = new Date(filters.endDate);
-      toDate.setHours(23, 59, 59, 999);
+      const toDate = new Date(filters.endDate + 'T23:59:59');
       result = result.filter((t) => new Date(t.timestamp) <= toDate);
     }
 
@@ -263,6 +262,11 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
   return (
     <PageTransition>
       <div className="space-y-6 sm:space-y-8 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6">
+        {/* Global Filter Bar */}
+        <AnimatedCard delay={0.1}>
+          <GlobalFilterBar />
+        </AnimatedCard>
+
         {/* Header */}
         <motion.div
           className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4"
@@ -297,12 +301,6 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
             </Button>
           )}
         </motion.div>
-
-        {/* Global Filter Bar */}
-        <AnimatedCard delay={0.1}>
-          <GlobalFilterBar />
-        </AnimatedCard>
-
         {/* Table Card - Desktop */}
         <AnimatedCard delay={0.2} className="hidden md:block">
           <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">

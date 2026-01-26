@@ -290,6 +290,11 @@ export function DashboardView({
   return (
     <PageTransition>
       <div className="space-y-6 sm:space-y-8 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6">
+        {/* Global Filter Bar */}
+        <AnimatedCard delay={0.1}>
+          <GlobalFilterBar />
+        </AnimatedCard>
+
         {/* Header */}
         <motion.div
           className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4"
@@ -324,12 +329,6 @@ export function DashboardView({
             </Button>
           )}
         </motion.div>
-
-        {/* Global Filter Bar */}
-        <AnimatedCard delay={0.1}>
-          <GlobalFilterBar />
-        </AnimatedCard>
-
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <MetricCard
