@@ -38,6 +38,7 @@ interface Metrics {
     largestLoss: number;
     avgTrade: number;
     openPositionsCount: number;
+    closedTrades: any[];
 }
 
 interface LivePosition {
@@ -130,15 +131,19 @@ export default function DashboardPage() {
         largestLoss: 0,
         avgTrade: 0,
         openPositionsCount: 0,
+        closedTrades: [],
     });
     const [refreshKey, setRefreshKey] = useState(0);
     const [livePositions, setLivePositions] = useState<LivePositionsData | null>(null);
     const [liveLoading, setLiveLoading] = useState(false);
     const [hasDisabledConnections, setHasDisabledConnections] = useState(false);
+    const [allPositions, setAllPositions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
     // Fetch metrics whenever ANY filter changes
     const fetchMetrics = useCallback(async () => {
         try {
+            setLoading(true);
             const params = new URLSearchParams();
             if (filters.symbol) params.append("symbol", filters.symbol);
             if (filters.startDate) params.append("startDate", filters.startDate);
@@ -149,8 +154,42 @@ export default function DashboardPage() {
             const res = await fetch(`/api/metrics?${params.toString()}`);
             const data = await res.json();
             setMetrics(data);
+
+            // Format positions for the table
+            const closedDisplayPositions = (data.closedTrades || []).map((p: any) => ({
+                symbol: p.symbol,
+                quantity: p.quantity,
+                entryPrice: p.entryPrice,
+                exitPrice: p.exitPrice,
+                pnl: p.pnl,
+                openedAt: p.openedAt,
+                closedAt: p.closedAt,
+                broker: p.broker,
+                accountId: p.accountId,
+                status: "closed" as const,
+                type: p.type,
+            }));
+
+            const openDisplayPositions = (data.openPositions || []).map((p: any) => ({
+                symbol: p.symbol,
+                quantity: p.quantity,
+                entryPrice: p.entryPrice,
+                exitPrice: null,
+                pnl: null,
+                openedAt: p.openedAt,
+                closedAt: null,
+                broker: p.broker,
+                accountId: p.accountId,
+                status: "open" as const,
+                tradeId: p.tradeId,
+                type: p.type,
+            }));
+
+            setAllPositions([...openDisplayPositions, ...closedDisplayPositions]);
         } catch (e) {
             console.error(e);
+        } finally {
+            setLoading(false);
         }
     }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType]);
 
@@ -428,6 +467,8 @@ export default function DashboardPage() {
                             <PositionsTable
                                 key={refreshKey}
                                 onMetricsUpdate={handleMetricsUpdate}
+                                positions={allPositions}
+                                loading={loading}
                                 livePositions={livePositions?.positions}
                             />
                         </CardContent>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import {
     Table,
     TableBody,
@@ -37,6 +37,8 @@ interface PositionsTableProps {
     initialPositions?: DisplayPosition[];
     isDemo?: boolean;
     livePositions?: LivePosition[];
+    positions?: DisplayPosition[];
+    loading?: boolean;
 }
 
 type SortField = "symbol" | "status" | "entryDate" | "exitDate" | "quantity" | "entryPrice" | "exitPrice" | "pnl" | "return" | "broker";
@@ -60,30 +62,28 @@ const getSortValue = (p: DisplayPosition, field: SortField): string | number => 
 
 export function PositionsTable({
     onMetricsUpdate,
-    initialPositions,
+    initialPositions = [],
     isDemo = false,
-    livePositions: _livePositions, // Handled by parent now
+    livePositions: _livePositions,
     positions: externalPositions,
     loading: externalLoading
-}: PositionsTableProps & { positions?: DisplayPosition[], loading?: boolean }) {
+}: PositionsTableProps) {
     const { filters } = useFilters();
-    const [allPositions, setAllPositions] = useState<DisplayPosition[]>(externalPositions || initialPositions || []);
-    const [filteredPositions, setFilteredPositions] = useState<DisplayPosition[]>(externalPositions || initialPositions || []);
-    const [loading, setLoading] = useState(externalLoading ?? !isDemo);
 
-    // Update internal state when external props change
-    useEffect(() => {
-        if (externalPositions) {
-            setAllPositions(externalPositions);
-            setFilteredPositions(externalPositions);
-        }
-    }, [externalPositions]);
+    // Use external positions if provided, otherwise fallback to local/initial
+    const allPositions = externalPositions || initialPositions;
+    const loading = externalLoading ?? false;
 
-    useEffect(() => {
-        if (externalLoading !== undefined) {
-            setLoading(externalLoading);
-        }
-    }, [externalLoading]);
+    // Apply client-side filters (especially status)
+    const filteredPositions = useMemo(() => {
+        return allPositions.filter((p: DisplayPosition) => {
+            // Filter by status (open/winners/losers)
+            if (filters.status === "open") return p.status === "open";
+            if (filters.status === "winners") return p.status === "closed" && (p.pnl ?? 0) > 0;
+            if (filters.status === "losers") return p.status === "closed" && (p.pnl ?? 0) < 0;
+            return true;
+        });
+    }, [allPositions, filters.status]);
 
     const { sortedData: sortedPositions, handleSort, getSortIcon } = useSort<DisplayPosition, SortField>({
         data: filteredPositions,
@@ -92,15 +92,39 @@ export function PositionsTable({
         getValueForField: getSortValue,
     });
 
-    // Check if filters are hiding positions (for indicator)
-    const hasFiltersApplied =
-        filters.symbol ||
-        filters.startDate ||
-        filters.endDate ||
-        filters.status !== "all" ||
-        filters.accountId !== "all" ||
-        filters.assetType !== "all";
+    // Handle metrics update if needed
+    useEffect(() => {
+        if (onMetricsUpdate && !isDemo) {
+            const closed = filteredPositions.filter((p: DisplayPosition) => p.status === "closed");
+            const wins = closed.filter((p: DisplayPosition) => (p.pnl ?? 0) > 0);
+            const losses = closed.filter((p: DisplayPosition) => (p.pnl ?? 0) < 0);
+            const netPnL = closed.reduce((sum: number, p: DisplayPosition) => sum + (p.pnl ?? 0), 0);
 
+            onMetricsUpdate({
+                netPnL,
+                totalTrades: closed.length,
+                winningTrades: wins.length,
+                losingTrades: losses.length,
+                winRate: closed.length > 0 ? Math.round((wins.length / closed.length) * 100) : 0,
+                avgWin: wins.length > 0 ? wins.reduce((sum: number, p: DisplayPosition) => sum + (p.pnl ?? 0), 0) / wins.length : 0,
+                avgLoss: losses.length > 0 ? Math.abs(losses.reduce((sum: number, p: DisplayPosition) => sum + (p.pnl ?? 0), 0) / losses.length) : 0,
+                profitFactor: losses.length > 0 ? wins.reduce((sum: number, p: DisplayPosition) => sum + (p.pnl ?? 0), 0) / Math.abs(losses.reduce((sum: number, p: DisplayPosition) => sum + (p.pnl ?? 0), 0)) : 1,
+                largestWin: wins.length > 0 ? Math.max(...wins.map((p: DisplayPosition) => p.pnl ?? 0)) : 0,
+                largestLoss: losses.length > 0 ? Math.min(...losses.map((p: DisplayPosition) => p.pnl ?? 0)) : 0,
+                avgTrade: closed.length > 0 ? netPnL / closed.length : 0,
+                avgWinPct: 0, // Simplified
+                avgLossPct: 0,
+                monthlyData: [],
+                symbolData: [],
+                cumulativePnL: [],
+                openPositionsCount: allPositions.filter((p: DisplayPosition) => p.status === "open").length,
+                closedTrades: closed as any[] // Type assertion for compatibility if needed
+            });
+        }
+    }, [filteredPositions, onMetricsUpdate, isDemo, allPositions]);
+
+    // Check if filters are hiding positions (for indicator)
+    const hasFiltersApplied = filters.status !== "all";
     const isFilteringPositions = hasFiltersApplied && sortedPositions.length < allPositions.length;
 
     const positionsWithLiveData = sortedPositions;
@@ -115,7 +139,6 @@ export function PositionsTable({
             if (!res.ok) {
                 alert("Failed to delete position");
             }
-            // Parent should refetch data after deletion
         } catch (e) {
             console.error(e);
             alert("Error deleting position");
