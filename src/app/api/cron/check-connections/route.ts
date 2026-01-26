@@ -113,6 +113,14 @@ export async function GET(request: NextRequest) {
               if (isDisabled) {
                 newlyDisabled++;
                 console.warn(`[CheckConnections] Connection disabled: ${brokerName} (${acc.number}) for ${user.email}`);
+
+                // Send notification email
+                try {
+                  const { sendConnectionAlert } = await import('@/lib/email-alerts');
+                  await sendConnectionAlert(user.email!, user.name || 'Trader', brokerName, 'Connection Broken');
+                } catch (e) {
+                  console.error(`[CheckConnections] Failed to send alert email: ${e}`);
+                }
               } else {
                 newlyEnabled++;
                 console.log(`[CheckConnections] Connection restored: ${brokerName} (${acc.number}) for ${user.email}`);
@@ -159,6 +167,22 @@ export async function GET(request: NextRequest) {
           });
           newlyDisabled++;
           disabledAccounts++;
+
+          // Send notification email for missing account
+          try {
+            // Dynamically import to avoid edge runtime issues if this code is ever moved
+            const { sendConnectionAlert } = await import('@/lib/email-alerts');
+            await sendConnectionAlert(user.email!, user.name || 'Trader', acc.brokerName || 'Unknown Broker', 'Connection Removed');
+          } catch (e) {
+            console.error(`[CheckConnections] Failed to send alert email: ${e}`);
+          }
+        }
+
+        // Send notifications for newly disabled accounts found in loop
+        if (newlyDisabled > 0) {
+          // We can't easily know WHICH specific account triggered the 'newlyDisabled' counter inside the loop 
+          // without refactoring, so we can rely on the loop's internal alert logic if we add it there.
+          // Let's add it inside the loop above where newlyDisabled++ happens.
         }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Unknown error';
