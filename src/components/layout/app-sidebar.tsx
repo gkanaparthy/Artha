@@ -52,7 +52,7 @@ export function AppSidebar() {
             <Link href="/dashboard" className="p-6 flex items-center gap-3 hover:opacity-80 transition-opacity">
                 <div className="w-10 h-10 relative flex items-center justify-center">
                     <Image
-                        src="/leaf-logo.svg"
+                        src="/logo.png"
                         alt="Artha Logo"
                         fill
                         className="object-contain"

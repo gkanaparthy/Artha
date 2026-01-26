@@ -36,10 +36,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/leaf-logo.svg", type: "image/svg+xml" },
+      { url: "/logo.png", type: "image/png" },
     ],
     apple: [
-      { url: "/leaf-logo.svg" },
+      { url: "/logo.png" },
     ],
   },
 };
