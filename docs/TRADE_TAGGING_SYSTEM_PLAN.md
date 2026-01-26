@@ -643,7 +643,852 @@ src/components/views/journal-view.tsx       # Support tag display
 
 ---
 
-## Part 11: Future Enhancements (Not in Scope)
+## Part 11: Test Cases & Verification
+
+### 11.1 Unit Tests - Tag Definition Service
+
+#### Tag Creation Tests
+
+```typescript
+describe('TagDefinition Service', () => {
+  describe('createTag', () => {
+    it('should create a tag with valid data', async () => {
+      const tag = await createTag({
+        userId: 'user_123',
+        name: 'Breakout',
+        category: 'SETUP',
+        color: '#10B981',
+        description: 'Price breaking resistance'
+      });
+      expect(tag.id).toBeDefined();
+      expect(tag.name).toBe('Breakout');
+      expect(tag.category).toBe('SETUP');
+    });
+
+    it('should reject duplicate tag names for same user', async () => {
+      await createTag({ userId: 'user_123', name: 'FOMO', category: 'EMOTION' });
+      await expect(
+        createTag({ userId: 'user_123', name: 'FOMO', category: 'EMOTION' })
+      ).rejects.toThrow('Tag name already exists');
+    });
+
+    it('should allow same tag name for different users', async () => {
+      await createTag({ userId: 'user_123', name: 'Breakout', category: 'SETUP' });
+      const tag2 = await createTag({ userId: 'user_456', name: 'Breakout', category: 'SETUP' });
+      expect(tag2.id).toBeDefined();
+    });
+
+    it('should reject tag names exceeding 30 characters', async () => {
+      await expect(
+        createTag({ userId: 'user_123', name: 'A'.repeat(31), category: 'CUSTOM' })
+      ).rejects.toThrow('Tag name must be 30 characters or less');
+    });
+
+    it('should reject empty tag names', async () => {
+      await expect(
+        createTag({ userId: 'user_123', name: '', category: 'CUSTOM' })
+      ).rejects.toThrow('Tag name is required');
+    });
+
+    it('should reject tag names with only whitespace', async () => {
+      await expect(
+        createTag({ userId: 'user_123', name: '   ', category: 'CUSTOM' })
+      ).rejects.toThrow('Tag name is required');
+    });
+
+    it('should trim whitespace from tag names', async () => {
+      const tag = await createTag({ userId: 'user_123', name: '  Breakout  ', category: 'SETUP' });
+      expect(tag.name).toBe('Breakout');
+    });
+
+    it('should enforce max 50 tags per user', async () => {
+      for (let i = 0; i < 50; i++) {
+        await createTag({ userId: 'user_123', name: `Tag${i}`, category: 'CUSTOM' });
+      }
+      await expect(
+        createTag({ userId: 'user_123', name: 'Tag50', category: 'CUSTOM' })
+      ).rejects.toThrow('Maximum 50 tags allowed');
+    });
+
+    it('should validate color format as hex', async () => {
+      await expect(
+        createTag({ userId: 'user_123', name: 'Test', category: 'CUSTOM', color: 'red' })
+      ).rejects.toThrow('Invalid color format');
+    });
+  });
+
+  describe('updateTag', () => {
+    it('should update tag name', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Old', category: 'CUSTOM' });
+      const updated = await updateTag(tag.id, 'user_123', { name: 'New' });
+      expect(updated.name).toBe('New');
+    });
+
+    it('should not update tag owned by different user', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Test', category: 'CUSTOM' });
+      await expect(
+        updateTag(tag.id, 'user_456', { name: 'Hacked' })
+      ).rejects.toThrow('Tag not found');
+    });
+
+    it('should not allow updating default tags', async () => {
+      const defaultTag = await getDefaultTags('user_123').find(t => t.name === 'Breakout');
+      await expect(
+        updateTag(defaultTag.id, 'user_123', { name: 'Renamed' })
+      ).rejects.toThrow('Cannot modify default tags');
+    });
+  });
+
+  describe('archiveTag', () => {
+    it('should soft delete tag', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'ToArchive', category: 'CUSTOM' });
+      await archiveTag(tag.id, 'user_123');
+      const archived = await getTag(tag.id, 'user_123');
+      expect(archived.isArchived).toBe(true);
+    });
+
+    it('should preserve position tags when archiving', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Used', category: 'SETUP' });
+      await addTagToPosition('acc:AAPL:2024-01-15', tag.id, 'user_123');
+      await archiveTag(tag.id, 'user_123');
+
+      const positionTags = await getPositionTags('acc:AAPL:2024-01-15', 'user_123');
+      expect(positionTags.some(t => t.tagDefinitionId === tag.id)).toBe(true);
+    });
+
+    it('should hide archived tags from tag list by default', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Hidden', category: 'CUSTOM' });
+      await archiveTag(tag.id, 'user_123');
+
+      const tags = await listTags('user_123');
+      expect(tags.some(t => t.id === tag.id)).toBe(false);
+    });
+
+    it('should show archived tags when explicitly requested', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Hidden', category: 'CUSTOM' });
+      await archiveTag(tag.id, 'user_123');
+
+      const tags = await listTags('user_123', { includeArchived: true });
+      expect(tags.some(t => t.id === tag.id)).toBe(true);
+    });
+  });
+
+  describe('restoreTag', () => {
+    it('should restore archived tag', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Restore', category: 'CUSTOM' });
+      await archiveTag(tag.id, 'user_123');
+      await restoreTag(tag.id, 'user_123');
+
+      const restored = await getTag(tag.id, 'user_123');
+      expect(restored.isArchived).toBe(false);
+    });
+  });
+});
+```
+
+### 11.2 Unit Tests - Position Tagging Service
+
+```typescript
+describe('PositionTag Service', () => {
+  describe('addTagToPosition', () => {
+    it('should add tag to position', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Test', category: 'SETUP' });
+      const result = await addTagToPosition('acc:AAPL:2024-01-15T09:30:00Z', tag.id, 'user_123');
+      expect(result.positionKey).toBe('acc:AAPL:2024-01-15T09:30:00Z');
+    });
+
+    it('should not add same tag twice', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Test', category: 'SETUP' });
+      await addTagToPosition('acc:AAPL:2024-01-15', tag.id, 'user_123');
+      await expect(
+        addTagToPosition('acc:AAPL:2024-01-15', tag.id, 'user_123')
+      ).rejects.toThrow('Tag already applied');
+    });
+
+    it('should enforce max 10 tags per position', async () => {
+      for (let i = 0; i < 10; i++) {
+        const tag = await createTag({ userId: 'user_123', name: `Tag${i}`, category: 'CUSTOM' });
+        await addTagToPosition('acc:AAPL:2024-01-15', tag.id, 'user_123');
+      }
+      const tag11 = await createTag({ userId: 'user_123', name: 'Tag10', category: 'CUSTOM' });
+      await expect(
+        addTagToPosition('acc:AAPL:2024-01-15', tag11.id, 'user_123')
+      ).rejects.toThrow('Maximum 10 tags per position');
+    });
+
+    it('should not allow tagging with another user\'s tag', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Private', category: 'SETUP' });
+      await expect(
+        addTagToPosition('acc:AAPL:2024-01-15', tag.id, 'user_456')
+      ).rejects.toThrow('Tag not found');
+    });
+
+    it('should allow adding note with tag', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Test', category: 'SETUP' });
+      const result = await addTagToPosition(
+        'acc:AAPL:2024-01-15',
+        tag.id,
+        'user_123',
+        { notes: 'Perfect setup execution' }
+      );
+      expect(result.notes).toBe('Perfect setup execution');
+    });
+
+    it('should not allow adding archived tag', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Archived', category: 'SETUP' });
+      await archiveTag(tag.id, 'user_123');
+      await expect(
+        addTagToPosition('acc:AAPL:2024-01-15', tag.id, 'user_123')
+      ).rejects.toThrow('Cannot add archived tag');
+    });
+  });
+
+  describe('removeTagFromPosition', () => {
+    it('should remove tag from position', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Remove', category: 'SETUP' });
+      await addTagToPosition('acc:AAPL:2024-01-15', tag.id, 'user_123');
+      await removeTagFromPosition('acc:AAPL:2024-01-15', tag.id, 'user_123');
+
+      const tags = await getPositionTags('acc:AAPL:2024-01-15', 'user_123');
+      expect(tags.length).toBe(0);
+    });
+
+    it('should not remove tag for different user', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Keep', category: 'SETUP' });
+      await addTagToPosition('acc:AAPL:2024-01-15', tag.id, 'user_123');
+      await expect(
+        removeTagFromPosition('acc:AAPL:2024-01-15', tag.id, 'user_456')
+      ).rejects.toThrow('Position tag not found');
+    });
+  });
+
+  describe('bulkTagPositions', () => {
+    it('should add tag to multiple positions', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Bulk', category: 'SETUP' });
+      const positions = ['acc:AAPL:2024-01-15', 'acc:TSLA:2024-01-16', 'acc:GOOGL:2024-01-17'];
+
+      const result = await bulkTagPositions(positions, tag.id, 'user_123');
+      expect(result.tagged).toBe(3);
+      expect(result.skipped).toBe(0);
+    });
+
+    it('should skip positions that already have the tag', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Bulk', category: 'SETUP' });
+      await addTagToPosition('acc:AAPL:2024-01-15', tag.id, 'user_123');
+
+      const positions = ['acc:AAPL:2024-01-15', 'acc:TSLA:2024-01-16'];
+      const result = await bulkTagPositions(positions, tag.id, 'user_123');
+      expect(result.tagged).toBe(1);
+      expect(result.skipped).toBe(1);
+    });
+
+    it('should enforce max 100 positions per bulk operation', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Bulk', category: 'SETUP' });
+      const positions = Array.from({ length: 101 }, (_, i) => `acc:SYM${i}:2024-01-15`);
+
+      await expect(
+        bulkTagPositions(positions, tag.id, 'user_123')
+      ).rejects.toThrow('Maximum 100 positions per bulk operation');
+    });
+  });
+});
+```
+
+### 11.3 Unit Tests - Position Key Generation
+
+```typescript
+describe('Position Key Utilities', () => {
+  describe('generatePositionKey', () => {
+    it('should generate key for stock position', () => {
+      const key = generatePositionKey({
+        accountId: 'acc_123',
+        symbol: 'AAPL',
+        openedAt: '2024-01-15T09:30:00.000Z'
+      });
+      expect(key).toBe('acc_123:AAPL:2024-01-15T09:30:00.000Z');
+    });
+
+    it('should generate key for option position with full OCC symbol', () => {
+      const key = generatePositionKey({
+        accountId: 'acc_123',
+        symbol: 'AAPL  240119C00150000',
+        openedAt: '2024-01-15T09:30:00.000Z'
+      });
+      expect(key).toBe('acc_123:AAPL  240119C00150000:2024-01-15T09:30:00.000Z');
+    });
+
+    it('should handle special characters in symbol', () => {
+      const key = generatePositionKey({
+        accountId: 'acc_123',
+        symbol: 'BRK.B',
+        openedAt: '2024-01-15T09:30:00.000Z'
+      });
+      expect(key).toBe('acc_123:BRK.B:2024-01-15T09:30:00.000Z');
+    });
+  });
+
+  describe('parsePositionKey', () => {
+    it('should parse valid position key', () => {
+      const parsed = parsePositionKey('acc_123:AAPL:2024-01-15T09:30:00.000Z');
+      expect(parsed.accountId).toBe('acc_123');
+      expect(parsed.symbol).toBe('AAPL');
+      expect(parsed.openedAt).toBe('2024-01-15T09:30:00.000Z');
+    });
+
+    it('should handle OCC symbols with colons replaced', () => {
+      const key = 'acc_123:AAPL  240119C00150000:2024-01-15T09:30:00.000Z';
+      const parsed = parsePositionKey(key);
+      expect(parsed.symbol).toBe('AAPL  240119C00150000');
+    });
+
+    it('should throw on invalid key format', () => {
+      expect(() => parsePositionKey('invalid')).toThrow('Invalid position key format');
+      expect(() => parsePositionKey('only:two')).toThrow('Invalid position key format');
+    });
+  });
+
+  describe('encodePositionKeyForUrl', () => {
+    it('should URL-encode position key', () => {
+      const encoded = encodePositionKeyForUrl('acc_123:AAPL  240119C00150000:2024-01-15T09:30:00.000Z');
+      expect(encoded).not.toContain(' ');
+      expect(encoded).not.toContain(':');
+    });
+
+    it('should be reversible', () => {
+      const original = 'acc_123:AAPL  240119C00150000:2024-01-15T09:30:00.000Z';
+      const encoded = encodePositionKeyForUrl(original);
+      const decoded = decodePositionKeyFromUrl(encoded);
+      expect(decoded).toBe(original);
+    });
+  });
+});
+```
+
+### 11.4 Unit Tests - Tag Analytics
+
+```typescript
+describe('Tag Analytics Service', () => {
+  describe('getTagPerformance', () => {
+    beforeEach(async () => {
+      // Setup: Create tags and positions with P&L
+      await seedTestData();
+    });
+
+    it('should calculate win rate for setup tag', async () => {
+      const analytics = await getTagPerformance('user_123', 'tag_breakout');
+      expect(analytics.totalTrades).toBeGreaterThan(0);
+      expect(analytics.winRate).toBeGreaterThanOrEqual(0);
+      expect(analytics.winRate).toBeLessThanOrEqual(100);
+    });
+
+    it('should calculate average P&L per trade', async () => {
+      const analytics = await getTagPerformance('user_123', 'tag_breakout');
+      expect(typeof analytics.avgPnL).toBe('number');
+    });
+
+    it('should calculate total P&L', async () => {
+      const analytics = await getTagPerformance('user_123', 'tag_breakout');
+      expect(typeof analytics.totalPnL).toBe('number');
+    });
+
+    it('should return zero stats for unused tag', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Unused', category: 'CUSTOM' });
+      const analytics = await getTagPerformance('user_123', tag.id);
+      expect(analytics.totalTrades).toBe(0);
+      expect(analytics.winRate).toBe(0);
+      expect(analytics.totalPnL).toBe(0);
+    });
+
+    it('should filter by date range', async () => {
+      const analytics = await getTagPerformance('user_123', 'tag_breakout', {
+        startDate: '2024-01-01',
+        endDate: '2024-01-31'
+      });
+      expect(analytics.totalTrades).toBeLessThanOrEqual(
+        (await getTagPerformance('user_123', 'tag_breakout')).totalTrades
+      );
+    });
+  });
+
+  describe('getMistakeCostAnalysis', () => {
+    it('should calculate total cost per mistake tag', async () => {
+      const analysis = await getMistakeCostAnalysis('user_123');
+      expect(Array.isArray(analysis)).toBe(true);
+      analysis.forEach(item => {
+        expect(item.tagName).toBeDefined();
+        expect(item.totalCost).toBeLessThanOrEqual(0); // Mistakes should be negative
+        expect(item.tradeCount).toBeGreaterThanOrEqual(0);
+      });
+    });
+
+    it('should sort by most costly mistake first', async () => {
+      const analysis = await getMistakeCostAnalysis('user_123');
+      for (let i = 1; i < analysis.length; i++) {
+        expect(analysis[i - 1].totalCost).toBeLessThanOrEqual(analysis[i].totalCost);
+      }
+    });
+
+    it('should calculate "without mistakes" projection', async () => {
+      const analysis = await getMistakeCostAnalysis('user_123');
+      const totalMistakeCost = analysis.reduce((sum, m) => sum + m.totalCost, 0);
+      const actualPnL = await getTotalPnL('user_123');
+      const projectedPnL = actualPnL - totalMistakeCost;
+      expect(projectedPnL).toBeGreaterThan(actualPnL);
+    });
+  });
+
+  describe('getEmotionCorrelation', () => {
+    it('should correlate emotions with win rate', async () => {
+      const correlation = await getEmotionCorrelation('user_123');
+      expect(Array.isArray(correlation)).toBe(true);
+      correlation.forEach(item => {
+        expect(item.emotion).toBeDefined();
+        expect(item.winRate).toBeGreaterThanOrEqual(0);
+        expect(item.winRate).toBeLessThanOrEqual(100);
+        expect(item.avgLoss).toBeLessThanOrEqual(0);
+      });
+    });
+
+    it('should identify "Calm & Focused" as best performer', async () => {
+      const correlation = await getEmotionCorrelation('user_123');
+      const calm = correlation.find(e => e.emotion === 'Calm & Focused');
+      const fomo = correlation.find(e => e.emotion === 'FOMO');
+      if (calm && fomo) {
+        expect(calm.winRate).toBeGreaterThan(fomo.winRate);
+      }
+    });
+  });
+});
+```
+
+### 11.5 API Integration Tests
+
+```typescript
+describe('Tag API Endpoints', () => {
+  describe('GET /api/tags', () => {
+    it('should return 401 without auth', async () => {
+      const res = await fetch('/api/tags');
+      expect(res.status).toBe(401);
+    });
+
+    it('should return user tags', async () => {
+      const res = await authenticatedFetch('/api/tags');
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(Array.isArray(data.tags)).toBe(true);
+    });
+
+    it('should filter by category', async () => {
+      const res = await authenticatedFetch('/api/tags?category=MISTAKE');
+      const data = await res.json();
+      data.tags.forEach(tag => {
+        expect(tag.category).toBe('MISTAKE');
+      });
+    });
+
+    it('should not return other users tags', async () => {
+      const res = await authenticatedFetch('/api/tags', { userId: 'user_456' });
+      const data = await res.json();
+      data.tags.forEach(tag => {
+        expect(tag.userId).toBe('user_456');
+      });
+    });
+  });
+
+  describe('POST /api/tags', () => {
+    it('should create tag', async () => {
+      const res = await authenticatedFetch('/api/tags', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: 'New Tag',
+          category: 'CUSTOM',
+          color: '#FF0000'
+        })
+      });
+      expect(res.status).toBe(201);
+      const data = await res.json();
+      expect(data.id).toBeDefined();
+      expect(data.name).toBe('New Tag');
+    });
+
+    it('should return 400 for missing name', async () => {
+      const res = await authenticatedFetch('/api/tags', {
+        method: 'POST',
+        body: JSON.stringify({ category: 'CUSTOM' })
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('should return 400 for invalid category', async () => {
+      const res = await authenticatedFetch('/api/tags', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'Test', category: 'INVALID' })
+      });
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe('POST /api/positions/:key/tags', () => {
+    it('should add tag to position', async () => {
+      const tag = await createTestTag();
+      const res = await authenticatedFetch('/api/positions/acc:AAPL:2024-01-15/tags', {
+        method: 'POST',
+        body: JSON.stringify({ tagId: tag.id })
+      });
+      expect(res.status).toBe(201);
+    });
+
+    it('should handle URL-encoded position key', async () => {
+      const tag = await createTestTag();
+      const encodedKey = encodeURIComponent('acc:AAPL  240119C00150000:2024-01-15');
+      const res = await authenticatedFetch(`/api/positions/${encodedKey}/tags`, {
+        method: 'POST',
+        body: JSON.stringify({ tagId: tag.id })
+      });
+      expect(res.status).toBe(201);
+    });
+
+    it('should return 404 for non-existent tag', async () => {
+      const res = await authenticatedFetch('/api/positions/acc:AAPL:2024-01-15/tags', {
+        method: 'POST',
+        body: JSON.stringify({ tagId: 'non_existent_tag' })
+      });
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('GET /api/tags/analytics', () => {
+    it('should return tag performance summary', async () => {
+      const res = await authenticatedFetch('/api/tags/analytics');
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.setupPerformance).toBeDefined();
+      expect(data.mistakeCosts).toBeDefined();
+      expect(data.emotionCorrelation).toBeDefined();
+    });
+
+    it('should filter by date range', async () => {
+      const res = await authenticatedFetch('/api/tags/analytics?startDate=2024-01-01&endDate=2024-01-31');
+      expect(res.status).toBe(200);
+    });
+  });
+});
+```
+
+### 11.6 UI Component Tests
+
+```typescript
+describe('Tag Components', () => {
+  describe('TagFilterDropdown', () => {
+    it('should render all categories', () => {
+      render(<TagFilterDropdown tags={mockTags} onSelect={jest.fn()} />);
+      expect(screen.getByText('Setups')).toBeInTheDocument();
+      expect(screen.getByText('Mistakes')).toBeInTheDocument();
+      expect(screen.getByText('Emotions')).toBeInTheDocument();
+      expect(screen.getByText('Custom')).toBeInTheDocument();
+    });
+
+    it('should call onSelect when tag clicked', () => {
+      const onSelect = jest.fn();
+      render(<TagFilterDropdown tags={mockTags} onSelect={onSelect} />);
+      fireEvent.click(screen.getByText('Breakout'));
+      expect(onSelect).toHaveBeenCalledWith(['tag_breakout']);
+    });
+
+    it('should allow multi-select', () => {
+      const onSelect = jest.fn();
+      render(<TagFilterDropdown tags={mockTags} onSelect={onSelect} selectedIds={['tag_breakout']} />);
+      fireEvent.click(screen.getByText('FOMO'));
+      expect(onSelect).toHaveBeenCalledWith(['tag_breakout', 'tag_fomo']);
+    });
+
+    it('should show selected count badge', () => {
+      render(<TagFilterDropdown tags={mockTags} selectedIds={['tag_1', 'tag_2']} />);
+      expect(screen.getByText('2')).toBeInTheDocument();
+    });
+  });
+
+  describe('TagAssignment', () => {
+    it('should show current tags', () => {
+      render(<TagAssignment positionKey="acc:AAPL:2024" currentTags={[mockTag]} />);
+      expect(screen.getByText('Breakout')).toBeInTheDocument();
+    });
+
+    it('should show quick-add buttons', () => {
+      render(<TagAssignment positionKey="acc:AAPL:2024" availableTags={mockTags} />);
+      expect(screen.getByText('+ Add Tag')).toBeInTheDocument();
+    });
+
+    it('should call onAdd when tag selected', async () => {
+      const onAdd = jest.fn();
+      render(<TagAssignment positionKey="acc:AAPL:2024" availableTags={mockTags} onAdd={onAdd} />);
+      fireEvent.click(screen.getByText('+ Add Tag'));
+      fireEvent.click(screen.getByText('FOMO'));
+      expect(onAdd).toHaveBeenCalledWith('acc:AAPL:2024', 'tag_fomo');
+    });
+
+    it('should call onRemove when X clicked', () => {
+      const onRemove = jest.fn();
+      render(<TagAssignment positionKey="acc:AAPL:2024" currentTags={[mockTag]} onRemove={onRemove} />);
+      fireEvent.click(screen.getByLabelText('Remove Breakout'));
+      expect(onRemove).toHaveBeenCalledWith('acc:AAPL:2024', 'tag_breakout');
+    });
+
+    it('should not show add button when max tags reached', () => {
+      const tenTags = Array.from({ length: 10 }, (_, i) => ({ id: `tag_${i}`, name: `Tag${i}` }));
+      render(<TagAssignment positionKey="acc:AAPL:2024" currentTags={tenTags} />);
+      expect(screen.queryByText('+ Add Tag')).not.toBeInTheDocument();
+      expect(screen.getByText('Max tags reached')).toBeInTheDocument();
+    });
+  });
+
+  describe('TagManager (Settings)', () => {
+    it('should render category tabs', () => {
+      render(<TagManager />);
+      expect(screen.getByRole('tab', { name: 'Setups' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Mistakes' })).toBeInTheDocument();
+    });
+
+    it('should show tag count per category', () => {
+      render(<TagManager tags={mockTags} />);
+      expect(screen.getByText('Setups (5)')).toBeInTheDocument();
+    });
+
+    it('should allow creating new tag', async () => {
+      const onCreate = jest.fn();
+      render(<TagManager onCreate={onCreate} />);
+      fireEvent.click(screen.getByText('+ New Tag'));
+      fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'New Tag' } });
+      fireEvent.click(screen.getByText('Create'));
+      expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({ name: 'New Tag' }));
+    });
+
+    it('should allow drag-and-drop reordering', () => {
+      // Drag-and-drop test implementation
+    });
+  });
+});
+```
+
+### 11.7 Edge Case Tests
+
+```typescript
+describe('Edge Cases', () => {
+  describe('Concurrent Operations', () => {
+    it('should handle concurrent tag additions gracefully', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'Race', category: 'SETUP' });
+
+      // Simulate race condition
+      const promises = [
+        addTagToPosition('acc:AAPL:2024-01-15', tag.id, 'user_123'),
+        addTagToPosition('acc:AAPL:2024-01-15', tag.id, 'user_123')
+      ];
+
+      const results = await Promise.allSettled(promises);
+      const successes = results.filter(r => r.status === 'fulfilled');
+      expect(successes.length).toBe(1); // Only one should succeed
+    });
+  });
+
+  describe('Position Key Edge Cases', () => {
+    it('should handle positions opened at exact midnight', () => {
+      const key = generatePositionKey({
+        accountId: 'acc_123',
+        symbol: 'AAPL',
+        openedAt: '2024-01-15T00:00:00.000Z'
+      });
+      expect(parsePositionKey(key).openedAt).toBe('2024-01-15T00:00:00.000Z');
+    });
+
+    it('should handle symbols with numbers', () => {
+      const key = generatePositionKey({
+        accountId: 'acc_123',
+        symbol: '3M',
+        openedAt: '2024-01-15T09:30:00.000Z'
+      });
+      expect(parsePositionKey(key).symbol).toBe('3M');
+    });
+
+    it('should handle very long OCC symbols', () => {
+      const symbol = 'SPXW  260105P06920000'; // SPX weeklies
+      const key = generatePositionKey({
+        accountId: 'acc_123',
+        symbol,
+        openedAt: '2024-01-15T09:30:00.000Z'
+      });
+      expect(parsePositionKey(key).symbol).toBe(symbol);
+    });
+  });
+
+  describe('Data Integrity', () => {
+    it('should maintain referential integrity when deleting user', async () => {
+      const tag = await createTag({ userId: 'user_to_delete', name: 'Test', category: 'CUSTOM' });
+      await addTagToPosition('acc:AAPL:2024-01-15', tag.id, 'user_to_delete');
+
+      await deleteUser('user_to_delete'); // Cascade delete
+
+      const orphanTags = await prisma.tagDefinition.findMany({
+        where: { userId: 'user_to_delete' }
+      });
+      expect(orphanTags.length).toBe(0);
+
+      const orphanPositionTags = await prisma.positionTag.findMany({
+        where: { userId: 'user_to_delete' }
+      });
+      expect(orphanPositionTags.length).toBe(0);
+    });
+
+    it('should handle tag deletion with existing position tags', async () => {
+      const tag = await createTag({ userId: 'user_123', name: 'ToDelete', category: 'CUSTOM' });
+      await addTagToPosition('acc:AAPL:2024-01-15', tag.id, 'user_123');
+
+      // Should archive, not hard delete
+      await archiveTag(tag.id, 'user_123');
+
+      const positionTags = await getPositionTags('acc:AAPL:2024-01-15', 'user_123');
+      // Position tag should still exist, referencing archived tag
+      expect(positionTags.some(t => t.tagDefinitionId === tag.id)).toBe(true);
+    });
+  });
+
+  describe('Large Data Sets', () => {
+    it('should handle analytics with 10,000+ positions', async () => {
+      // Seed large dataset
+      await seedLargeDataset('user_123', 10000);
+
+      const startTime = Date.now();
+      const analytics = await getTagPerformance('user_123', 'tag_breakout');
+      const duration = Date.now() - startTime;
+
+      expect(duration).toBeLessThan(5000); // Should complete in < 5s
+      expect(analytics.totalTrades).toBeGreaterThan(0);
+    });
+
+    it('should paginate tag list for user with 50 tags', async () => {
+      for (let i = 0; i < 50; i++) {
+        await createTag({ userId: 'user_123', name: `Tag${i}`, category: 'CUSTOM' });
+      }
+
+      const page1 = await listTags('user_123', { page: 1, limit: 20 });
+      const page2 = await listTags('user_123', { page: 2, limit: 20 });
+
+      expect(page1.tags.length).toBe(20);
+      expect(page2.tags.length).toBe(20);
+      expect(page1.tags[0].id).not.toBe(page2.tags[0].id);
+    });
+  });
+
+  describe('Demo Mode', () => {
+    it('should not allow tag creation in demo mode', async () => {
+      await expect(
+        createTag({ userId: 'demo_user', name: 'Test', category: 'CUSTOM' })
+      ).rejects.toThrow('Cannot create tags in demo mode');
+    });
+
+    it('should not allow tag assignment in demo mode', async () => {
+      await expect(
+        addTagToPosition('demo_acc:AAPL:2024-01-15', 'tag_123', 'demo_user')
+      ).rejects.toThrow('Cannot modify tags in demo mode');
+    });
+
+    it('should show sample tags in demo mode', async () => {
+      const tags = await listTags('demo_user');
+      expect(tags.some(t => t.isDefault)).toBe(true);
+    });
+  });
+
+  describe('Migration Edge Cases', () => {
+    it('should handle existing trade-tag relations during migration', async () => {
+      // Simulate pre-migration state
+      await prisma.tag.create({ data: { name: 'OldTag', color: '#000' } });
+      await prisma.trade.update({
+        where: { id: 'trade_123' },
+        data: { tags: { connect: { name: 'OldTag' } } }
+      });
+
+      // Run migration
+      await migrateTagsToPositionBased();
+
+      // Verify new structure
+      const position = await getPositionForTrade('trade_123');
+      const positionTags = await getPositionTags(position.key, position.userId);
+      expect(positionTags.some(t => t.tagDefinition.name === 'OldTag')).toBe(true);
+    });
+  });
+});
+```
+
+### 11.8 Manual Test Scenarios
+
+#### Scenario 1: New User Onboarding
+1. Create new account
+2. Navigate to Journal page
+3. Verify 15 default tags visible (5 per category)
+4. Click on a position
+5. Verify quick-add buttons show default tags
+6. Add "Breakout" tag
+7. Verify tag appears on position in list
+
+#### Scenario 2: Custom Tag Creation
+1. Go to Settings > Tags
+2. Click "Custom" tab
+3. Click "+ New Tag"
+4. Enter name "My Strategy"
+5. Pick color
+6. Enter description
+7. Save
+8. Verify tag appears in Custom section
+9. Go to Journal
+10. Verify new tag available in quick-add
+
+#### Scenario 3: Tag Filtering
+1. Add different tags to 5 positions
+2. Open tag filter dropdown
+3. Select "FOMO"
+4. Verify only FOMO-tagged positions visible
+5. Add "Early Entry" to filter (multi-select)
+6. Toggle "Match All" vs "Match Any"
+7. Verify correct filtering behavior
+8. Clear filters
+9. Verify all positions visible
+
+#### Scenario 4: Bulk Tagging
+1. Enable multi-select mode in Journal
+2. Select 3 positions
+3. Click "Add Tag"
+4. Select "Breakout"
+5. Verify all 3 positions now have Breakout tag
+6. Select same 3 positions
+7. Click "Remove Tag"
+8. Select "Breakout"
+9. Verify tag removed from all 3
+
+#### Scenario 5: Tag Analytics Review
+1. Tag 20+ positions with various tags
+2. Go to Reports > Tag Performance
+3. Verify Setup table shows win rates
+4. Verify Mistake costs are calculated
+5. Verify "Without mistakes" projection is shown
+6. Filter by date range
+7. Verify numbers update
+
+#### Scenario 6: Archive and Restore
+1. Create custom tag "Temporary"
+2. Tag a position with it
+3. Go to Settings > Tags
+4. Archive "Temporary" tag
+5. Verify tag hidden from list
+6. Go to Journal
+7. Verify tag still shows on position (greyed out)
+8. Verify tag not available in quick-add
+9. Go back to Settings
+10. Show archived tags
+11. Restore "Temporary"
+12. Verify tag back in list and quick-add
+
+---
+
+## Part 12: Future Enhancements (Not in Scope)
 
 1. **Day Plans** - Pre-market emotional state logging
 2. **Tag Templates** - Import community-shared tag sets
