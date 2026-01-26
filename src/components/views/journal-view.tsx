@@ -306,12 +306,12 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
                 filteredTrades,
                 'trades',
                 [
-                  { key: 'timestamp', header: 'Date', formatter: (val: any) => format(new Date(val), "yyyy-MM-dd") },
+                  { key: 'timestamp', header: 'Date', formatter: (val: unknown) => format(new Date(val as string | number | Date), "yyyy-MM-dd") },
                   { key: 'symbol', header: 'Symbol' },
                   { key: 'action', header: 'Action' },
                   { key: 'quantity', header: 'Quantity' },
-                  { key: 'price', header: 'Price', formatter: (val: any) => Number(val).toFixed(2) },
-                  { key: 'fees', header: 'Fees', formatter: (val: any) => Number(val).toFixed(2) },
+                  { key: 'price', header: 'Price', formatter: (val: unknown) => Number(val).toFixed(2) },
+                  { key: 'fees', header: 'Fees', formatter: (val: unknown) => Number(val).toFixed(2) },
                 ]
               )}
             />

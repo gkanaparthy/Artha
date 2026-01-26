@@ -137,7 +137,7 @@ export interface StrategiesListResponse {
   total: number;
 }
 
-export interface StrategyDetailResponse extends StrategyWithLegs {}
+export type StrategyDetailResponse = StrategyWithLegs;
 
 export interface DetectStrategiesResponse {
   detected: number;

@@ -31,7 +31,7 @@ function getOptionExpiration(symbol: string): Date | null {
 export function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOptions) {
     // Helper to get tags for an item
     const getTagsForItem = (item: { symbol: string, accountId: string, openedAt: Date }) => {
-        if (!(filters as any)?.positionTags || !(filters as any)?.tagDefs) return [];
+        if (!filters || !('positionTags' in filters) || !('tagDefs' in filters)) return [];
         // For lookup, we try to reconstruct the key. 
         // Note: The positionKey logic in DB might be `v1|...` but here we are using a Map keyed by something?
         // Wait, the caller (route.tsx) constructs the map using `pt.positionKey`.
@@ -56,8 +56,8 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
         // Or if the backfill isn't finished.
         // The key in the Map comes from `prisma.positionTag.findMany`.
 
-        const ptMap = (filters as any).positionTags as Map<string, string[]>;
-        const defMap = (filters as any).tagDefs as Map<string, any>;
+        const ptMap = 'positionTags' in (filters as object) ? (filters as unknown as Record<string, unknown>).positionTags as Map<string, string[]> : new Map();
+        const defMap = 'tagDefs' in (filters as object) ? (filters as unknown as Record<string, unknown>).tagDefs as Map<string, { id: string; name: string; color: string; category: string; icon: string | null }> : new Map();
 
         let tagIds = ptMap.get(v1Key);
 
@@ -69,7 +69,7 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
 
         if (!tagIds) return [];
 
-        return tagIds.map((id: string) => defMap.get(id)).filter(Boolean);
+        return tagIds.map((id: string) => defMap.get(id)).filter(Boolean) as { id: string; name: string; color: string; category: string; icon: string | null }[];
     };
 
     // 0. Deduplicate trades using SnapTrade's unique trade ID
@@ -388,8 +388,8 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
             filteredTrades = filteredTrades.filter(t => t.type === filters.assetType);
             filteredOpenPositions = filteredOpenPositions.filter(p => p.type === filters.assetType);
         }
-        if (filters.tagIds && filters.tagIds.length > 0 && (filters as any).positionTags) {
-            const ptMap = (filters as any).positionTags as Map<string, string[]>;
+        if (filters.tagIds && filters.tagIds.length > 0 && 'positionTags' in (filters as object)) {
+            const ptMap = (filters as unknown as Record<string, unknown>).positionTags as Map<string, string[]>;
             const filterByTags = (item: { symbol: string, accountId: string, openedAt: Date }) => {
                 const v1Key = `v1|${item.accountId}|${item.symbol}|${item.openedAt.getTime()}`;
                 let itemTagIds = ptMap.get(v1Key);

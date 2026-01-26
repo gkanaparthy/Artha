@@ -54,7 +54,7 @@ export function parsePositionKey(key: string): {
             symbol,
             openedAt: new Date(timestamp)
         };
-    } catch (e) {
+    } catch {
         return null;
     }
 }

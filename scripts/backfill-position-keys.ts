@@ -85,7 +85,7 @@ async function main() {
             }
 
             // Update Net Qty
-            let qty = Math.abs(trade.quantity);
+            const qty = Math.abs(trade.quantity);
             const action = trade.action.toUpperCase();
 
             // Determine sign

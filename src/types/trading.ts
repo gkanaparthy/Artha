@@ -144,7 +144,7 @@ export interface ClosedTrade {
   accountId: string;
   type: string;
   multiplier: number;
-  tags?: any[];
+  tags?: { id: string; name: string; color: string; category: string; icon: string | null }[];
 }
 
 // Rename the frontend one to ClosedPositionJSON or similar? 
@@ -161,5 +161,5 @@ export interface OpenPositionInternal {
   currentValue: number;
   tradeId: string;
   type: string;
-  tags?: any[];
+  tags?: { id: string; name: string; color: string; category: string; icon: string | null }[];
 }

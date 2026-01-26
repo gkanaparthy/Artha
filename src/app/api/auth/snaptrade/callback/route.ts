@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
             }
 
             // Provide different feedback based on reconnect status and sync result
-            let params = new URLSearchParams();
+            const params = new URLSearchParams();
             if (isReconnect) {
                 if (syncSucceeded) {
                     params.set('broker_reconnected', 'true');

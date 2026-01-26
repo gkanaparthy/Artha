@@ -16,6 +16,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-2",
@@ -29,6 +30,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-3",
@@ -42,6 +44,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-4",
@@ -55,6 +58,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-5",
@@ -68,6 +72,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-6",
@@ -81,6 +86,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-7",
@@ -94,6 +100,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-8",
@@ -107,6 +114,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-9",
@@ -120,6 +128,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-10",
@@ -133,6 +142,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   // February 2026 trades
   {
@@ -147,6 +157,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-12",
@@ -160,6 +171,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-13",
@@ -173,6 +185,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-14",
@@ -186,6 +199,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-15",
@@ -199,6 +213,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-16",
@@ -212,6 +227,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-17",
@@ -225,6 +241,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-18",
@@ -238,6 +255,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-19",
@@ -251,6 +269,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-20",
@@ -264,6 +283,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   // March 2026 trades
   {
@@ -278,6 +298,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-22",
@@ -291,6 +312,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-23",
@@ -304,6 +326,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-24",
@@ -317,6 +340,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-25",
@@ -330,6 +354,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-26",
@@ -343,6 +368,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-27",
@@ -356,6 +382,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-28",
@@ -369,6 +396,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-29",
@@ -382,6 +410,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-30",
@@ -395,6 +424,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-31",
@@ -408,6 +438,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-32",
@@ -421,6 +452,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-33",
@@ -434,6 +466,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-34",
@@ -447,6 +480,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-35",
@@ -460,6 +494,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-36",
@@ -473,6 +508,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   // Options trades
   {
@@ -487,6 +523,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-38",
@@ -500,6 +537,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-39",
@@ -513,6 +551,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-40",
@@ -526,6 +565,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-41",
@@ -539,6 +579,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-42",
@@ -552,6 +593,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   // More stock trades
   {
@@ -566,6 +608,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-44",
@@ -579,6 +622,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-45",
@@ -592,6 +636,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-46",
@@ -605,6 +650,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-47",
@@ -618,6 +664,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-48",
@@ -631,6 +678,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-49",
@@ -644,6 +692,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
   {
     id: "demo-t-50",
@@ -657,6 +706,7 @@ export const DEMO_TRADES: Trade[] = [
     accountId: "demo-acc-1",
     account: { brokerName: "Demo Broker" },
     tags: [],
+    positionKey: null,
   },
 ];
 

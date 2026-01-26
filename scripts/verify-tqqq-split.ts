@@ -18,7 +18,7 @@ async function checkTqqq() {
 
     console.log(`Total TQQQ trades: ${dbTrades.length}`);
 
-    let longLots: { qty: number, price: number }[] = [];
+    const longLots: { qty: number, price: number }[] = [];
     let closedPnL = 0;
 
     for (const trade of dbTrades) {
@@ -29,8 +29,8 @@ async function checkTqqq() {
         } else if (trade.action === 'SELL') {
             let remaining = Math.abs(trade.quantity);
             while (remaining > 0 && longLots.length > 0) {
-                let lot = longLots[0];
-                let take = Math.min(remaining, lot.qty);
+                const lot = longLots[0];
+                const take = Math.min(remaining, lot.qty);
                 closedPnL += (trade.price - lot.price) * take;
                 lot.qty -= take;
                 remaining -= take;
