@@ -141,6 +141,8 @@ export default function ReportsPage() {
       if (filters.symbol) params.append("symbol", filters.symbol);
       if (filters.accountId && filters.accountId !== 'all') params.append("accountId", filters.accountId);
       if (filters.assetType && filters.assetType !== 'all') params.append("assetType", filters.assetType);
+      if (filters.tagIds && filters.tagIds.length > 0) params.append("tagIds", filters.tagIds.join(","));
+      if (filters.tagFilterMode) params.append("tagFilterMode", filters.tagFilterMode);
 
       const res = await fetch(`/api/metrics?${params.toString()}`);
       const data: Metrics = await res.json();

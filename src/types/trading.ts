@@ -103,6 +103,7 @@ export interface TradeInput {
   expiryDate?: Date | null;
   contractMultiplier?: number;
   snapTradeTradeId?: string | null;
+  positionKey?: string | null;
 }
 
 export interface Lot {
@@ -115,6 +116,7 @@ export interface Lot {
   originalQuantity: number;
   multiplier: number;
   type: string;
+  positionKey: string | null;
 }
 
 export interface FilterOptions {

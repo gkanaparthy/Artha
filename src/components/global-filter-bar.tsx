@@ -221,6 +221,10 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                             </Select>
                         )}
 
+                        <div className="w-full">
+                            <TagFilterDropdown />
+                        </div>
+
                         {/* Action Buttons */}
                         <div className="flex gap-2 pt-2">
                             {onExport && (

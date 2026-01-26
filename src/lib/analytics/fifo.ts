@@ -30,7 +30,7 @@ function getOptionExpiration(symbol: string): Date | null {
 
 export function calculateMetricsFromTrades(trades: TradeInput[], filters?: FilterOptions) {
     // Helper to get tags for an item
-    const getTagsForItem = (item: { symbol: string, accountId: string, openedAt: Date }) => {
+    const getTagsForItem = (item: { symbol: string, accountId: string, openedAt: Date, positionKey?: string | null }) => {
         if (!filters || !('positionTags' in filters) || !('tagDefs' in filters)) return [];
         // For lookup, we try to reconstruct the key. 
         // Note: The positionKey logic in DB might be `v1|...` but here we are using a Map keyed by something?
@@ -50,7 +50,7 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
         // But we must handle legacy keys too if any exist? The backfill should have fixed them.
 
         // Let's assume v1 format:
-        const v1Key = `v1|${item.accountId}|${item.symbol}|${item.openedAt.getTime()}`;
+        // const v1Key = `v1|${item.accountId}|${item.symbol}|${item.openedAt.getTime()}`;
 
         // We also need to support the legacy format just in case the Map has legacy keys?
         // Or if the backfill isn't finished.
@@ -59,9 +59,20 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
         const ptMap = 'positionTags' in (filters as object) ? (filters as unknown as Record<string, unknown>).positionTags as Map<string, string[]> : new Map();
         const defMap = 'tagDefs' in (filters as object) ? (filters as unknown as Record<string, unknown>).tagDefs as Map<string, { id: string; name: string; color: string; category: string; icon: string | null }> : new Map();
 
-        let tagIds = ptMap.get(v1Key);
+        let tagIds: string[] | undefined;
 
-        // Fallback to legacy key check if v1 not found
+        // Try candidate keys in order of reliability
+        if (item.positionKey) {
+            tagIds = ptMap.get(item.positionKey);
+        }
+
+        // Fallback to re-deriving v1 key if no tag found was found yet
+        if (!tagIds) {
+            const v1Key = `v1|${item.accountId}|${item.symbol}|${item.openedAt.getTime()}`;
+            tagIds = ptMap.get(v1Key);
+        }
+
+        // Final fallback to legacy key
         if (!tagIds) {
             const legacyKey = `${item.accountId}:${item.symbol}:${item.openedAt.toISOString()}`;
             tagIds = ptMap.get(legacyKey);
@@ -193,7 +204,8 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                         tags: getTagsForItem({
                             symbol: keyDetails.get(key)?.symbol || trade.symbol,
                             accountId: matchLot.accountId,
-                            openedAt: matchLot.date
+                            openedAt: matchLot.date,
+                            positionKey: matchLot.positionKey
                         })
                     });
 
@@ -213,7 +225,8 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                         broker: broker,
                         accountId: accountId,
                         multiplier: multiplier,
-                        type: tradeType
+                        type: tradeType,
+                        positionKey: trade.positionKey || null
                     });
                 }
             } else {
@@ -238,7 +251,8 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                         tags: getTagsForItem({
                             symbol: keyDetails.get(key)?.symbol || trade.symbol,
                             accountId: matchLot.accountId,
-                            openedAt: matchLot.date
+                            openedAt: matchLot.date,
+                            positionKey: matchLot.positionKey
                         })
                     });
 
@@ -258,7 +272,8 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                         broker: broker,
                         accountId: accountId,
                         multiplier: multiplier,
-                        type: tradeType
+                        type: tradeType,
+                        positionKey: trade.positionKey || null
                     });
                 }
             }
@@ -284,7 +299,13 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                         broker: lot.broker,
                         accountId: lot.accountId,
                         type: lot.type,
-                        multiplier: lot.multiplier
+                        multiplier: lot.multiplier,
+                        tags: getTagsForItem({
+                            symbol: symbol,
+                            accountId: lot.accountId,
+                            openedAt: lot.date,
+                            positionKey: lot.positionKey
+                        })
                     });
                 }
             }
@@ -303,7 +324,13 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                         broker: lot.broker,
                         accountId: lot.accountId,
                         type: lot.type,
-                        multiplier: lot.multiplier
+                        multiplier: lot.multiplier,
+                        tags: getTagsForItem({
+                            symbol: symbol,
+                            accountId: lot.accountId,
+                            openedAt: lot.date,
+                            positionKey: lot.positionKey
+                        })
                     });
                 }
             }
@@ -321,7 +348,12 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                 currentValue: lot.price * lot.quantity * lot.multiplier,
                 tradeId: lot.tradeId,
                 type: lot.type,
-                tags: getTagsForItem({ symbol: keyDetails.get(key)?.symbol || key, accountId: lot.accountId, openedAt: lot.date })
+                tags: getTagsForItem({
+                    symbol: keyDetails.get(key)?.symbol || key,
+                    accountId: lot.accountId,
+                    openedAt: lot.date,
+                    positionKey: lot.positionKey // Added positionKey
+                })
             });
         }
 
