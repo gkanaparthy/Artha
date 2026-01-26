@@ -12,9 +12,24 @@ interface AIInsightsCardProps {
     startDate?: string;
     endDate?: string;
     accountId?: string;
+    isDemo?: boolean;
 }
 
-export function AIInsightsCard({ startDate, endDate, accountId }: AIInsightsCardProps) {
+const DEMO_INSIGHT = `
+### **Key Strengths**
+* **Risk Management Consistency**: You've maintained a controlled maximum drawdown of $1,240.50 (approx. 2.4% of your total equity). Your stop-loss discipline on "NVDA" and "AAPL" trades prevented significant capital erosion during recent volatility.
+* **Asset Allocation Synergy**: Your strategy of using Stocks for long-term growth and Options for income/hedging is working well. The Stocks portion contributed 65% of your Net P&L with lower relative volatility.
+
+### **Areas for Improvement**
+* **Morning Performance Fade**: Analysis shows that trades opened between 9:30 AM and 10:15 AM have a 22% lower win rate. You are often fighting the initial 15-minute price discovery volatility.
+* **Profit Taking Early**: On your winning "TSLA" trades, you exited 40% earlier than your original target. This is capping your average win size compared to your risk.
+
+### **Actionable Next Steps**
+* **Wait for the 10:00 AM Candle**: Avoid opening new positions in the first 30 minutes of the session. Let the market settle and confirm a trend.
+* **Scale Out Strategy**: Instead of full exits, try closing 50% at your first target and moving stops to break-even to allow runners to hit your final goal.
+`;
+
+export function AIInsightsCard({ startDate, endDate, accountId, isDemo = false }: AIInsightsCardProps) {
     const [loading, setLoading] = useState(false);
     const [insights, setInsights] = useState<{ content: string; provider: string; timestamp: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -22,6 +37,19 @@ export function AIInsightsCard({ startDate, endDate, accountId }: AIInsightsCard
     const generateInsights = async () => {
         setLoading(true);
         setError(null);
+
+        if (isDemo) {
+            // Simulate AI delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            setInsights({
+                content: DEMO_INSIGHT.trim(),
+                provider: "Demo AI",
+                timestamp: new Date().toISOString()
+            });
+            setLoading(false);
+            return;
+        }
+
         try {
             const params = new URLSearchParams();
             if (startDate) params.set("startDate", startDate);

@@ -27,6 +27,7 @@ import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "@/lib/export";
 import type { Metrics, DisplayPosition } from "@/types/trading";
+import { AIInsightsCard } from "@/components/ai-insights-card";
 
 interface DashboardViewProps {
   initialMetrics?: Metrics;
@@ -467,6 +468,16 @@ export function DashboardView({
             glowClass={isDemo ? "glow-green" : livePositions && filteredLiveMetrics.totalUnrealizedPnl >= 0 ? "glow-green" : "glow-red"}
           />
         </div>
+
+        {/* AI Insights Section */}
+        <AnimatedCard delay={0.65}>
+          <AIInsightsCard
+            startDate={filters.startDate}
+            endDate={filters.endDate}
+            accountId={filters.accountId}
+            isDemo={isDemo}
+          />
+        </AnimatedCard>
 
         {/* Positions Table */}
         <AnimatedCard delay={0.7}>
