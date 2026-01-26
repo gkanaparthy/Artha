@@ -539,7 +539,7 @@ Bump version: `dashboard_filters_v4` to include tag filters
 - [x] Build color picker component
 - [x] Build archive/restore functionality
 
-### Phase 5: Journal Integration (3 days)
+### Phase 5: Journal & Filter Integration (Completed)
 - [x] Add tag column to journal table
 - [x] Add tag filter to global-filter-bar
 - [x] Create TagManager component (CRUD, reordering)
@@ -554,9 +554,9 @@ Bump version: `dashboard_filters_v4` to include tag filters
 
 ### Phase 6: Tag Analytics (Completed)
 - [x] Create `/api/tags/analytics/route.ts`
-- [x] Build tag performance report section
-- [x] Build mistake cost analysis chart
-- [x] Build emotion correlation table
+- [x] Build tag performance report section (Integrated in Reports & Dashboard)
+- [x] Build mistake cost analysis chart ("Behavioral Alpha")
+- [x] Build emotion correlation table (Integrated in Detail Table)
 - [x] Add dashboard widgets
 
 ### Phase 7: Bulk Operations (Completed)
@@ -564,11 +564,11 @@ Bump version: `dashboard_filters_v4` to include tag filters
 - [x] Build bulk tag assignment dialog
 - [x] Implement bulk tag/untag endpoints
 
-### Phase 8: Migration & Cleanup (1 day)
-- [ ] Migrate existing Tag → TagDefinition
-- [ ] Migrate Trade-Tag → Position-Tag
-- [ ] Deprecate old Tag model
-- [ ] Update all references
+### Phase 8: Migration & Cleanup (Completed/Stable)
+- [x] Backfill position keys for all trades
+- [x] Implement dual-mode key lookup (v1 + legacy) for transition stability
+- [ ] Deprecate old Tag model (Preserving for data safety for now)
+- [x] Update all UI references to new TagDefinition
 
 **Total Estimated: 16 days**
 

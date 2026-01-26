@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { CalendarView } from "@/components/calendar-view";
+import { TagPerformance } from "@/components/tag-performance";
 
 // Dynamic import for heavy Recharts components - only loaded when needed
 const ReportsCharts = dynamic(
@@ -463,6 +464,17 @@ export default function ReportsPage() {
               netPnL={metrics.netPnL}
               totalTrades={metrics.totalTrades}
             />
+
+            {/* Tag Performance Analysis */}
+            <AnimatedCard delay={0.88}>
+              <div className="space-y-4 pt-4 border-t border-dashed">
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-purple-500" />
+                  <h2 className="text-xl font-semibold">Tag Performance Analysis</h2>
+                </div>
+                <TagPerformance />
+              </div>
+            </AnimatedCard>
 
             {/* Stats Summary */}
             <AnimatedCard delay={0.85}>
