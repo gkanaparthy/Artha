@@ -18,6 +18,8 @@ import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { DateRange } from "react-day-picker";
 
 interface GlobalFilterBarProps {
     showStatusFilter?: boolean;
@@ -28,8 +30,6 @@ interface GlobalFilterBarProps {
 
 export function GlobalFilterBar({ showStatusFilter = true, className, onExport, exportLabel = "Export" }: GlobalFilterBarProps) {
     const { filters, setFilters, resetFilters, accounts } = useFilters();
-    const [startDateOpen, setStartDateOpen] = useState(false);
-    const [endDateOpen, setEndDateOpen] = useState(false);
     const [mobileFiltersExpanded, setMobileFiltersExpanded] = useState(false);
 
     const handleClearFilters = () => {
@@ -176,30 +176,19 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                             </SelectContent>
                         </Select>
 
-                        {/* Date Range - Native inputs for mobile */}
-                        <div className="flex items-center gap-2">
-                            <div className="flex-1">
-                                <input
-                                    type="date"
-                                    value={filters.startDate || ''}
-                                    onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm touch-manipulation"
-                                    placeholder="From date"
-                                />
-                            </div>
-
-                            <span className="text-muted-foreground text-sm">-</span>
-
-                            <div className="flex-1">
-                                <input
-                                    type="date"
-                                    value={filters.endDate || ''}
-                                    onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm touch-manipulation"
-                                    placeholder="To date"
-                                />
-                            </div>
-                        </div>
+                        {/* Date Range - Unified Picker for mobile */}
+                        <DateRangePicker
+                            className="w-full"
+                            from={filters.startDate ? new Date(filters.startDate + 'T00:00:00') : undefined}
+                            to={filters.endDate ? new Date(filters.endDate + 'T00:00:00') : undefined}
+                            onSelect={(range) => {
+                                setFilters(prev => ({
+                                    ...prev,
+                                    startDate: range?.from ? format(range.from, "yyyy-MM-dd") : "",
+                                    endDate: range?.to ? format(range.to, "yyyy-MM-dd") : ""
+                                }));
+                            }}
+                        />
 
                         {/* Status Filter (Optional) */}
                         {showStatusFilter && (
@@ -291,81 +280,17 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                 </Select>
 
                 {/* Date Range */}
-                <div className="flex items-center gap-2">
-                    <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "w-[130px] h-10 justify-start text-left font-normal touch-manipulation",
-                                    !filters.startDate && "text-muted-foreground"
-                                )}
-                            >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {filters.startDate ? (
-                                    format(new Date(new Date(filters.startDate).getTime() + new Date(filters.startDate).getTimezoneOffset() * 60000), "MMM dd, yy")
-                                ) : (
-                                    <span>From</span>
-                                )}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 z-[100]" align="center" sideOffset={5}>
-                            <Calendar
-                                mode="single"
-                                selected={filters.startDate ? new Date(new Date(filters.startDate).getTime() + new Date(filters.startDate).getTimezoneOffset() * 60000) : undefined}
-                                onSelect={(date) => {
-                                    if (date) {
-                                        const offset = date.getTimezoneOffset();
-                                        const localDate = new Date(date.getTime() - (offset * 60 * 1000));
-                                        setFilters(prev => ({ ...prev, startDate: localDate.toISOString().split('T')[0] }));
-                                    } else {
-                                        setFilters(prev => ({ ...prev, startDate: "" }));
-                                    }
-                                    setStartDateOpen(false);
-                                }}
-                                initialFocus
-                            />
-                        </PopoverContent>
-                    </Popover>
-
-                    <span className="text-muted-foreground">-</span>
-
-                    <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "w-[130px] h-10 justify-start text-left font-normal touch-manipulation",
-                                    !filters.endDate && "text-muted-foreground"
-                                )}
-                            >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {filters.endDate ? (
-                                    format(new Date(new Date(filters.endDate).getTime() + new Date(filters.endDate).getTimezoneOffset() * 60000), "MMM dd, yy")
-                                ) : (
-                                    <span>To</span>
-                                )}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 z-[100]" align="center" sideOffset={5}>
-                            <Calendar
-                                mode="single"
-                                selected={filters.endDate ? new Date(new Date(filters.endDate).getTime() + new Date(filters.endDate).getTimezoneOffset() * 60000) : undefined}
-                                onSelect={(date) => {
-                                    if (date) {
-                                        const offset = date.getTimezoneOffset();
-                                        const localDate = new Date(date.getTime() - (offset * 60 * 1000));
-                                        setFilters(prev => ({ ...prev, endDate: localDate.toISOString().split('T')[0] }));
-                                    } else {
-                                        setFilters(prev => ({ ...prev, endDate: "" }));
-                                    }
-                                    setEndDateOpen(false);
-                                }}
-                                initialFocus
-                            />
-                        </PopoverContent>
-                    </Popover>
-                </div>
+                <DateRangePicker
+                    from={filters.startDate ? new Date(filters.startDate + 'T00:00:00') : undefined}
+                    to={filters.endDate ? new Date(filters.endDate + 'T00:00:00') : undefined}
+                    onSelect={(range) => {
+                        setFilters(prev => ({
+                            ...prev,
+                            startDate: range?.from ? format(range.from, "yyyy-MM-dd") : "",
+                            endDate: range?.to ? format(range.to, "yyyy-MM-dd") : ""
+                        }));
+                    }}
+                />
 
                 {/* Status Filter (Optional) */}
                 {showStatusFilter && (

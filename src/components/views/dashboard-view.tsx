@@ -24,6 +24,7 @@ import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
 import { cn, formatCompactCurrency } from "@/lib/utils";
 import { useFilters } from "@/contexts/filter-context";
+import { GlobalFilterBar } from "@/components/global-filter-bar";
 import type { Metrics, DisplayPosition } from "@/types/trading";
 
 interface DashboardViewProps {
@@ -323,6 +324,11 @@ export function DashboardView({
             </Button>
           )}
         </motion.div>
+
+        {/* Global Filter Bar */}
+        <AnimatedCard delay={0.1}>
+          <GlobalFilterBar />
+        </AnimatedCard>
 
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

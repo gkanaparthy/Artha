@@ -54,3 +54,6 @@ pravaha_plan/
 # data exports
 *.csv
 .env*.local
+
+# backups
+/backups/

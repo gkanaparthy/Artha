@@ -1,6 +1,13 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend lazily to prevent crash if key is missing
+let resendInstance: Resend | null = null;
+function getResend() {
+    if (!resendInstance) {
+        resendInstance = new Resend(process.env.RESEND_API_KEY || 'missing_key');
+    }
+    return resendInstance;
+}
 
 // Simple in-memory rate limiting (in production, use Redis or similar)
 const emailRateLimits = new Map<string, { count: number; firstAttempt: number }>();
@@ -83,7 +90,7 @@ export async function sendVerificationRequest({
     console.log(`[Auth] API key available: ${!!process.env.RESEND_API_KEY}`);
 
     try {
-        await resend.emails.send({
+        await getResend().emails.send({
             from,
             to: normalizedEmail,
             subject: 'Sign in to Artha Trading Journal',
