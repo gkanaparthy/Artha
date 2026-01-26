@@ -743,8 +743,8 @@ export function ReportsView({
                             data={winLossData}
                             cx="50%"
                             cy="50%"
-                            innerRadius={70}
-                            outerRadius={100}
+                            innerRadius={60}
+                            outerRadius={80}
                             paddingAngle={5}
                             dataKey="value"
                             label={({ name, value, percent }) =>
