@@ -30,6 +30,7 @@ import {
   AlertCircle,
   Trash2,
   Tags,
+  BrainCircuit,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
@@ -52,6 +53,7 @@ interface UserData {
   id: string;
   snapTradeUserId: string | null;
   createdAt: string;
+  aiPersona: 'PROFESSIONAL' | 'CANDOR';
   accounts: Account[];
 }
 
@@ -310,6 +312,27 @@ export default function SettingsPage() {
     }
     await signOut({ callbackUrl: "/login" });
   };
+
+  const handleUpdatePersona = async (persona: 'PROFESSIONAL' | 'CANDOR') => {
+    try {
+      const res = await fetch('/api/user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aiPersona: persona }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update persona');
+
+      setUserData(prev => prev ? { ...prev, aiPersona: persona } : null);
+      toast.success('AI Coaching Persona updated', {
+        description: `Your AI insights will now use the ${persona === 'PROFESSIONAL' ? 'Professional' : 'Radical Candor'} style.`
+      });
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to update preference');
+    }
+  };
+
 
   if (loading) {
     return (
@@ -590,6 +613,57 @@ export default function SettingsPage() {
                 <Badge variant="secondary" className="bg-green-500/10 text-green-600 dark:text-green-400 border-none">Setups</Badge>
                 <Badge variant="secondary" className="bg-red-500/10 text-red-600 dark:text-red-400 border-none">Mistakes</Badge>
                 <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-none">Emotions</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </AnimatedCard>
+
+        {/* AI Coaching Settings */}
+        <AnimatedCard delay={0.28}>
+          <Card className="card-hover overflow-hidden border-purple-500/20 bg-gradient-to-br from-card to-purple-500/5">
+            <CardHeader className="p-4 sm:p-6 pb-2">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-600/20 to-purple-600/10 flex items-center justify-center">
+                  <BrainCircuit className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-base sm:text-lg">AI Coaching Persona</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">Choose how the AI provides feedback</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 pt-0">
+              <div className="grid gap-4 sm:grid-cols-2 mt-2">
+                <div
+                  onClick={() => handleUpdatePersona('PROFESSIONAL')}
+                  className={cn(
+                    "p-4 rounded-xl border cursor-pointer transition-all hover:bg-muted/50",
+                    userData?.aiPersona === 'PROFESSIONAL' ? "border-purple-600 bg-purple-600/5 ring-1 ring-purple-600/20" : "bg-muted/20 border-transparent shadow-sm"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold text-foreground">Professional Coach</span>
+                    {userData?.aiPersona === 'PROFESSIONAL' && <CheckCircle2 className="h-4 w-4 text-purple-600" />}
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Balanced, supportive, and professional. Focuses on long-term growth and steady improvement.
+                  </p>
+                </div>
+                <div
+                  onClick={() => handleUpdatePersona('CANDOR')}
+                  className={cn(
+                    "p-4 rounded-xl border cursor-pointer transition-all hover:bg-muted/50",
+                    userData?.aiPersona === 'CANDOR' ? "border-red-600 bg-red-600/5 ring-1 ring-red-600/20" : "bg-muted/20 border-transparent shadow-sm"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold text-foreground">Radical Candor Coach</span>
+                    {userData?.aiPersona === 'CANDOR' && <CheckCircle2 className="h-4 w-4 text-red-600" />}
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    No-nonsense, direct, and brutally honest. Cuts through the noise to find the &quot;leaks&quot; in your trading.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

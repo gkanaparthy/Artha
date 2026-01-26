@@ -45,3 +45,32 @@ export async function GET() {
         return NextResponse.json({ error: message }, { status: 500 });
     }
 }
+
+export async function PATCH(req: Request) {
+    try {
+        const session = await auth();
+
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const body = await req.json();
+        const { aiPersona } = body;
+
+        if (!aiPersona || !['PROFESSIONAL', 'CANDOR'].includes(aiPersona)) {
+            return NextResponse.json({ error: 'Invalid persona' }, { status: 400 });
+        }
+
+        const user = await prisma.user.update({
+            where: { id: session.user.id },
+            data: { aiPersona },
+        });
+
+        return NextResponse.json(user);
+
+    } catch (error: unknown) {
+        console.error('User update error:', error);
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return NextResponse.json({ error: message }, { status: 500 });
+    }
+}

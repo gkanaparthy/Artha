@@ -22,6 +22,7 @@ model User {
   brokerAccounts      BrokerAccount[]
   positionTags        PositionTag[]
   sessions            Session[]
+  aiPersona           AiPersona       @default(PROFESSIONAL)
   tagDefinitions      TagDefinition[]
   tradeGroups         TradeGroup[]
 }
@@ -222,4 +223,8 @@ enum TagCategory {
   MISTAKE
   EMOTION
   CUSTOM
+}
+enum AiPersona {
+  PROFESSIONAL
+  CANDOR
 }

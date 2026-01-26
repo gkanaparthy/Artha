@@ -56,7 +56,13 @@ export async function GET(req: NextRequest) {
             });
         }
 
-        // 4. Check Cache
+        // 4. Fetch User Persona & Cache Status
+        const user = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { aiPersona: true }
+        });
+        const persona = user?.aiPersona || "PROFESSIONAL";
+
         const { getCachedInsight, setCachedInsight, generateFilterHash } = await import("@/lib/cache/insights-cache");
 
         // Fetch last sync time to include in hash for auto-invalidation
@@ -66,7 +72,11 @@ export async function GET(req: NextRequest) {
             select: { lastSyncedAt: true }
         });
 
-        const filterHash = generateFilterHash({ ...filters, lastSync: lastSync?.lastSyncedAt?.getTime() });
+        const filterHash = generateFilterHash({
+            ...filters,
+            lastSync: lastSync?.lastSyncedAt?.getTime(),
+            persona // Include persona in cache key
+        });
         const cached = await getCachedInsight(session.user.id, filterHash);
 
         if (cached) {
@@ -80,8 +90,8 @@ export async function GET(req: NextRequest) {
         }
 
         // 5. Generate Insights
-        console.log(`[InsightsAPI] Sending request to LLM Manager...`);
-        const { insights, provider } = await llmManager.generateInsights(dataSummary);
+        console.log(`[InsightsAPI] Sending request to LLM Manager with persona: ${persona}...`);
+        const { insights, provider } = await llmManager.generateInsights(dataSummary, persona);
 
         // 6. Set Cache
         await setCachedInsight(session.user.id, filterHash, insights);

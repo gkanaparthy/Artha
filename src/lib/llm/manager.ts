@@ -2,6 +2,7 @@ import { LLMProvider } from "./provider";
 import { GeminiProvider } from "./providers/gemini.provider";
 import { GroqProvider } from "./providers/groq.provider";
 import { InsightDataSummary } from "@/types/insights";
+import { AiPersona } from "@prisma/client";
 
 export class LLMManager {
     private providers: LLMProvider[];
@@ -13,14 +14,14 @@ export class LLMManager {
         ];
     }
 
-    async generateInsights(data: InsightDataSummary): Promise<{ insights: string; provider: string }> {
+    async generateInsights(data: InsightDataSummary, persona: AiPersona = "PROFESSIONAL"): Promise<{ insights: string; provider: string }> {
         const errors: string[] = [];
 
         for (const provider of this.providers) {
             if (provider.isAvailable()) {
                 try {
-                    console.log(`[LLMManager] Attempting to generate insights using ${provider.name}...`);
-                    const insights = await provider.generateInsights(data);
+                    console.log(`[LLMManager] Attempting to generate insights using ${provider.name} (${persona})...`);
+                    const insights = await provider.generateInsights(data, persona);
                     return { insights, provider: provider.name };
                 } catch (error: any) {
                     console.error(`[LLMManager] Error with provider ${provider.name}:`, error.message);
