@@ -41,6 +41,7 @@ interface Trade {
   };
   tags: { id: string; name: string; color: string }[];
   accountId: string;
+  positionKey?: string | null;
 }
 
 interface TradeDetailSheetProps {
@@ -58,7 +59,8 @@ export function TradeDetailSheet({
 }: TradeDetailSheetProps) {
   if (!trade) return null;
 
-  const positionKey = `${trade.accountId}:${trade.symbol}:${trade.timestamp}`;
+  // Use the canonical positionKey if available, otherwise fallback to legacy construction for robustness (though all trades should have keys now)
+  const positionKey = trade.positionKey || `${trade.accountId}:${trade.symbol}:${trade.timestamp}`;
   const value = trade.price * trade.quantity;
   const isBuy = trade.action.includes("BUY") || trade.action === "ASSIGNMENT";
 
