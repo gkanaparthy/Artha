@@ -22,6 +22,8 @@ import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
 import { cn } from "@/lib/utils";
 import { useFilters } from "@/contexts/filter-context";
+import { GlobalFilterBar } from "@/components/global-filter-bar";
+import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "@/lib/export";
 
 interface Metrics {
     netPnL: number;
@@ -344,6 +346,30 @@ export default function DashboardPage() {
                         {syncing ? "Syncing..." : "Sync Trades"}
                     </Button>
                 </motion.div>
+
+                {/* Global Filter Bar */}
+                <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md pb-4 -mx-4 px-4 md:-mx-8 md:px-8">
+                    <AnimatedCard delay={0.1}>
+                        <GlobalFilterBar
+                            onExport={() => exportToExcel(
+                                allPositions,
+                                'positions',
+                                [
+                                    { key: 'symbol', header: 'Symbol' },
+                                    { key: 'status', header: 'Status' },
+                                    { key: 'type', header: 'Type' },
+                                    { key: 'broker', header: 'Broker' },
+                                    { key: 'quantity', header: 'Quantity' },
+                                    { key: 'entryPrice', header: 'Entry Price', formatter: formatCurrencyForExport },
+                                    { key: 'exitPrice', header: 'Exit Price', formatter: formatCurrencyForExport },
+                                    { key: 'pnl', header: 'P&L', formatter: formatCurrencyForExport },
+                                    { key: 'openedAt', header: 'Entry Date', formatter: formatDateForExport },
+                                    { key: 'closedAt', header: 'Exit Date', formatter: formatDateForExport },
+                                ]
+                            )}
+                        />
+                    </AnimatedCard>
+                </div>
 
                 {/* Warning Banner for Disabled Connections */}
                 {hasDisabledConnections && (
