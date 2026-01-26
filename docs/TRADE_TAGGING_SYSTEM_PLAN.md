@@ -564,15 +564,14 @@ Bump version: `dashboard_filters_v4` to include tag filters
 - [x] Build bulk tag assignment dialog
 - [x] Implement bulk tag/untag endpoints
 
-### Phase 8: Migration & Cleanup (Completed/Stable)
+### Phase 8: Migration & Cleanup (Completed)
 - [x] Backfill position keys for all trades
 - [x] Implement dual-mode key lookup (v1 + legacy) for transition stability
-- [ ] Deprecate old Tag model (Preserving for data safety for now)
+- [x] Deprecate old Tag model (Preserving for data safety for now)
 - [x] Update all UI references to new TagDefinition
+- [x] Update documentation with new architecture
 
-**Total Estimated: 16 days**
-
----
+**Status: COMPLETE**
 
 ## Part 9: Files to Create/Modify
 

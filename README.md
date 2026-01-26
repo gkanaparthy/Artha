@@ -66,71 +66,84 @@ Unlike cloud-based solutions, Artha is self-hosted, giving you complete control 
 - **Live unrealized P&L** - Real-time tracking of open positions
 - **Phantom position detection** - Automatically identifies and handles incomplete trade history
 
-### 🎨 User Experience
-- **Dark/Light theme** - Toggle between themes
-- **Responsive design** - Works on desktop and mobile
-- **Fast filtering** - Client-side filtering for instant updates
-- **Export capabilities** - Share reports as images
-- **Smooth animations** - Framer Motion for polished UX
-
-## 🛡️ Security
-
-Artha implements **enterprise-grade security** to protect your sensitive financial data:
-
-### Authentication & Authorization
-- **NextAuth.js v5** - Industry-standard authentication
-- **Multiple auth providers**:
-  - Google OAuth
-  - Apple OAuth
-  - Email Magic Links (via Resend)
-- **Session-based auth** - Secure, httpOnly cookies
-- **Admin-only routes** - Protected admin endpoints with email verification
-
-### Data Protection
-- **Field-level encryption** - AES-256-GCM encryption for:
-  - SnapTrade user secrets
-  - Broker account numbers
-  - OAuth tokens
-- **Zero-Trust architecture**:
-  - Row-Level Security (RLS) enabled on all tables
-  - No direct database access from client
-  - All queries proxied through authenticated API routes
-  - Service-role bypass only after session validation
-
-### Rate Limiting
-- **Upstash Redis-based rate limiting** - Prevents abuse and DoS attacks
-- **Granular limits**:
-  - Auth endpoints: 10 requests/minute
-  - Trade sync: 10 requests/minute
-  - Single deletions: 30 requests/minute
-  - Bulk operations: 5 requests/minute
-- **IP-based tracking** - Sliding window algorithm
-- **Graceful degradation** - App works even if rate limiting is disabled
-
-### API Security
-- **CRON_SECRET protection** - Cron jobs require secret token
-- **Admin email verification** - Admin routes verify user email
-- **Input validation** - All inputs validated on server-side
-- **Error handling** - Generic error messages in production
-
-## 🏗️ Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| **Framework** | Next.js 16 (App Router, Turbopack) |
-| **Language** | TypeScript 5 |
-| **UI Library** | React 19 |
-| **Styling** | Tailwind CSS 4 |
-| **Components** | Radix UI, shadcn/ui |
-| **Animations** | Framer Motion |
-| **Charts** | Recharts |
-| **Database** | PostgreSQL (Supabase) + Prisma ORM |
-| **Auth** | NextAuth.js v5 |
-| **Email** | Resend |
-| **Broker API** | SnapTrade SDK |
-| **Rate Limiting** | Upstash Redis |
-| **Encryption** | Node.js Crypto (AES-256-GCM) |
-| **Deployment** | Vercel (Serverless) |
+68: ### 🏷️ Trade Tagging System
+69: - **Setup & Mistake Tracking** - Tag trades with specific setups (e.g., "Breakout") and mistakes (e.g., "FOMO")
+70: - **Position-Based Tagging** - Tags apply to the entire position (entry + exit), not just single executions
+71: - **Analytics** - See P&L per tag to identify profitable setups and costly mistakes
+72: - **Custom Categories** - Organize tags by Setup, Mistake, Emotion, or Custom
+73: - **Bulk Operations** - Tag multiple trades at once for faster journaling
+74: 
+75: ### 🔔 Proactive Alerts
+76: - **Connection Monitoring** - Automatically detects broken broker connections
+77: - **Email Notifications** - Sends instant alerts when a connection is invalid (via Resend)
+78: - **Actionable Links** - Emails include direct links to fix the issue
+79: 
+80: ### 🎨 User Experience
+81: - **Dark/Light theme** - Toggle between themes
+82: - **Responsive design** - Works on desktop and mobile
+83: - **Fast filtering** - Client-side filtering for instant updates
+84: - **Export capabilities** - Share reports as images
+85: - **Smooth animations** - Framer Motion for polished UX
+86: 
+87: ## 🛡️ Security
+88: 
+89: Artha implements **enterprise-grade security** to protect your sensitive financial data:
+90: 
+91: ### Authentication & Authorization
+92: - **NextAuth.js v5** - Industry-standard authentication
+93: - **Multiple auth providers**:
+94:   - Google OAuth
+95:   - Apple OAuth
+96:   - Email Magic Links (via Resend)
+97: - **Session-based auth** - Secure, httpOnly cookies
+98: - **Admin-only routes** - Protected admin endpoints with email verification
+99: 
+100: ### Data Protection
+101: - **Field-level encryption** - AES-256-GCM encryption for:
+102:   - SnapTrade user secrets
+103:   - Broker account numbers
+104:   - OAuth tokens
+105: - **Zero-Trust architecture**:
+106:   - Row-Level Security (RLS) enabled on all tables
+107:   - No direct database access from client
+108:   - All queries proxied through authenticated API routes
+109:   - Service-role bypass only after session validation
+110: 
+111: ### Rate Limiting
+112: - **Upstash Redis-based rate limiting** - Prevents abuse and DoS attacks
+113: - **Granular limits**:
+114:   - Auth endpoints: 10 requests/minute
+115:   - Trade sync: 10 requests/minute
+116:   - Single deletions: 30 requests/minute
+117:   - Bulk operations: 5 requests/minute
+118: - **IP-based tracking** - Sliding window algorithm
+119: - **Graceful degradation** - App works even if rate limiting is disabled
+120: 
+121: ### API Security
+122: - **CRON_SECRET protection** - Cron jobs require secret token
+123: - **Admin email verification** - Admin routes verify user email
+124: - **Input validation** - All inputs validated on server-side
+125: - **Error handling** - Generic error messages in production
+126: 
+127: ## 🏗️ Tech Stack
+128: 
+129: | Layer | Technology |
+130: |-------|------------|
+131: | **Framework** | Next.js 16 (App Router, Turbopack) |
+132: | **Language** | TypeScript 5 |
+133: | **UI Library** | React 19 |
+134: | **Styling** | Tailwind CSS 4 |
+135: | **Components** | Radix UI, shadcn/ui |
+136: | **Animations** | Framer Motion |
+137: | **Charts** | Recharts |
+138: | **Database** | PostgreSQL (Supabase) + Prisma ORM |
+139: | **Auth** | NextAuth.js v5 |
+140: | **Email** | Resend |
+141: | **Broker API** | SnapTrade SDK |
+142: | **AI (Planned)** | Groq (Llama 3) / Gemini |
+143: | **Rate Limiting** | Upstash Redis |
+144: | **Encryption** | Node.js Crypto (AES-256-GCM) |
+145: | **Deployment** | Vercel (Serverless) |
 
 ## 🚀 Getting Started
 
@@ -347,7 +360,9 @@ Artha includes built-in data quality monitoring:
 - [x] Field-level encryption
 - [x] Live unrealized P&L
 - [x] Admin data quality monitoring
-- [ ] Trade tagging and notes
+- [x] Trade tagging and notes
+- [x] Automated broken connection alerts
+- [ ] AI-Powered Trade Analysis (Insights)
 - [ ] Custom trade entry (manual trades)
 - [ ] Import from CSV/Excel
 - [ ] Multiple currency support
