@@ -18,6 +18,7 @@ import {
   ArrowDownRight,
   Calculator,
   Layers,
+  BarChart3,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
@@ -28,6 +29,7 @@ import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "@/lib/export";
 import type { Metrics, DisplayPosition } from "@/types/trading";
 import { AIInsightsCard } from "@/components/ai-insights-card";
+import { TagPerformance } from "@/components/tag-performance";
 
 interface DashboardViewProps {
   initialMetrics?: Metrics;
@@ -501,6 +503,17 @@ export function DashboardView({
             </CardContent>
           </Card>
         </AnimatedCard>
+
+        {/* Tag Insights */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-purple-500" />
+            <h2 className="text-xl font-semibold">Tag Insights</h2>
+          </div>
+          <AnimatedCard delay={0.8}>
+            <TagPerformance isDemo={isDemo} />
+          </AnimatedCard>
+        </div>
       </div>
     </PageTransition>
   );

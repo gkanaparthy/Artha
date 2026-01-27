@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { useFilters } from "@/contexts/filter-context";
 import { TagCategory } from "@/types/tags";
 import { cn } from "@/lib/utils";
+import { DEMO_TAG_STATS } from "@/lib/demo-data";
 
 interface TagStats {
     id: string;
@@ -42,12 +43,17 @@ interface TagStats {
     winRate: number;
 }
 
-export function TagPerformance() {
+interface TagPerformanceProps {
+    isDemo?: boolean;
+}
+
+export function TagPerformance({ isDemo = false }: TagPerformanceProps) {
     const { filters } = useFilters();
-    const [data, setData] = useState<TagStats[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState<TagStats[]>(isDemo ? DEMO_TAG_STATS as TagStats[] : []);
+    const [loading, setLoading] = useState(!isDemo);
 
     useEffect(() => {
+        if (isDemo) return;
         const fetchAnalytics = async () => {
             try {
                 setLoading(true);

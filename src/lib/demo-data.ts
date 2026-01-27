@@ -726,6 +726,10 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     status: "open",
     tradeId: "demo-open-1",
     type: "STOCK",
+    tags: [
+      { id: "dt-1", name: "Breakout", color: "#10B981", category: "SETUP", icon: "🎯" },
+      { id: "dt-7", name: "Focused", color: "#10B981", category: "EMOTION", icon: "🧘" }
+    ]
   },
   {
     symbol: "MSFT",
@@ -740,6 +744,9 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     status: "open",
     tradeId: "demo-open-2",
     type: "STOCK",
+    tags: [
+      { id: "dt-2", name: "ABCD Pattern", color: "#3B82F6", category: "SETUP", icon: "📈" }
+    ]
   },
   {
     symbol: "SPY 240419C520",
@@ -754,6 +761,9 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     status: "open",
     tradeId: "demo-open-3",
     type: "OPTION",
+    tags: [
+      { id: "dt-1", name: "Breakout", color: "#10B981", category: "SETUP", icon: "🎯" }
+    ]
   },
   // Closed Positions (Stocks)
   {
@@ -768,6 +778,10 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     accountId: "demo-acc-1",
     status: "closed",
     type: "STOCK",
+    tags: [
+      { id: "dt-1", name: "Breakout", color: "#10B981", category: "SETUP", icon: "🎯" },
+      { id: "dt-9", name: "Focused", color: "#10B981", category: "EMOTION", icon: "🧘" }
+    ]
   },
   {
     symbol: "AAPL",
@@ -781,6 +795,10 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     accountId: "demo-acc-1",
     status: "closed",
     type: "STOCK",
+    tags: [
+      { id: "dt-4", name: "FOMO", color: "#EF4444", category: "MISTAKE", icon: "🚫" },
+      { id: "dt-8", name: "Fear", color: "#64748B", category: "EMOTION", icon: "😨" }
+    ]
   },
   {
     symbol: "AMD",
@@ -794,6 +812,9 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     accountId: "demo-acc-1",
     status: "closed",
     type: "STOCK",
+    tags: [
+      { id: "dt-3", name: "Support Bounce", color: "#6366F1", category: "SETUP", icon: "🛡️" }
+    ]
   },
   // Closed Positions (Options)
   {
@@ -808,6 +829,9 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     accountId: "demo-acc-1",
     status: "closed",
     type: "OPTION",
+    tags: [
+      { id: "dt-1", name: "Breakout", color: "#10B981", category: "SETUP", icon: "🎯" }
+    ]
   },
   {
     symbol: "AAPL 240322P170",
@@ -821,6 +845,10 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     accountId: "demo-acc-1",
     status: "closed",
     type: "OPTION",
+    tags: [
+      { id: "dt-5", name: "Early Exit", color: "#F59E0B", category: "MISTAKE", icon: "⏱️" },
+      { id: "dt-8", name: "Fear", color: "#64748B", category: "EMOTION", icon: "😨" }
+    ]
   },
   {
     symbol: "SPY 240329C510",
@@ -834,6 +862,9 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     accountId: "demo-acc-1",
     status: "closed",
     type: "OPTION",
+    tags: [
+      { id: "dt-3", name: "Support Bounce", color: "#6366F1", category: "SETUP", icon: "🛡️" }
+    ]
   },
   {
     symbol: "COIN",
@@ -847,6 +878,10 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     accountId: "demo-acc-1",
     status: "closed",
     type: "STOCK",
+    tags: [
+      { id: "dt-2", name: "ABCD Pattern", color: "#3B82F6", category: "SETUP", icon: "📈" },
+      { id: "dt-7", name: "Focused", color: "#10B981", category: "EMOTION", icon: "🧘" }
+    ]
   },
 ];
 
@@ -976,3 +1011,114 @@ export const DEMO_METRICS: Metrics = {
     { symbol: "SPY Options", pnl: 2109.60, trades: 1, winRate: 100.00 },
   ],
 };
+
+export const DEMO_TAG_STATS = [
+  {
+    id: "dt-1",
+    name: "Breakout",
+    color: "#10B981",
+    category: "SETUP",
+    totalPnL: 12359.50,
+    tradeCount: 4,
+    winCount: 4,
+    lossCount: 0,
+    avgPnL: 3089.88,
+    winRate: 100
+  },
+  {
+    id: "dt-2",
+    name: "ABCD Pattern",
+    color: "#3B82F6",
+    category: "SETUP",
+    totalPnL: 2256.00,
+    tradeCount: 2,
+    winCount: 2,
+    lossCount: 0,
+    avgPnL: 1128.00,
+    winRate: 100
+  },
+  {
+    id: "dt-3",
+    name: "Support Bounce",
+    color: "#6366F1",
+    category: "SETUP",
+    totalPnL: 4226.35,
+    tradeCount: 2,
+    winCount: 2,
+    lossCount: 0,
+    avgPnL: 2113.18,
+    winRate: 100
+  },
+  {
+    id: "dt-4",
+    name: "FOMO",
+    color: "#EF4444",
+    category: "MISTAKE",
+    totalPnL: -1240.50,
+    tradeCount: 3,
+    winCount: 0,
+    lossCount: 3,
+    avgPnL: -413.50,
+    winRate: 0
+  },
+  {
+    id: "dt-5",
+    name: "Early Exit",
+    color: "#F59E0B",
+    category: "MISTAKE",
+    totalPnL: -850.00,
+    tradeCount: 2,
+    winCount: 0,
+    lossCount: 2,
+    avgPnL: -425.00,
+    winRate: 0
+  },
+  {
+    id: "dt-6",
+    name: "Revenge Trade",
+    color: "#E11D48",
+    category: "MISTAKE",
+    totalPnL: -1500.00,
+    tradeCount: 1,
+    winCount: 0,
+    lossCount: 1,
+    avgPnL: -1500.00,
+    winRate: 0
+  },
+  {
+    id: "dt-7",
+    name: "Focused",
+    color: "#10B981",
+    category: "EMOTION",
+    totalPnL: 14087.50,
+    tradeCount: 3,
+    winCount: 3,
+    lossCount: 0,
+    avgPnL: 4695.83,
+    winRate: 100
+  },
+  {
+    id: "dt-8",
+    name: "Fear",
+    color: "#64748B",
+    category: "EMOTION",
+    totalPnL: -2445.00,
+    tradeCount: 2,
+    winCount: 0,
+    lossCount: 2,
+    avgPnL: -1222.50,
+    winRate: 0
+  },
+  {
+    id: "dt-9",
+    name: "Greed",
+    color: "#F59E0B",
+    category: "EMOTION",
+    totalPnL: -500.00,
+    tradeCount: 1,
+    winCount: 0,
+    lossCount: 1,
+    avgPnL: -500.00,
+    winRate: 0
+  }
+];
