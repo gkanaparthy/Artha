@@ -15,7 +15,7 @@ interface AIInsightsCardProps {
     isDemo?: boolean;
 }
 
-const DEMO_INSIGHT = `
+const DEMO_INSIGHT_PROFESSIONAL = `
 ### **Key Strengths**
 * **Risk Management Consistency**: You've maintained a controlled maximum drawdown of $1,240.50 (approx. 2.4% of your total equity). Your stop-loss discipline on "NVDA" and "AAPL" trades prevented significant capital erosion during recent volatility.
 * **Asset Allocation Synergy**: Your strategy of using Stocks for long-term growth and Options for income/hedging is working well. The Stocks portion contributed 65% of your Net P&L with lower relative volatility.
@@ -29,10 +29,36 @@ const DEMO_INSIGHT = `
 * **Scale Out Strategy**: Instead of full exits, try closing 50% at your first target and moving stops to break-even to allow runners to hit your final goal.
 `;
 
+const DEMO_INSIGHT_CANDOR = `
+### 🚨 THE BOTTOM LINE
+You have a decent win rate, but you're "bleeding out" because your winners are tiny and your losers are sloppy. You're basically a high-frequency ATM for the market right now.
+
+### 🔍 THE BIGGEST LEAK
+**Morning Performance Fade**: You are consistently lighting money on fire between 9:30 AM and 10:15 AM. You're fighting the opening range instead of waiting for it to settle. This isn't trading; it's gambling on noise.
+
+### 🛠️ THE FIX
+1. **The 30-Minute Rule**: Hands off the keyboard until 10:00 AM. Period. No exceptions.
+2. **Stop Exiting Early**: You're cutting winners at 40% of target because you're scared to lose. If you don't let your edge play out, you don't have one.
+3. **Hard Stop Discipline**: When your stop is hit, you're OUT. No "adjusting" stops because you "believe" in the trade.
+`;
+
 export function AIInsightsCard({ startDate, endDate, accountId, isDemo = false }: AIInsightsCardProps) {
     const [loading, setLoading] = useState(false);
     const [insights, setInsights] = useState<{ content: string; provider: string; timestamp: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [persona, setPersona] = useState<'PROFESSIONAL' | 'CANDOR'>('PROFESSIONAL');
+
+    // Fetch user persona once
+    useState(() => {
+        if (typeof window !== 'undefined') {
+            fetch('/api/user')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.aiPersona) setPersona(data.aiPersona);
+                })
+                .catch(() => { }); // Ignore errors, default to PROFESSIONAL
+        }
+    });
 
     const generateInsights = async () => {
         setLoading(true);
@@ -42,7 +68,7 @@ export function AIInsightsCard({ startDate, endDate, accountId, isDemo = false }
             // Simulate AI delay
             await new Promise(resolve => setTimeout(resolve, 2000));
             setInsights({
-                content: DEMO_INSIGHT.trim(),
+                content: persona === 'CANDOR' ? DEMO_INSIGHT_CANDOR.trim() : DEMO_INSIGHT_PROFESSIONAL.trim(),
                 provider: "Demo AI",
                 timestamp: new Date().toISOString()
             });

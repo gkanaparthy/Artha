@@ -24,7 +24,7 @@ export class GeminiProvider implements LLMProvider {
             throw new Error("Gemini API key not configured");
         }
 
-        const model = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = this.genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
         const systemPrompt = getSystemPrompt(persona);
         const userPrompt = getUserPrompt(data);
