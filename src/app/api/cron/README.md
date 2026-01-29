@@ -2,32 +2,20 @@
 
 ## Trade Sync (`/api/cron/sync-all`)
 
-**Schedule**: `15 0 * * 2-6` (Vercel Cron, UTC timezone)
+**Schedule**: `30 13 * * *` (Vercel Cron, UTC timezone)
 
 ### Translated Times:
-- **UTC**: 12:15 AM Tuesday-Saturday
-- **ET (Eastern Time)**: 7:15 PM Monday-Friday
-- **CT (Central Time)**: 6:15 PM Monday-Friday
-- **PT (Pacific Time)**: 4:15 PM Monday-Friday
+- **UTC**: 1:30 PM Daily
+- **CT (Central Time)**: 7:30 AM Daily
+- **ET (Eastern Time)**: 8:30 AM Daily
+- **PT (Pacific Time)**: 5:30 AM Daily
 
 ### Why This Time?
 
-**Market Close:**
-- US stock market closes at 4:00 PM ET
-
 **Broker Settlement:**
-- Most brokers (Schwab, Robinhood, E-Trade) make trade data available 1-3 hours after market close
-- Conservative estimate: 7:00 PM ET (midnight UTC)
-
-**Our Schedule:**
-- Runs at **7:15 PM ET** (12:15 AM UTC)
-- **15 minutes** after the latest brokers typically settle trades
-- Ensures all trades from the day are available in SnapTrade
-
-### Why Tuesday-Saturday in UTC?
-- 12:15 AM UTC on Tuesday = 7:15 PM ET on Monday
-- 12:15 AM UTC on Saturday = 7:15 PM ET on Friday
-- This captures all weekday trading sessions (Mon-Fri) in US Eastern Time
+- Some brokers (especially Schwab) can have a delay in making trade executions available via API.
+- Running at **7:30 AM CT / 8:30 AM ET** ensures that all trades from the previous trading day (even those settled late overnight) are fully synchronized and available before the next market open.
+- This provides a fresh, updated dashboard for the start of the new trading day.
 
 ### Testing Locally:
 ```bash
