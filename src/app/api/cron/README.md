@@ -2,13 +2,13 @@
 
 ## Trade Sync (`/api/cron/sync-all`)
 
-**Schedule**: `0 0,12 * * *` (Vercel Cron, UTC timezone)
+**Schedule**: `15 0 * * 2-6` (Vercel Cron, UTC timezone)
 
 ### Translated Times:
-- **UTC**: 12:00 AM and 12:00 PM Daily
-- **CT (Central Time)**: 6:00 PM and 6:00 AM Daily
-- **ET (Eastern Time)**: 7:00 PM and 7:00 AM Daily
-- **PT (Pacific Time)**: 4:00 PM and 4:00 AM Daily
+- **UTC**: 12:15 AM Tuesday-Saturday
+- **ET (Eastern Time)**: 7:15 PM Monday-Friday
+- **CT (Central Time)**: 6:15 PM Monday-Friday
+- **PT (Pacific Time)**: 4:15 PM Monday-Friday
 
 ### Why This Time?
 
