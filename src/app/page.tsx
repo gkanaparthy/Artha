@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Playfair_Display, Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 import {
@@ -18,6 +18,10 @@ import {
 } from "lucide-react";
 import { CursorParticles } from "@/components/cursor-particles";
 import { useState } from "react";
+import { PsychologyPreview } from "@/components/landing/psychology-preview";
+import { ComparisonTable } from "@/components/landing/comparison-table";
+import { BrokerLogos } from "@/components/landing/broker-logos";
+import { FAQSection } from "@/components/landing/faq-section";
 
 const playfair = Playfair_Display({ subsets: ["latin"] });
 const inter = Inter({ subsets: ["latin"] });
@@ -77,50 +81,52 @@ export default function LandingPage() {
                 </div>
 
                 {/* Mobile Menu Dropdown */}
-                {mobileMenuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="md:hidden border-t border-[#2E4A3B]/5 bg-[#FAFBF6]/95 backdrop-blur-md"
-                    >
-                        <nav className="container mx-auto px-4 py-4 flex flex-col gap-3 max-w-6xl">
-                            <Link
-                                href="#features"
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="text-[#2E4A3B]/70 hover:text-[#2E4A3B] text-sm font-medium transition-colors py-2"
-                            >
-                                Features
-                            </Link>
-                            <Link
-                                href="#pricing"
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="text-[#2E4A3B]/70 hover:text-[#2E4A3B] text-sm font-medium transition-colors py-2"
-                            >
-                                Pricing
-                            </Link>
-                            <Link
-                                href="/demo"
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="text-[#E59889] font-medium text-sm hover:text-[#E59889]/80 transition-colors py-2"
-                            >
-                                Try Demo
-                            </Link>
-                            <Link
-                                href="/login"
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="text-[#2E4A3B] font-medium text-sm hover:opacity-80 transition-opacity py-2"
-                            >
-                                Log in
-                            </Link>
-                            <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="mt-2">
-                                <Button className="w-full bg-[#2E4A3B] hover:bg-[#2E4A3B]/90 text-white rounded-full h-10">
-                                    Get Started
-                                </Button>
-                            </Link>
-                        </nav>
-                    </motion.div>
-                )}
+                <AnimatePresence mode="wait">
+                    {mobileMenuOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="md:hidden border-t border-[#2E4A3B]/5 bg-[#FAFBF6]/95 backdrop-blur-md"
+                        >
+                            <nav className="container mx-auto px-4 py-4 flex flex-col gap-3 max-w-6xl">
+                                <Link
+                                    href="#features"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="text-[#2E4A3B]/70 hover:text-[#2E4A3B] text-sm font-medium transition-colors py-2"
+                                >
+                                    Features
+                                </Link>
+                                <Link
+                                    href="#pricing"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="text-[#2E4A3B]/70 hover:text-[#2E4A3B] text-sm font-medium transition-colors py-2"
+                                >
+                                    Pricing
+                                </Link>
+                                <Link
+                                    href="/demo"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="text-[#E59889] font-medium text-sm hover:text-[#E59889]/80 transition-colors py-2"
+                                >
+                                    Try Demo
+                                </Link>
+                                <Link
+                                    href="/login"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="text-[#2E4A3B] font-medium text-sm hover:opacity-80 transition-opacity py-2"
+                                >
+                                    Log in
+                                </Link>
+                                <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="mt-2">
+                                    <Button className="w-full bg-[#2E4A3B] hover:bg-[#2E4A3B]/90 text-white rounded-full h-10">
+                                        Get Started
+                                    </Button>
+                                </Link>
+                            </nav>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </header>
 
             <main className="flex-1">
@@ -145,13 +151,28 @@ export default function LandingPage() {
                                     v1.0 is now live
                                 </div>
                                 <h1 className={cn("text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-[#2E4A3B] leading-[1.1] mb-4 sm:mb-6", playfair.className)}>
-                                    Master your mindset. <br />
-                                    <span className="italic text-[#E59889]">Refine your edge.</span>
+                                    Stop Losing Money to the <br />
+                                    <span className="italic text-[#E59889]">Same Mistakes</span>
                                 </h1>
                                 <p className="text-base sm:text-lg md:text-xl text-[#2E4A3B]/70 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0">
-                                    The beautiful, automated trading journal for serious traders.
-                                    Identify patterns, track psychology, and sync trades instantly.
+                                    For active day traders and swing traders who want to break emotional patterns,
+                                    identify winning setups, and finally understand why they lose.
                                 </p>
+
+                                <div className="flex flex-col gap-3 text-left max-w-md mx-auto mt-8 bg-[#E8EFE0]/30 p-6 rounded-2xl border border-[#2E4A3B]/5">
+                                    <div className="flex items-start gap-3">
+                                        <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                                        <p className="text-[#2E4A3B]/80 text-sm sm:text-base font-medium">Stop repeating the same costly mistakes</p>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                        <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                                        <p className="text-[#2E4A3B]/80 text-sm sm:text-base font-medium">See exactly which setups actually make you money</p>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                        <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                                        <p className="text-[#2E4A3B]/80 text-sm sm:text-base font-medium">Track the emotions draining your account</p>
+                                    </div>
+                                </div>
                             </motion.div>
 
                             <motion.div
@@ -200,6 +221,8 @@ export default function LandingPage() {
                     </div>
                 </section>
 
+                <PsychologyPreview />
+
                 {/* Features Section */}
                 <section id="features" className="py-16 sm:py-20 md:py-24 bg-white relative">
                     <div className="container mx-auto px-4 max-w-6xl">
@@ -214,40 +237,44 @@ export default function LandingPage() {
 
                         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
                             <FeatureCard
+                                icon={Target}
+                                title="Psychology Tracking"
+                                description="Tag every trade with setups, mistakes, and emotions. See exactly which patterns cost you money - and which make it."
+                            />
+                            <FeatureCard
                                 icon={Zap}
-                                title="Instant Sync"
-                                description="Connect with top brokers via SnapTrade. Your trades appear automatically—no manual entry needed."
+                                title="Zero Manual Entry"
+                                description="Connect your broker once. Every trade syncs automatically from 25+ brokerages including Interactive Brokers, Schwab, and Robinhood."
                             />
                             <FeatureCard
                                 icon={BarChart3}
-                                title="Performance Analytics"
-                                description="Visualize your P&L, win rate, and risk/reward ratio. Know exactly what's working."
-                            />
-                            <FeatureCard
-                                icon={Target}
-                                title="Mistake Tracking"
-                                description="Tag trades with psychological notes. Identify if FOMO or revenge trading is costing you money."
+                                title="Real P&L Clarity"
+                                description="FIFO-calculated profits, win rates, and R:R ratios. Filter by date, account, symbol, or tag to find what's working."
                             />
                         </div>
                     </div>
                 </section>
 
+                <ComparisonTable />
+
+                <BrokerLogos />
+
                 {/* Pricing Section (Free) */}
                 <section id="pricing" className="py-16 sm:py-20 md:py-24 bg-[#FAFBF6]">
                     <div className="container mx-auto px-4 max-w-4xl text-center">
                         <h2 className={cn("text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#2E4A3B] mb-4 sm:mb-6", playfair.className)}>
-                            Completely Free. <br /> For Everyone.
+                            Free During Early Access
                         </h2>
                         <p className="text-[#2E4A3B]/70 text-base sm:text-lg mb-8 sm:mb-12 max-w-2xl mx-auto px-4">
-                            We believe every trader deserves the best tools to succeed. No hidden fees, no subscriptions.
+                            Get full access while we're in beta. Help us build the best trading journal - your feedback shapes the product.
                         </p>
 
                         <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 shadow-xl border border-[#2E4A3B]/5 max-w-md mx-auto relative overflow-hidden">
                             <div className="absolute top-0 right-0 bg-[#E59889] text-white text-xs font-bold px-3 sm:px-4 py-1 rounded-bl-xl">
                                 EARLY ACCESS
                             </div>
-                            <div className="text-4xl sm:text-5xl font-bold text-[#2E4A3B] mb-2 mt-4 sm:mt-0">$0</div>
-                            <p className="text-[#2E4A3B]/70 mb-6 sm:mb-8">Forever free for early adopters</p>
+                            <div className="text-4xl sm:text-5xl font-bold text-[#2E4A3B] mb-2 mt-4 sm:mt-0">$0 <span className="text-base font-normal text-[#2E4A3B]/50">/ month</span></div>
+                            <p className="text-[#2E4A3B]/70 mb-6 sm:mb-8">Early Access Membership</p>
 
                             <ul className="space-y-3 sm:space-y-4 text-left mb-6 sm:mb-8 max-w-xs mx-auto">
                                 <li className="flex items-center gap-3 text-[#2E4A3B] text-sm sm:text-base">
@@ -256,22 +283,32 @@ export default function LandingPage() {
                                 </li>
                                 <li className="flex items-center gap-3 text-[#2E4A3B] text-sm sm:text-base">
                                     <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-                                    <span>Advanced charting</span>
+                                    <span>All analytics & P&L tracking</span>
                                 </li>
                                 <li className="flex items-center gap-3 text-[#2E4A3B] text-sm sm:text-base">
                                     <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-                                    <span>All broker integrations</span>
+                                    <span>Psychology & mistake tagging</span>
+                                </li>
+                                <li className="flex items-center gap-3 text-[#2E4A3B] text-sm sm:text-base">
+                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                                    <span>25+ broker integrations</span>
+                                </li>
+                                <li className="flex items-center gap-3 text-[#2E4A3B] text-sm sm:text-base">
+                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                                    <span>AI Performance Coaching</span>
                                 </li>
                             </ul>
 
                             <Link href="/login">
                                 <Button className="w-full h-11 sm:h-12 rounded-xl bg-[#2E4A3B] hover:bg-[#2E4A3B]/90 text-white font-medium text-sm sm:text-base">
-                                    Start Now
+                                    Start Free
                                 </Button>
                             </Link>
                         </div>
                     </div>
                 </section>
+
+                <FAQSection />
             </main>
 
             <footer className="bg-[#2E4A3B] text-white py-8 sm:py-10 md:py-12">
