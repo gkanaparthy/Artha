@@ -24,23 +24,36 @@ export class GeminiProvider implements LLMProvider {
             throw new Error("Gemini API key not configured");
         }
 
-        const model = this.genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-
         const systemPrompt = getSystemPrompt(persona);
         const userPrompt = getUserPrompt(data);
 
+        // Modern way to set system instructions for Gemini 1.5
+        const model = this.genAI.getGenerativeModel({
+            model: "gemini-flash-latest",
+            systemInstruction: systemPrompt
+        });
+
         try {
-            const result = await model.generateContent([systemPrompt, userPrompt]);
+            console.log(`[GeminiProvider] Calling generateContent...`);
+            const result = await model.generateContent(userPrompt);
             const response = await result.response;
             const text = response.text();
 
             if (!text) {
+                console.error("[GeminiProvider] Empty response text");
                 throw new Error("Empty response from Gemini API");
             }
 
             return text;
         } catch (error: any) {
             console.error("[GeminiProvider] Generation failed:", error);
+            // Check for specific safety or rate limit errors
+            if (error.message?.includes("429") || error.message?.includes("quota")) {
+                throw new Error(`Gemini rate limit exceeded: ${error.message}`);
+            }
+            if (error.message?.includes("safety")) {
+                throw new Error(`Gemini blocked content for safety: ${error.message}`);
+            }
             throw new Error(`Gemini API error: ${error.message || "Unknown error"}`);
         }
     }

@@ -18,17 +18,20 @@ export class LLMManager {
         const errors: string[] = [];
 
         for (const provider of this.providers) {
-            if (provider.isAvailable()) {
+            const available = provider.isAvailable();
+            console.log(`[LLMManager] Checking ${provider.name}: Available = ${available}`);
+
+            if (available) {
                 try {
                     console.log(`[LLMManager] Attempting to generate insights using ${provider.name} (${persona})...`);
                     const insights = await provider.generateInsights(data, persona);
+                    console.log(`[LLMManager] Successfully generated insights with ${provider.name}`);
                     return { insights, provider: provider.name };
                 } catch (error: any) {
                     console.error(`[LLMManager] Error with provider ${provider.name}:`, error.message);
                     errors.push(`${provider.name}: ${error.message}`);
+                    continue; // Try next provider
                 }
-            } else {
-                console.log(`[LLMManager] Provider ${provider.name} is not available (missing API key)`);
             }
         }
 
