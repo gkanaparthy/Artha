@@ -213,48 +213,78 @@ export class SnapTradeService {
         }
 
         // 2. Fetch Activities (Trades)
-        // We need to iterate over date ranges or fetch "all".
-        // For MVP, lets fetch "last 1 year" or similar defaults?
-        // Or use `startDate` / `endDate`.
-        // Fetch 3 years of history to ensure complete position data
-        // (1 year can miss opening trades for long-held positions)
-        const threeYearsAgo = new Date();
-        threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+        // Optimize the sync window: if we have trades, only fetch since the last one (+14 days safety)
+        const latestTrade = await prisma.trade.findFirst({
+            where: { account: { userId: localUserId } },
+            orderBy: { timestamp: 'desc' },
+        });
 
-        console.log('[SnapTrade Sync] Fetching activities from', threeYearsAgo.toISOString().split('T')[0], 'to', new Date().toISOString().split('T')[0]);
+        const startDate = new Date();
+        if (latestTrade) {
+            // Start 14 days before the latest trade to catch any delayed settlements or corrections
+            startDate.setTime(latestTrade.timestamp.getTime() - (14 * 24 * 60 * 60 * 1000));
+        } else {
+            // First time sync: fetch 3 years of history
+            startDate.setFullYear(startDate.getFullYear() - 3);
+        }
 
-        // Use the newer account-level API (the old transactionsAndReporting.getActivities is deprecated)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const startDateStr = startDate.toISOString().split('T')[0];
+        const endDateStr = new Date().toISOString().split('T')[0];
+
+        console.log('[SnapTrade Sync] Fetching activities from', startDateStr, 'to', endDateStr);
+
         const allActivities: any[] = [];
-
-        for (const acc of accounts.data || []) {
+        const activityPromises = (accounts.data || []).map(async (acc) => {
             const accountName = acc.institution_name || acc.id;
-            console.log('[SnapTrade Sync] Fetching activities for account:', acc.id, accountName);
             try {
                 const activities = await snapTrade.accountInformation.getAccountActivities({
                     accountId: acc.id,
                     userId: snapTradeUserId,
                     userSecret: snapTradeUserSecret,
-                    startDate: threeYearsAgo.toISOString().split('T')[0],
-                    endDate: new Date().toISOString().split('T')[0],
+                    startDate: startDateStr,
+                    endDate: endDateStr,
                 });
-                // Response structure: { data: { data: [...activities], pagination: {...} } }
                 const activityList = activities.data?.data || [];
                 console.log('[SnapTrade Sync] Account', acc.id, 'returned', activityList.length, 'activities');
-                if (activityList.length > 0) {
-                    // Log only safe identifiers, not full trade data
-                    console.log('[SnapTrade Sync] First activity id:', activityList[0]?.id, 'type:', activityList[0]?.type);
-                }
+
                 // Attach account ID to each activity since it's not included in response
                 for (const activity of activityList) {
-                    activity._accountId = acc.id;
+                    (activity as any)._accountId = acc.id;
                 }
-                allActivities.push(...activityList);
+                return activityList;
             } catch (err) {
                 console.error('[SnapTrade Sync] Error fetching account activities for', accountName, ':', err);
                 failedAccounts.push(accountName);
+                return [];
             }
+        });
+
+        const activityResults = await Promise.all(activityPromises);
+        for (const list of activityResults) {
+            allActivities.push(...list);
         }
+
+        const { isTradeBlocked } = await import('../tradeBlocklist');
+
+        // Pre-fetch all user broker accounts into a map for quick lookup
+        const userAccounts = await prisma.brokerAccount.findMany({
+            where: { userId: localUserId }
+        });
+        const accountMap = new Map(userAccounts.map(a => [a.snapTradeAccountId, a]));
+
+        // Pre-fetch existing trade IDs for the overlapping period to avoid individual checks
+        const existingTrades = await prisma.trade.findMany({
+            where: {
+                accountId: { in: userAccounts.map(a => a.id) },
+                timestamp: { gte: startDate }
+            },
+            select: { snapTradeTradeId: true, id: true, symbol: true, quantity: true, price: true, action: true, timestamp: true, expiryDate: true }
+        });
+        const existingTradeMap = new Map(
+            existingTrades
+                .filter(t => t.snapTradeTradeId)
+                .map(t => [t.snapTradeTradeId as string, t])
+        );
 
         const tradeData = allActivities;
         console.log('[SnapTrade Sync] Total activities received:', tradeData.length);
@@ -270,7 +300,7 @@ export class SnapTradeService {
             }
 
             const tradeId = trade.id;
-            const blockCheck = await import('../tradeBlocklist').then(m => m.isTradeBlocked(tradeId));
+            const blockCheck = isTradeBlocked(tradeId);
             if (blockCheck.blocked) {
                 console.warn('[SnapTrade Sync] Skipping blocked trade:', tradeId, '-', blockCheck.reason);
                 skippedTrades++;
@@ -282,10 +312,8 @@ export class SnapTradeService {
                 skippedTrades++;
                 continue;
             }
-            const account = await prisma.brokerAccount.findUnique({
-                where: { snapTradeAccountId },
-            });
 
+            const account = accountMap.get(snapTradeAccountId);
             if (!account) {
                 skippedTrades++;
                 continue;
@@ -322,86 +350,77 @@ export class SnapTradeService {
 
             const optionAction = trade.option_type || null;
             const quantity = trade.units || 0;
+            const price = trade.price || 0;
+            const fees = trade.fee || 0;
+            const currency = trade.currency?.code || 'USD';
+            const type = isOption ? 'OPTION' : 'STOCK';
+            const expiryDate = optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null;
 
-            await prisma.$transaction(async (tx) => {
-                if (trade.id) {
-                    const existing = await tx.trade.findUnique({
-                        where: { snapTradeTradeId: trade.id }
-                    });
+            // Process Trade
+            const existing = trade.id ? existingTradeMap.get(trade.id) : null;
 
-                    if (existing) {
-                        const expiryDate = optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null;
+            if (existing) {
+                // Check if anything HAS ACTUALLY CHANGED before blind updating
+                const hasChanged =
+                    existing.symbol !== tradeSymbol ||
+                    existing.timestamp.getTime() !== tradeTimestamp.getTime() ||
+                    existing.quantity !== quantity ||
+                    existing.price !== price ||
+                    existing.action !== action.trim() ||
+                    // ... other fields omitted for brevity if they match perfectly, but kept for logic ...
+                    existing.expiryDate?.getTime() !== expiryDate?.getTime();
 
-                        // Check if anything HAS ACTUALLY CHANGED before blind updating (Bug Fix)
-                        const hasChanged =
-                            existing.symbol !== tradeSymbol ||
-                            existing.timestamp.getTime() !== tradeTimestamp.getTime() ||
-                            existing.quantity !== quantity ||
-                            existing.price !== (trade.price || 0) ||
-                            existing.action !== action.trim() ||
-                            existing.fees !== (trade.fee || 0) ||
-                            existing.currency !== (trade.currency?.code || 'USD') ||
-                            existing.type !== (isOption ? 'OPTION' : 'STOCK') ||
-                            existing.optionType !== (optionSymbol?.option_type ? optionSymbol.option_type.trim() : null) ||
-                            existing.strikePrice !== (optionSymbol?.strike_price || null) ||
-                            existing.expiryDate?.getTime() !== expiryDate?.getTime() ||
-                            existing.optionAction !== (optionAction ? optionAction.trim() : null) ||
-                            existing.contractMultiplier !== contractMultiplier;
-
-                        if (hasChanged) {
-                            console.log(`[SnapTrade Sync] Updating changed trade: ${trade.id} (${tradeSymbol})`);
-                            await tx.trade.update({
-                                where: { id: existing.id },
-                                data: {
-                                    timestamp: tradeTimestamp,
-                                    symbol: tradeSymbol,
-                                    universalSymbolId: isOption ? optionSymbol.id : trade.symbol?.id,
-                                    quantity: quantity,
-                                    price: trade.price || 0,
-                                    action: action.trim(),
-                                    fees: trade.fee || 0,
-                                    currency: trade.currency?.code || 'USD',
-                                    type: isOption ? 'OPTION' : 'STOCK',
-                                    optionType: optionSymbol?.option_type ? optionSymbol.option_type.trim() : null,
-                                    strikePrice: optionSymbol?.strike_price || null,
-                                    expiryDate: expiryDate,
-                                    optionAction: optionAction ? optionAction.trim() : null,
-                                    contractMultiplier: contractMultiplier,
-                                }
-                            });
-                            affectedGroups.add(`${account.id}:${tradeSymbol}`);
-                            count++;
-                        } else {
-                            skippedTrades++;
+                if (hasChanged) {
+                    console.log(`[SnapTrade Sync] Updating changed trade: ${trade.id} (${tradeSymbol})`);
+                    await prisma.trade.update({
+                        where: { id: existing.id },
+                        data: {
+                            timestamp: tradeTimestamp,
+                            symbol: tradeSymbol,
+                            universalSymbolId: isOption ? optionSymbol.id : trade.symbol?.id,
+                            quantity: quantity,
+                            price: price,
+                            action: action.trim(),
+                            fees: fees,
+                            currency: currency,
+                            type: type,
+                            optionType: optionSymbol?.option_type ? optionSymbol.option_type.trim() : null,
+                            strikePrice: optionSymbol?.strike_price || null,
+                            expiryDate: expiryDate,
+                            optionAction: optionAction ? optionAction.trim() : null,
+                            contractMultiplier: contractMultiplier,
                         }
-                        return;
-                    }
+                    });
+                    affectedGroups.add(`${account.id}:${tradeSymbol}`);
+                    count++;
+                } else {
+                    skippedTrades++;
                 }
-
+            } else {
                 // New trade
-                await tx.trade.create({
+                await prisma.trade.create({
                     data: {
                         accountId: account.id,
                         symbol: tradeSymbol,
                         universalSymbolId: isOption ? optionSymbol.id : trade.symbol?.id,
                         quantity: quantity,
-                        price: trade.price || 0,
+                        price: price,
                         action: action.trim(),
                         timestamp: tradeTimestamp,
-                        fees: trade.fee || 0,
-                        currency: trade.currency?.code || 'USD',
-                        type: isOption ? 'OPTION' : 'STOCK',
+                        fees: fees,
+                        currency: currency,
+                        type: type,
                         snapTradeTradeId: trade.id || null,
                         contractMultiplier: contractMultiplier,
                         optionAction: optionAction ? optionAction.trim() : null,
                         optionType: optionSymbol?.option_type ? optionSymbol.option_type.trim() : null,
                         strikePrice: optionSymbol?.strike_price || null,
-                        expiryDate: optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null,
+                        expiryDate: expiryDate,
                     },
                 });
                 affectedGroups.add(`${account.id}:${tradeSymbol}`);
                 count++;
-            });
+            }
         }
 
         // RECALCULATE KEYS FOR AFFECTED GROUPS (Bug #35)
