@@ -17,10 +17,10 @@ async function run() {
 
     console.log(`User: ${user.name}`);
     for (const acc of user.brokerAccounts) {
-        const decryptedNum = acc.accountNumber ? safeDecrypt(acc.accountNumber) : 'N/A';
+        const decryptedNum = (acc.accountNumber ? safeDecrypt(acc.accountNumber) : null) || 'N/A';
         console.log(`Broker: ${acc.brokerName} | Decrypted Acc#: ${decryptedNum} | SnapTrade ID: ${acc.snapTradeAccountId} | Disabled: ${acc.disabled}`);
 
-        if (decryptedNum.endsWith('6893')) {
+        if (decryptedNum && decryptedNum.endsWith('6893')) {
             console.log('🎯 Found the target account!');
 
             // Check trades for this specific account from Jan 27, 2026
