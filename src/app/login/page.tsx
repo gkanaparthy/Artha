@@ -6,7 +6,7 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Chrome, Apple, Loader2, Info, Mail, ArrowRight, CheckCircle } from "lucide-react";
+import { Chrome, Loader2, Info, Mail, ArrowRight, CheckCircle } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Playfair_Display, Inter } from "next/font/google";
@@ -15,11 +15,11 @@ const playfair = Playfair_Display({ subsets: ["latin"] });
 const inter = Inter({ subsets: ["latin"] });
 
 export default function LoginPage() {
-  const [loading, setLoading] = useState<"google" | "apple" | "email" | null>(null);
+  const [loading, setLoading] = useState<"google" | "email" | null>(null);
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
 
-  const handleSignIn = async (provider: "google" | "apple") => {
+  const handleSignIn = async (provider: "google") => {
     setLoading(provider);
     try {
       await signIn(provider, { callbackUrl: "/dashboard" });
@@ -231,21 +231,6 @@ export default function LoginPage() {
               </Button>
             </motion.div>
 
-            {/* Apple Button */}
-            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-              <Button
-                className="w-full h-14 bg-white hover:bg-white/80 text-[#2E4A3B] border border-[#2E4A3B]/10 rounded-xl text-base font-medium shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-3"
-                onClick={() => handleSignIn("apple")}
-                disabled={loading !== null}
-              >
-                {loading === "apple" ? (
-                  <Loader2 className="h-5 w-5 animate-spin text-[#2E4A3B]" />
-                ) : (
-                  <Apple className="h-5 w-5 fill-current" />
-                )}
-                Continue with Apple
-              </Button>
-            </motion.div>
           </div>
 
           {/* Footer Links */}
