@@ -151,12 +151,12 @@ export default function LandingPage() {
                                     v1.0 is now live
                                 </div>
                                 <h1 className={cn("text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-[#2E4A3B] leading-[1.1] mb-4 sm:mb-6", playfair.className)}>
-                                    Stop Losing Money to the <br />
-                                    <span className="italic text-[#E59889]">Same Mistakes</span>
+                                    Your Trades Tell a Story. <br />
+                                    <span className="italic text-[#E59889]">Artha Finds the Patterns.</span>
                                 </h1>
                                 <p className="text-base sm:text-lg md:text-xl text-[#2E4A3B]/70 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0">
-                                    For active day traders and swing traders who want to break emotional patterns,
-                                    identify winning setups, and finally understand why they lose.
+                                    The psychology-first trading journal for active traders.
+                                    Identify winning setups, track emotional patterns, and finally understand why you lose.
                                 </p>
 
                                 <div className="flex flex-col gap-3 text-left max-w-md mx-auto mt-8 bg-[#E8EFE0]/30 p-6 rounded-2xl border border-[#2E4A3B]/5">
@@ -244,7 +244,7 @@ export default function LandingPage() {
                             <FeatureCard
                                 icon={Zap}
                                 title="Zero Manual Entry"
-                                description="Connect your broker once. Every trade syncs automatically from 25+ brokerages including Interactive Brokers, Schwab, and Robinhood."
+                                description="Connect your broker once. Every trade syncs automatically from 100+ brokerages including Interactive Brokers, Schwab, Zerodha, and Robinhood."
                             />
                             <FeatureCard
                                 icon={BarChart3}

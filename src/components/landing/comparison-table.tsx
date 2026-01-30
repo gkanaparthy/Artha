@@ -11,7 +11,7 @@ const features = [
     { name: "Psychology tracking", spreadsheet: false, other: false, artha: true },
     { name: "Mistake patterns", spreadsheet: false, other: false, artha: true },
     { name: "Setup analytics", spreadsheet: false, other: false, artha: true },
-    { name: "15+ broker support", spreadsheet: false, other: "Varies", artha: true },
+    { name: "100+ broker support", spreadsheet: false, other: "Varies", artha: true },
     { name: "Price", spreadsheet: "Free", other: "$20-50/mo", artha: "Free" },
 ];
 

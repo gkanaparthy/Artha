@@ -22,7 +22,7 @@ const faqs = [
     },
     {
         question: "What brokers do you support?",
-        answer: "25+ brokerages including Robinhood, E*TRADE, Fidelity, Interactive Brokers, Webull, Questrade, Wealthsimple, Trading 212, Coinbase, Binance, and more. Coverage includes US, Canada, Europe, and Australia."
+        answer: "100+ brokerages including Robinhood, Fidelity, Interactive Brokers, Zerodha (India), Schwab, Webull, Trading 212, Coinbase, Binance, and more. Coverage includes US, Canada, India, Europe, and Australia."
     },
     {
         question: "Is this really free?",
