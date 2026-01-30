@@ -47,31 +47,28 @@ Unlike cloud-based solutions, Artha is self-hosted, giving you complete control 
 - **Trade deletion** - Clean up erroneous trades
 
 ### 🔗 Broker Integration
-- **SnapTrade integration** - Connect 15+ brokerages:
-  - Charles Schwab
-  - Fidelity
-  - Interactive Brokers (IBKR)
-  - E*TRADE
-  - Robinhood
-  - TD Ameritrade
-  - And more...
-- **Automatic sync** - Trades are pulled automatically via cron jobs
-- **Multi-account support** - Connect multiple brokerage accounts
-- **OAuth security** - Secure broker authentication flow
+- **SnapTrade Integration**: Connect **100+ brokerages** worldwide:
+  - **India**: Zerodha, Dhan, Upstox, etc.
+  - **US/Global**: Interactive Brokers (IBKR), Charles Schwab, Fidelity, E*TRADE, Robinhood, Webull, and more.
+- **Automatic Sync**: Trades are pulled automatically via cron jobs or on-demand.
+- **Multi-Account Support**: Connect multiple brokerage accounts to a single dashboard.
+- **OAuth Security**: Secure broker authentication flow via SnapTrade.
 
 ### 🧮 Smart P&L Calculation
-- **FIFO lot matching** - Accurate cost basis calculation
-- **Options support** - Handles assignments, exercises, expirations with proper contract multipliers (100x)
-- **Fee tracking** - Includes commissions in P&L calculations
-- **Live unrealized P&L** - Real-time tracking of open positions
-- **Phantom position detection** - Automatically identifies and handles incomplete trade history
+- **FIFO Lot Matching**: Accurate cost basis calculation
+- **Options Support**: Handles assignments, exercises, expirations with proper contract multipliers (100x)
+- **Multi-Leg Strategy Detection**: Automatically identifies complex strategies like Vertical Spreads, Iron Condors, and Straddles
+- **Fee Tracking**: Includes commissions in P&L calculations
+- **Live Unrealized P&L**: Real-time tracking of open positions
+- **Phantom Position Detection**: Automatically identifies and handles incomplete trade history
 
-### 🏷️ Trade Tagging System
-- **Setup & Mistake Tracking** - Tag trades with specific setups (e.g., "Breakout") and mistakes (e.g., "FOMO")
-- **Position-Based Tagging** - Tags apply to the entire position (entry + exit), not just single executions
-- **Analytics** - See P&L per tag to identify profitable setups and costly mistakes
-- **Custom Categories** - Organize tags by Setup, Mistake, Emotion, or Custom
-- **Bulk Operations** - Tag multiple trades at once for faster journaling
+### 🏷️ Advanced Tagging System
+- **Setup & Mistake Tracking**: Tag trades with specific setups (e.g., "Breakout") and mistakes (e.g., "FOMO")
+- **Behavioral Alpha Tracking**: Quantify exactly how much emotional mistakes cost you vs. following your edge
+- **Position-Based Tagging**: Tags apply to the entire position (entry + exit), not just single executions
+- **Analytics**: See P&L per tag to identify profitable setups and costly mistakes
+- **Custom Categories**: Organize tags by Setup, Mistake, Emotion, or Custom
+- **Bulk Operations**: Tag thousands of trades at once for faster journaling
 
 ### 🔔 Proactive Alerts
 - **Connection Monitoring** - Automatically detects broken broker connections
@@ -79,11 +76,11 @@ Unlike cloud-based solutions, Artha is self-hosted, giving you complete control 
 - **Actionable Links** - Emails include direct links to fix the issue
 
 ### 🤖 AI Performance Coaching
-- **Personalized Insights** - AI analyzes your metrics, patterns, and tags to find strengths and weaknesses
-- **Actionable Steps** - Get 2-3 specific behavioral recommendations based on your actual data
-- **Multi-LLM Strategy** - Automatically uses **Google Gemini 2.0 Flash** with a robust fallback to **Groq (Llama 3.3)**
-- **Smart Caching** - Redis-backed (Upstash) caching ensures fast loads and cost-efficiency
-- **Demo Mode** - Experience the coaching even without live data via simulated AI analysis
+- **Personalized Insights**: AI analyzes your metrics, patterns, and tags to find strengths and weaknesses
+- **Actionable Steps**: Get 2-3 specific behavioral recommendations based on your actual data
+- **Multi-LLM Strategy**: Automatically uses **Google Gemini 1.5 Flash** with a robust fallback to **Groq (Llama 3.3)**
+- **Persona Modes**: Choose between **Professional** (encouraging) and **Candor** (brutally honest) coaching styles
+- **Smart Caching**: Redis-backed (Upstash) caching ensures fast loads and cost-efficiency
 
 ### 🎨 User Experience
 - **Dark/Light theme** - Toggle between themes
@@ -98,9 +95,8 @@ Artha implements **enterprise-grade security** to protect your sensitive financi
 
 ### Authentication & Authorization
 - **NextAuth.js v5** - Industry-standard authentication
-- **Multiple auth providers**:
+- **Multiple Auth Providers**:
   - Google OAuth
-  - Apple OAuth
   - Email Magic Links (via Resend)
 - **Session-based auth** - Secure, httpOnly cookies
 - **Admin-only routes** - Protected admin endpoints with email verification
@@ -193,10 +189,6 @@ Artha implements **enterprise-grade security** to protect your sensitive financi
    # Google OAuth (optional)
    GOOGLE_CLIENT_ID=your-google-client-id
    GOOGLE_CLIENT_SECRET=your-google-client-secret
-
-   # Apple OAuth (optional)
-   APPLE_CLIENT_ID=your-apple-client-id
-   APPLE_CLIENT_SECRET=your-apple-client-secret
 
    # Email (Resend - for magic links)
    RESEND_API_KEY=your-resend-api-key

@@ -10,16 +10,16 @@ Artha is a modern trading journal application designed to help traders track, an
 
 | Layer | Technology | Version | Purpose |
 |-------|------------|---------|---------|
-| Frontend | Next.js | 15.x | React framework with App Router |
+| Frontend | Next.js | 16.1 | React framework with App Router |
 | UI Components | Shadcn/UI | Latest | Pre-built accessible components |
 | Styling | Tailwind CSS | 4.x | Utility-first CSS framework |
-| Animations | Framer Motion | 11.x | Declarative animations |
-| Charts | Recharts | 2.x | Data visualization |
-| Database | SQLite | 3.x | Local relational database |
-| ORM | Prisma | 6.x | Database abstraction layer |
-| Brokerage API | SnapTrade | Latest | Broker integration |
-| Runtime | Node.js | 22.x | Server runtime |
-| Package Manager | pnpm | 9.x | Fast, disk-efficient package manager |
+| Animations | Framer Motion | 12.x | Declarative animations |
+| Charts | Recharts | 3.x | Data visualization |
+| Database | PostgreSQL | Latest | Cloud relational database (Supabase) |
+| ORM | Prisma | 5.22.x | Database abstraction layer |
+| Brokerage API | SnapTrade | Latest | Broker integration (100+ brokers) |
+| AI Integration | Google Gemini / Groq | 1.5 Flash / Llama 3.3 | Performance Coaching & Insights |
+| Caching | Upstash Redis | Latest | Rate limiting & Content caching |
 
 ### 2.2 Architecture Pattern
 
@@ -53,17 +53,25 @@ The application follows a **Monolithic Full-Stack Architecture** using Next.js A
             ┌─────────────────┴─────────────────┐
             │                                   │
             ▼                                   ▼
-┌───────────────────────┐         ┌───────────────────────────┐
-│   SQLite Database     │         │     SnapTrade API         │
-│   (via Prisma ORM)    │         │   (External Service)      │
-│  ┌─────────────────┐  │         │  - Broker connections     │
-│  │ User            │  │         │  - Account data           │
-│  │ Account         │  │         │  - Trade history          │
-│  │ Trade           │  │         └───────────────────────────┘
-│  │ Tag             │  │
-│  │ TradeNote       │  │
-│  └─────────────────┘  │
-└───────────────────────┘
+┌─────────────────────────┐         ┌───────────────────────────┐
+│   PostgreSQL (Supabase) │         │     SnapTrade API         │
+│     (via Prisma ORM)    │         │   (External Service)      │
+│  ┌───────────────────┐  │         │  - Broker connections     │
+│  │ User (AiPersona)  │  │         │  - Account data           │
+│  │ BrokerAccount     │  │         │  - Trade history          │
+│  │ Trade             │  │         └───────────────────────────┘
+│  │ TagDefinition     │  │                       ▲
+│  │ PositionTag       │  │                       │ 
+│  │ TradeGroup (Legs) │  │          ┌────────────┴─────────────┐
+│  └───────────────────┘  │          │   AI Integration Layer   │
+└─────────────────────────┘          │ - Gemini 1.5 (Primary)   │
+            ▲                        │ - Groq Llama 3.3 (Backup)│
+            │                        └──────────────────────────┘
+    ┌───────┴───────┐
+    │ Upstash Redis │
+    │ - Caching     │
+    │ - Rate Limit  │
+    └───────────────┘
 ```
 
 ## 3. Data Model
@@ -72,49 +80,38 @@ The application follows a **Monolithic Full-Stack Architecture** using Next.js A
 
 ```
 ┌──────────────┐       ┌──────────────────┐
-│    User      │       │     Account      │
+│    User      │       │  BrokerAccount   │
 ├──────────────┤       ├──────────────────┤
 │ id (PK)      │──────<│ userId (FK)      │
 │ snapTradeId  │       │ id (PK)          │
-│ createdAt    │       │ snapTradeAcctId  │
-│ updatedAt    │       │ brokerName       │
-└──────────────┘       │ createdAt        │
-                       │ updatedAt        │
-                       └────────┬─────────┘
-                                │
-                                │
-                       ┌────────▼─────────┐
-                       │     Trade        │
-                       ├──────────────────┤
-                       │ id (PK)          │
-                       │ accountId (FK)   │
-                       │ symbol           │
-                       │ action           │
-                       │ quantity         │
-                       │ price            │
-                       │ timestamp        │
-                       │ fees             │
-                       │ type             │
-                       │ currency         │
-                       │ snapTradeId      │
-                       └────────┬─────────┘
-                                │
-              ┌─────────────────┼─────────────────┐
-              │                                   │
-     ┌────────▼─────────┐              ┌─────────▼────────┐
-     │   TradeNote      │              │   TradeTag       │
+│ aiPersona    │       │ accountNumber    │
+│ createdAt    │       │ brokerName       │
+└──────┬───────┘       └────────┬─────────┘
+       │                        │
+       │               ┌────────▼─────────┐
+       │               │     Trade        │
+       │               ├──────────────────┤
+       │               │ id (PK)          │
+       │               │ accountId (FK)   │
+       │               │ symbol           │
+       │               │ quantity/price   │
+       │               │ positionKey      │
+       └──────┬────────┴────────┬─────────┘
+              │                 │
+     ┌────────▼─────────┐       │      ┌──────────────────┐
+     │  TagDefinition   │       │      │   TradeGroup     │
+     ├──────────────────┤       │      ├──────────────────┤
+     │ id (PK)          │       │      │ id (PK)          │
+     │ name             │       │      │ strategyType     │
+     │ category         │       │      │ opened/closedAt  │
+     └────────┬─────────┘       │      └────────┬─────────┘
+              │                 │               │
+     ┌────────▼─────────┐       │      ┌────────▼─────────┐
+     │   PositionTag    │<──────┘      │   TradeGroupLeg  │
      ├──────────────────┤              ├──────────────────┤
-     │ id (PK)          │              │ tradeId (FK)     │
-     │ tradeId (FK)     │              │ tagId (FK)       │
-     │ content          │              └──────────────────┘
-     │ createdAt        │                      │
-     └──────────────────┘              ┌───────▼──────────┐
-                                       │      Tag         │
-                                       ├──────────────────┤
-                                       │ id (PK)          │
-                                       │ name             │
-                                       │ color            │
-                                       └──────────────────┘
+     │ positionKey (FK) │              │ groupId (FK)     │
+     │ tagDefId (FK)    │              │ tradeId (FK)     │
+     └──────────────────┘              └──────────────────┘
 ```
 
 ### 3.2 Database Schema Details
@@ -243,20 +240,18 @@ Key trading metrics are calculated from closed positions:
 - `endDate`: Optional. Filter end date (ISO 8601)
 - `symbol`: Optional. Filter by symbol
 
-## 6. Security Considerations
+## 6. Security Architecture
 
-### 6.1 Current Implementation
-- User IDs are stored in browser localStorage
-- SnapTrade API credentials are server-side only
-- No sensitive data exposed to client
+### 6.1 Implemented Protections
+- **Authentication**: NextAuth.js v5 using JWT strategy for Edge compatibility.
+- **Row-Level Security (RLS)**: Enforced via Supabase to ensure users can only access their own data.
+- **Field-Level Encryption**: AES-256-GCM encryption for SnapTrade secrets and OAuth tokens using Node.js `crypto`.
+- **Rate Limiting**: Integrated Upstash Redis for preventing API abuse on critical endpoints (Auth, Sync, AI).
+- **Zero-Public API**: All sensitive brokerage interactions are proxied through server-side handlers; no direct client-to-SnapTrade communication.
 
-### 6.2 Recommended Enhancements
-- Implement proper OAuth authentication (Google, Apple)
-- Add rate limiting to API endpoints
-- Implement CSRF protection
-- Add input validation and sanitization
-- Use HTTPS in production
-- Implement session management
+### 6.2 Data Privacy
+- **AES-256-GCM**: Sensitive SnapTrade tokens are encrypted before being stored in PostgreSQL.
+- **Self-Hosted Preference**: Architecture designed to be easily deployable on Vercel or private VPS instances.
 
 ## 7. Component Architecture
 
