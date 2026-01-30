@@ -14,6 +14,7 @@ export class TradeGroupingService {
             where: { accountId, symbol },
             orderBy: [
                 { timestamp: 'asc' },
+                { action: 'asc' }, // Ensure BUYs (B) precede SELLs (S) if timestamps are identical (Bug Fix)
                 { createdAt: 'asc' }
             ]
         });
@@ -29,7 +30,13 @@ export class TradeGroupingService {
 
             if (isFlat) {
                 // START NEW POSITION
-                currentPositionKey = generatePositionKey(trade.accountId, trade.symbol, trade.timestamp);
+                // Sticky logic: If the opening trade already has a valid positionKey, reuse it.
+                // This prevents tag loss if the opening trade's timestamp changes slightly in a later sync.
+                if (trade.positionKey && trade.positionKey.startsWith('v1|')) {
+                    currentPositionKey = trade.positionKey;
+                } else {
+                    currentPositionKey = generatePositionKey(trade.accountId, trade.symbol, trade.timestamp);
+                }
             }
 
             if (currentPositionKey && trade.positionKey !== currentPositionKey) {

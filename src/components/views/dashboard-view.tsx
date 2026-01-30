@@ -182,6 +182,7 @@ export function DashboardView({
         accountId: p.accountId,
         status: "closed" as const,
         type: p.type,
+        tags: p.tags,
       }));
 
       const openDisplayPositions: DisplayPosition[] = (data.openPositions || []).map((p: any) => ({
@@ -197,6 +198,7 @@ export function DashboardView({
         status: "open" as const,
         tradeId: p.tradeId,
         type: p.type,
+        tags: p.tags,
       }));
 
       setAllPositions([...openDisplayPositions, ...closedDisplayPositions]);
