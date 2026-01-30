@@ -272,11 +272,10 @@ export class SnapTradeService {
         });
         const accountMap = new Map(userAccounts.map(a => [a.snapTradeAccountId, a]));
 
-        // Pre-fetch existing trade IDs for the overlapping period to avoid individual checks
+        // Pre-fetch existing trade IDs for the user to avoid individual checks and unique constraint errors
         const existingTrades = await prisma.trade.findMany({
             where: {
-                accountId: { in: userAccounts.map(a => a.id) },
-                timestamp: { gte: startDate }
+                accountId: { in: userAccounts.map(a => a.id) }
             },
             select: { snapTradeTradeId: true, id: true, symbol: true, quantity: true, price: true, action: true, timestamp: true, expiryDate: true }
         });
