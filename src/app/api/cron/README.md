@@ -1,25 +1,25 @@
 # Cron Job Schedule
 
-## Trade Sync (`/api/cron/sync-all`)
+## Unified Daily Cron (`/api/cron/daily`)
 
-**Schedule**: `30 13 * * *` (Vercel Cron, UTC timezone)
+**Schedule**: `0 14 * * *` (Vercel Cron, UTC timezone)
 
 ### Translated Times:
-- **UTC**: 1:30 PM Daily
-- **CT (Central Time)**: 7:30 AM Daily
-- **ET (Eastern Time)**: 8:30 AM Daily
-- **PT (Pacific Time)**: 5:30 AM Daily
+- **UTC**: 2:00 PM Daily
+- **CT (Central Time)**: 8:00 AM Daily
+- **ET (Eastern Time)**: 9:00 AM Daily
+- **PT (Pacific Time)**: 6:00 AM Daily
 
-### Why This Time?
+### Functions:
+1. **Connection Health Check**: Verifies all broker connections and sends email alerts for broken ones.
+2. **Full Trade Sync**: Deep synchronization of all trade history for all users.
 
-**Broker Settlement:**
-- Some brokers (especially Schwab) can have a delay in making trade executions available via API.
-- Running at **7:30 AM CT / 8:30 AM ET** ensures that all trades from the previous trading day (even those settled late overnight) are fully synchronized and available before the next market open.
-- This provides a fresh, updated dashboard for the start of the new trading day.
+### Realtime Sync
+Recent orders are now synced in realtime using the `/api/trades/sync-recent` endpoint, triggered by the Dashboard every 2 minutes.
 
 ### Testing Locally:
 ```bash
-curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/sync-all
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/daily
 ```
 
 ### Security:

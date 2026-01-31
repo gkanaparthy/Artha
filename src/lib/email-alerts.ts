@@ -14,6 +14,8 @@ export async function sendConnectionAlert(
         return;
     }
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://arthatrades.com';
+
     try {
         await resend.emails.send({
             from: "Artha Alerts <alerts@arthatrades.com>",
@@ -51,7 +53,7 @@ export async function sendConnectionAlert(
 
         <p>Please reconnect your account to ensure your trading journal stays up to date.</p>
 
-        <a href="https://arthatrades.com/settings" class="button">Reconnect ${brokerName}</a>
+        <a href="${appUrl}/settings" class="button">Reconnect ${brokerName}</a>
         
         <p style="margin-top: 32px; font-size: 14px; color: #666;">
             If you have questions, reply to this email.

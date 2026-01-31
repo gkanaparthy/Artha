@@ -535,14 +535,14 @@ export default function SettingsPage() {
                             size="sm"
                             onClick={() => handleReconnect(account.id, account.brokerName || 'Unknown')}
                             disabled={reconnecting === account.id}
-                            className="bg-blue-500 hover:bg-blue-600 text-white h-8 text-xs"
+                            className="bg-red-500 hover:bg-red-600 text-white h-8 text-xs font-bold animate-pulse-subtle"
                           >
                             {reconnecting === account.id ? (
                               <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
                             ) : (
                               <RefreshCw className="h-3 w-3 mr-1.5" />
                             )}
-                            Reconnect
+                            RECONNECT NOW
                           </Button>
                         ) : null}
                         <Button

@@ -5,7 +5,6 @@ import { PositionsTable } from "@/components/positions-table";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
-    RefreshCw,
     TrendingUp,
     TrendingDown,
     Target,
@@ -13,7 +12,6 @@ import {
     BarChart3,
     Activity,
     LayoutDashboard,
-    Wallet,
     AlertCircle,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -243,10 +241,46 @@ export default function DashboardPage() {
         }));
     }, []);
 
+    // Realtime Sync (Fix #2): Poll for recent trades every 2 minutes
+    // This uses the FREE realtime SnapTrade endpoint
+    const syncRecent = useCallback(async () => {
+        // Skip if page not visible (tab inactive)
+        if (typeof document !== 'undefined' && document.hidden) return;
+
+        try {
+            const res = await fetch('/api/trades/sync-recent', { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.synced > 0) {
+                    console.log(`[Recent Sync] Automatically synced ${data.synced} trades`);
+                    // We don't want to force a full page refresh if the user is interacting
+                    // but we do want to update the metrics and positions
+                    fetchMetrics();
+                }
+            }
+        } catch (e) {
+            console.error('Recent sync failed:', e);
+        }
+    }, [fetchMetrics]);
+
     // Refetch when filters or global refreshKey change
     useEffect(() => {
         Promise.all([fetchMetrics(), fetchLivePositions(), checkDisabledConnections()]);
     }, [fetchMetrics, fetchLivePositions, checkDisabledConnections, refreshKey]);
+
+    // Setup realtime polling
+    useEffect(() => {
+        // Run once on mount (after a small delay to not block initial load)
+        const timer = setTimeout(syncRecent, 3000);
+
+        // Setup interval (2 minutes)
+        const interval = setInterval(syncRecent, 120 * 1000);
+
+        return () => {
+            clearTimeout(timer);
+            clearInterval(interval);
+        };
+    }, [syncRecent]);
 
     const formatCurrency = (value: number, showSign = false) => {
         const formatted = Math.abs(value).toLocaleString("en-US", {

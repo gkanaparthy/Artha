@@ -10,14 +10,17 @@
     "src/app/api/**/*.ts": {
       "maxDuration": 30
     },
-    "src/app/api/cron/sync-all/route.ts": {
+    "src/app/api/cron/daily/route.ts": {
       "maxDuration": 300
+    },
+    "src/app/api/trades/sync-recent/route.ts": {
+      "maxDuration": 25
     }
   },
   "crons": [
     {
-      "path": "/api/cron/sync-all",
-      "schedule": "30 13 * * *"
+      "path": "/api/cron/daily",
+      "schedule": "0 14 * * *"
     }
   ],
   "headers": [

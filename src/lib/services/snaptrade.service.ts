@@ -356,21 +356,58 @@ export class SnapTradeService {
             const expiryDate = optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null;
 
             // Process Trade
-            const existing = trade.id ? existingTradeMap.get(trade.id) : null;
+            let existing = trade.id ? existingTradeMap.get(trade.id) : null;
+
+            // FUZZY MATCHING: Check if we have a provisional trade created by "Recent Orders"
+            // that matches this settled activity. Use this to avoid duplicates.
+            let isProvisionalUpgrade = false;
+
+            if (!existing) {
+                // Try to find a recent provisional trade (where snapTradeTradeId is null)
+                // matching: Account + Symbol + Action + Quantity + recent Time
+                const timeDiffThreshold = 24 * 60 * 60 * 1000; // 24 hours (settlement time variance)
+
+                // We need to search the database for this specific potential match since we didn't pre-fetch everything
+                // Optimization: We could pre-fetch provisional trades too, but for now let's query.
+                const provisionalMatch = await prisma.trade.findFirst({
+                    where: {
+                        accountId: account.id,
+                        symbol: tradeSymbol,
+                        action: action.trim(),
+                        quantity: quantity, // Quantity should be exact
+                        snapTradeTradeId: null, // Only convert provisional trades
+                        timestamp: {
+                            gte: new Date(tradeTimestamp.getTime() - timeDiffThreshold),
+                            lte: new Date(tradeTimestamp.getTime() + timeDiffThreshold),
+                        }
+                    },
+                    orderBy: { timestamp: 'asc' } // Consume identical trades in FIFO order
+                });
+
+                if (provisionalMatch) {
+                    console.log(`[SnapTrade Sync] Found provisional match for ${tradeSymbol}: upgrading Order ${provisionalMatch.snapTradeOrderId} -> Activity ${trade.id}`);
+                    // Mock the "existing" object to trigger the update path
+                    existing = provisionalMatch as any;
+                    isProvisionalUpgrade = true;
+                }
+            }
 
             if (existing) {
                 // Check if anything HAS ACTUALLY CHANGED before blind updating
                 const hasChanged =
+                    isProvisionalUpgrade || // Always update if we are upgrading from provisional
                     existing.symbol !== tradeSymbol ||
                     existing.timestamp.getTime() !== tradeTimestamp.getTime() ||
                     existing.quantity !== quantity ||
                     existing.price !== price ||
                     existing.action !== action.trim() ||
-                    // ... other fields omitted for brevity if they match perfectly, but kept for logic ...
                     existing.expiryDate?.getTime() !== expiryDate?.getTime();
 
                 if (hasChanged) {
-                    console.log(`[SnapTrade Sync] Updating changed trade: ${trade.id} (${tradeSymbol})`);
+                    if (!isProvisionalUpgrade) {
+                        console.log(`[SnapTrade Sync] Updating changed trade: ${trade.id} (${tradeSymbol})`);
+                    }
+
                     await prisma.trade.update({
                         where: { id: existing.id },
                         data: {
@@ -383,6 +420,9 @@ export class SnapTradeService {
                             fees: fees,
                             currency: currency,
                             type: type,
+                            // CRITICAL: If this was a provisional upgrade, we NOW set the real Activity ID
+                            // ensuring future syncs find it instantly.
+                            snapTradeTradeId: trade.id,
                             optionType: optionSymbol?.option_type ? optionSymbol.option_type.trim() : null,
                             strikePrice: optionSymbol?.strike_price || null,
                             expiryDate: expiryDate,
@@ -390,6 +430,10 @@ export class SnapTradeService {
                             contractMultiplier: contractMultiplier,
                         }
                     });
+
+                    // Update our map so next iteration doesn't find it as missing if duplicate data
+                    existingTradeMap.set(trade.id, { ...existing, ...trade });
+
                     affectedGroups.add(`${account.id}:${tradeSymbol}`);
                     count++;
                 } else {
@@ -409,7 +453,8 @@ export class SnapTradeService {
                         fees: fees,
                         currency: currency,
                         type: type,
-                        snapTradeTradeId: trade.id || null,
+                        snapTradeTradeId: trade.id || null, // Final settled ID
+                        // snapTradeOrderId: null, // Unknown link
                         contractMultiplier: contractMultiplier,
                         optionAction: optionAction ? optionAction.trim() : null,
                         optionType: optionSymbol?.option_type ? optionSymbol.option_type.trim() : null,
@@ -430,6 +475,28 @@ export class SnapTradeService {
                 const [accId, sym] = group.split(':');
                 await tradeGroupingService.recalculatePositionKeys(accId, sym);
             }
+        }
+
+        // CLEANUP: Delete orphaned provisional trades older than 3 days
+        // These are trades that were synced via "Recent Orders" but never matched by a settled Activity
+        // (likely due to quantity mismatches or being phantom/canceled orders)
+        try {
+            const threeDaysAgo = new Date();
+            threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+            const deleted = await prisma.trade.deleteMany({
+                where: {
+                    accountId: { in: user.brokerAccounts.map(a => a.id) },
+                    snapTradeTradeId: null,
+                    snapTradeOrderId: { not: null }, // Only target provisional SnapTrade trades
+                    timestamp: { lt: threeDaysAgo }
+                }
+            });
+            if (deleted.count > 0) {
+                console.log(`[SnapTrade Sync] Cleaned up ${deleted.count} orphaned provisional trades`);
+            }
+        } catch (e) {
+            console.error('[SnapTrade Sync] Cleanup failed:', e);
         }
 
         const accountCount = accounts.data?.length || 0;
@@ -581,6 +648,173 @@ export class SnapTradeService {
         }
 
         return { positions: allPositions };
+    }
+
+    /**
+     * Syncs recent orders (last 24h) using FREE SnapTrade endpoint.
+     * Discord: "Recent orders endpoint is FREE and realtime"
+     */
+    async syncRecentOrders(localUserId: string): Promise<{
+        synced: number;
+        accounts: number;
+        failedAccounts: string[];
+        error?: string;
+    }> {
+        const user = await prisma.user.findUnique({
+            where: { id: localUserId },
+            include: { brokerAccounts: { where: { disabled: false } } } // Only active accounts
+        });
+
+        if (!user || !user.snapTradeUserId || !user.snapTradeUserSecret) {
+            return { synced: 0, accounts: 0, failedAccounts: [], error: 'No broker connected' };
+        }
+
+        const decryptedSecret = safeDecrypt(user.snapTradeUserSecret);
+        if (!decryptedSecret) {
+            return { synced: 0, accounts: 0, failedAccounts: [], error: 'Decryption failed' };
+        }
+
+        const snapTradeUserId = user.snapTradeUserId;
+        const snapTradeUserSecret = decryptedSecret;
+        const failedAccounts: string[] = [];
+        const allRecentOrders: any[] = [];
+
+        console.log(`[Recent Orders] Fetching for ${user.brokerAccounts.length} accounts of user ${user.email}`);
+
+        // Fetch recent orders for each account (parallel)
+        const promises = user.brokerAccounts.map(async (account) => {
+            try {
+                const response = await snapTrade.accountInformation.getUserAccountRecentOrders({
+                    userId: snapTradeUserId,
+                    userSecret: snapTradeUserSecret,
+                    accountId: account.snapTradeAccountId,
+                    onlyExecuted: false, // We want all recent orders (pending/executed) for better tracking
+                });
+
+                const ordersData = response.data.orders || [];
+                console.log(`[Recent Orders] Account ${account.brokerName}: ${ordersData.length} orders found`);
+
+                // Filter for executed orders only to avoid polluting P&L with pending/canceled orders
+                // We fetch everything (onlyExecuted: false) to debug, but only save actual fills
+                const executedOrders = ordersData.filter((o: any) =>
+                    o.status === 'EXECUTED' || o.status === 'PARTIAL' || o.status === 'FILLED'
+                );
+
+                console.log(`[Recent Orders] Account ${account.brokerName}: ${executedOrders.length} executed orders to process`);
+
+                // Tag with local account info
+                return executedOrders.map((o: any) => ({ ...o, _localAccountId: account.id }));
+            } catch (err) {
+                console.error(`[Recent Orders] Error for ${account.brokerName}:`, err);
+                failedAccounts.push(account.brokerName || account.snapTradeAccountId);
+                return [];
+            }
+        });
+
+        const results = await Promise.all(promises);
+        for (const list of results) {
+            allRecentOrders.push(...list);
+        }
+
+        if (allRecentOrders.length === 0) {
+            return { synced: 0, accounts: user.brokerAccounts.length, failedAccounts };
+        }
+
+        // Get existing trade IDs to skip duplicates
+        const existingTrades = await prisma.trade.findMany({
+            where: { accountId: { in: user.brokerAccounts.map(a => a.id) } },
+            select: { snapTradeTradeId: true, snapTradeOrderId: true }
+        });
+        const existingTradeIds = new Set(existingTrades.map(t => t.snapTradeTradeId).filter(Boolean));
+        const existingOrderIds = new Set(existingTrades.map(t => t.snapTradeOrderId).filter(Boolean));
+
+        let syncedCount = 0;
+        const affectedGroups = new Set<string>(); // accountId:symbol
+        const { isTradeBlocked } = await import('../tradeBlocklist');
+
+        // Process orders into trades
+        for (const order of allRecentOrders) {
+            const orderId = order.id;
+
+            // Skip if already synced (either as order or as final trade)
+            if (existingOrderIds.has(orderId) || existingTradeIds.has(orderId)) continue;
+
+            // Check blocklist
+            if (isTradeBlocked(orderId).blocked) continue;
+
+            const localAccountId = order._localAccountId;
+            if (!localAccountId) continue;
+
+            // Parse order fields
+            const action = order.action?.toUpperCase() || order.order_type?.toUpperCase();
+            if (!action) continue;
+
+            const orderDate = order.filled_at || order.updated_at || order.created_at;
+            if (!orderDate) continue;
+
+            const timestamp = new Date(orderDate);
+            if (isNaN(timestamp.getTime())) continue;
+
+            const optionSymbol = order.option_symbol;
+            const isOption = !!optionSymbol;
+            const symbol = isOption
+                ? (optionSymbol.ticker || order.universal_symbol?.symbol || 'UNKNOWN')
+                : (order.universal_symbol?.symbol || 'UNKNOWN');
+
+            const contractMultiplier = isOption
+                ? (optionSymbol.is_mini_option ? 10 : 100)
+                : 1;
+
+            const quantity = order.filled_units || order.total_quantity || 0;
+            const price = order.average_price || order.limit_price || 0;
+
+            // Create trade
+            try {
+                await prisma.trade.create({
+                    data: {
+                        accountId: localAccountId,
+                        symbol: symbol,
+                        universalSymbolId: isOption ? optionSymbol.id : order.universal_symbol?.id,
+                        quantity: quantity,
+                        price: price,
+                        action: action.trim(),
+                        timestamp: timestamp,
+                        fees: 0, // Recent orders may not include fees
+                        currency: order.universal_symbol?.currency?.code || 'USD',
+                        type: isOption ? 'OPTION' : 'STOCK',
+                        snapTradeTradeId: null, // Provisional: not yet a settled Activity ID from daily sync
+                        snapTradeOrderId: orderId, // Track source Order ID
+                        contractMultiplier: contractMultiplier,
+                        optionAction: order.option_type || null,
+                        optionType: optionSymbol?.option_type || null,
+                        strikePrice: optionSymbol?.strike_price || null,
+                        expiryDate: optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null,
+                    },
+                });
+                syncedCount++;
+                affectedGroups.add(`${localAccountId}:${symbol}`);
+            } catch (err) {
+                console.error('[Recent Orders] Create trade failed:', err);
+            }
+        }
+
+        // RECALCULATE KEYS FOR AFFECTED GROUPS (Ensure P&L is updated)
+        if (affectedGroups.size > 0) {
+            console.log(`[Recent Orders] Recalculating position keys for ${affectedGroups.size} groups...`);
+            const { tradeGroupingService } = await import('./trade-grouping.service');
+            for (const group of affectedGroups) {
+                const [accId, sym] = group.split(':');
+                await tradeGroupingService.recalculatePositionKeys(accId, sym);
+            }
+        }
+
+        console.log(`[Recent Orders] Synced ${syncedCount} new trades for user ${user.email}`);
+
+        return {
+            synced: syncedCount,
+            accounts: user.brokerAccounts.length,
+            failedAccounts,
+        };
     }
 }
 

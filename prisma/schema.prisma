@@ -106,6 +106,7 @@ model Trade {
   optionAction       String?
   contractMultiplier Int             @default(1)
   snapTradeTradeId   String?         @unique
+  snapTradeOrderId   String?         @unique
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   positionKey        String?
