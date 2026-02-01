@@ -1,6 +1,5 @@
 import { LLMProvider } from "../provider";
-import { InsightDataSummary } from "@/types/insights";
-import { AiPersona } from "@prisma/client";
+import { InsightDataSummary, AiPersona } from "@/types/insights";
 import { getSystemPrompt, getUserPrompt } from "../prompts";
 
 export class GroqProvider implements LLMProvider {

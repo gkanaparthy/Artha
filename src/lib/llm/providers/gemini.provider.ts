@@ -1,14 +1,14 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { LLMProvider } from "../provider";
-import { InsightDataSummary } from "@/types/insights";
-import { AiPersona } from "@prisma/client";
+import { InsightDataSummary, AiPersona } from "@/types/insights";
 import { getSystemPrompt, getUserPrompt } from "../prompts";
 
 export class GeminiProvider implements LLMProvider {
     name = "Google Gemini";
     private genAI: GoogleGenerativeAI | null = null;
 
-    constructor() {
+    private init() {
+        if (this.genAI) return;
         const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
         if (apiKey) {
             this.genAI = new GoogleGenerativeAI(apiKey);
@@ -16,10 +16,12 @@ export class GeminiProvider implements LLMProvider {
     }
 
     isAvailable(): boolean {
+        this.init();
         return !!this.genAI;
     }
 
     async generateInsights(data: InsightDataSummary, persona: AiPersona = "PROFESSIONAL"): Promise<string> {
+        this.init();
         if (!this.genAI) {
             throw new Error("Gemini API key not configured");
         }
@@ -27,14 +29,17 @@ export class GeminiProvider implements LLMProvider {
         const systemPrompt = getSystemPrompt(persona);
         const userPrompt = getUserPrompt(data);
 
-        // Modern way to set system instructions for Gemini 1.5
+        // Using Gemini 2.0 Flash for best performance/cost balance
         const model = this.genAI.getGenerativeModel({
-            model: "gemini-flash-latest",
-            systemInstruction: systemPrompt
+            model: "gemini-2.0-flash",
+            systemInstruction: {
+                role: "system",
+                parts: [{ text: systemPrompt }]
+            }
         });
 
         try {
-            console.log(`[GeminiProvider] Calling generateContent...`);
+            console.log(`[GeminiProvider] Using model: gemini-2.0-flash`);
             const result = await model.generateContent(userPrompt);
             const response = await result.response;
             const text = response.text();

@@ -1,8 +1,7 @@
 import { LLMProvider } from "./provider";
 import { GeminiProvider } from "./providers/gemini.provider";
 import { GroqProvider } from "./providers/groq.provider";
-import { InsightDataSummary } from "@/types/insights";
-import { AiPersona } from "@prisma/client";
+import { InsightDataSummary, AiPersona } from "@/types/insights";
 
 export class LLMManager {
     private providers: LLMProvider[];
@@ -18,20 +17,22 @@ export class LLMManager {
         const errors: string[] = [];
 
         for (const provider of this.providers) {
-            const available = provider.isAvailable();
-            console.log(`[LLMManager] Checking ${provider.name}: Available = ${available}`);
+            try {
+                const available = provider.isAvailable();
+                console.log(`[LLMManager] Checking ${provider.name}: Available = ${available}`);
 
-            if (available) {
-                try {
+                if (available) {
                     console.log(`[LLMManager] Attempting to generate insights using ${provider.name} (${persona})...`);
                     const insights = await provider.generateInsights(data, persona);
                     console.log(`[LLMManager] Successfully generated insights with ${provider.name}`);
                     return { insights, provider: provider.name };
-                } catch (error: any) {
-                    console.error(`[LLMManager] Error with provider ${provider.name}:`, error.message);
-                    errors.push(`${provider.name}: ${error.message}`);
-                    continue; // Try next provider
+                } else {
+                    errors.push(`${provider.name}: Not available (missing API key)`);
                 }
+            } catch (error: any) {
+                console.error(`[LLMManager] FATAL error with provider ${provider.name}:`, error.message);
+                errors.push(`${provider.name}: ${error.message}`);
+                continue; // Try next provider
             }
         }
 

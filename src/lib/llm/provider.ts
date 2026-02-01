@@ -1,5 +1,4 @@
-import { InsightDataSummary } from "@/types/insights";
-import { AiPersona } from "@prisma/client";
+import { InsightDataSummary, AiPersona } from "@/types/insights";
 
 export interface LLMProvider {
     name: string;

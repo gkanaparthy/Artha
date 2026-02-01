@@ -44,6 +44,8 @@ export interface InsightDataSummary {
     };
 }
 
+export type AiPersona = "PROFESSIONAL" | "CANDOR";
+
 export interface AIInsightResponse {
     insights: string;
     cached: boolean;
