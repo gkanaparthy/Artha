@@ -329,7 +329,7 @@ export default function DashboardPage() {
                 </motion.div>
 
                 {/* Global Filter Bar */}
-                <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md pb-4 -mx-4 px-4 md:-mx-8 md:px-8">
+                <div className="pb-4">
                     <AnimatedCard delay={0.1}>
                         <GlobalFilterBar
                             onExport={() => exportToExcel(
