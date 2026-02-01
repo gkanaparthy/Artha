@@ -161,8 +161,8 @@ export function DashboardView({
       if (filters.symbol) params.append("symbol", filters.symbol);
       if (filters.startDate) params.append("startDate", filters.startDate);
       if (filters.endDate) params.append("endDate", filters.endDate);
-      if (filters.accountId && filters.accountId !== "all")
-        params.append("accountId", filters.accountId);
+      if (filters.accountId && filters.accountId.length > 0)
+        params.append("accountId", filters.accountId.join(","));
       if (filters.assetType && filters.assetType !== "all")
         params.append("assetType", filters.assetType);
 
@@ -244,8 +244,8 @@ export function DashboardView({
     }
 
     // Apply account filter
-    if (filters.accountId && filters.accountId !== 'all') {
-      filtered = filtered.filter(p => p.accountId === filters.accountId);
+    if (filters.accountId && filters.accountId.length > 0) {
+      filtered = filtered.filter(p => filters.accountId.includes(p.accountId));
     }
 
     // Apply asset type filter
@@ -283,8 +283,53 @@ export function DashboardView({
     if (!isDemo) {
       fetchMetrics();
       fetchLivePositions();
+    } else if (initialPositions) {
+      // Handle client-side filtering for demo mode
+      let filtered = [...initialPositions];
+
+      // Filter by account
+      if (filters.accountId && filters.accountId.length > 0) {
+        filtered = filtered.filter(p => filters.accountId.includes(p.accountId));
+      }
+
+      // Filter by symbol
+      if (filters.symbol) {
+        const symbols = filters.symbol.split(',').map(s => s.trim().toLowerCase()).filter(s => s.length > 0);
+        if (symbols.length > 0) {
+          filtered = filtered.filter(p =>
+            symbols.some(s => p.symbol.toLowerCase().includes(s))
+          );
+        }
+      }
+
+      // Filter by asset type
+      if (filters.assetType && filters.assetType !== 'all') {
+        filtered = filtered.filter(p => p.type === filters.assetType);
+      }
+
+      setAllPositions(filtered);
+
+      // Simple metric recalculation for demo
+      const closed = filtered.filter(p => p.status === "closed");
+      if (closed.length > 0 || filtered.length < initialPositions.length) {
+        const netPnL = closed.reduce((sum, p) => sum + (p.pnl || 0), 0);
+        const winningTrades = closed.filter(p => (p.pnl || 0) > 0).length;
+        const losingTrades = closed.filter(p => (p.pnl || 0) < 0).length;
+        const winRate = closed.length > 0 ? Math.round((winningTrades / closed.length) * 100) : 0;
+
+        setMetrics(prev => ({
+          ...prev,
+          netPnL,
+          winningTrades,
+          losingTrades,
+          winRate,
+          totalTrades: closed.length
+        }));
+      } else if (initialMetrics) {
+        setMetrics(initialMetrics);
+      }
     }
-  }, [fetchMetrics, fetchLivePositions, isDemo, refreshKey]);
+  }, [fetchMetrics, fetchLivePositions, isDemo, refreshKey, filters, initialPositions, initialMetrics]);
 
   const formatCurrency = (value: number, showSign = false) => {
     const formatted = Math.abs(value).toLocaleString("en-US", {

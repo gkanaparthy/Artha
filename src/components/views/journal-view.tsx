@@ -177,8 +177,45 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
   useEffect(() => {
     if (!isDemo) {
       fetchTrades();
+    } else if (initialTrades) {
+      // Handle client-side filtering for demo mode
+      let filtered = [...initialTrades];
+
+      // Filter by account
+      if (filters.accountId && filters.accountId.length > 0) {
+        filtered = filtered.filter(t => filters.accountId.includes(t.accountId));
+      }
+
+      // Filter by symbol
+      if (filters.symbol) {
+        const symbols = filters.symbol.split(',').map(s => s.trim().toLowerCase()).filter(s => s.length > 0);
+        if (symbols.length > 0) {
+          filtered = filtered.filter(t =>
+            symbols.some(s => t.symbol.toLowerCase().includes(s))
+          );
+        }
+      }
+
+      // Filter by action
+      if (filters.action && filters.action !== "ALL") {
+        filtered = filtered.filter((t) => {
+          const a = t.action.toUpperCase();
+          if (filters.action === "BUY")
+            return a.includes("BUY") || a === "ASSIGNMENT";
+          if (filters.action === "SELL")
+            return a.includes("SELL") || a === "EXERCISES";
+          return true;
+        });
+      }
+
+      // Filter by asset type
+      if (filters.assetType && filters.assetType !== "all") {
+        filtered = filtered.filter((t) => t.type === filters.assetType);
+      }
+
+      setTrades(filtered);
     }
-  }, [fetchTrades, isDemo, refreshKey]);
+  }, [fetchTrades, isDemo, refreshKey, filters, initialTrades]);
 
   const handleDelete = async (tradeId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -226,8 +263,8 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
     }
 
     // Filter by account
-    if (filters.accountId && filters.accountId !== "all") {
-      result = result.filter((t) => t.accountId === filters.accountId);
+    if (filters.accountId && filters.accountId.length > 0) {
+      result = result.filter((t) => filters.accountId.includes(t.accountId));
     }
 
     // Filter by date range

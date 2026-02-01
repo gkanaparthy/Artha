@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef } from "react";
+import { usePathname } from "next/navigation";
+import { DEMO_ACCOUNTS } from "@/lib/demo-data";
 
 export type FilterStatus = "all" | "open" | "winners" | "losers";
 export type FilterAction = "ALL" | "BUY" | "SELL";
@@ -87,6 +89,8 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     const [refreshKey, setRefreshKey] = useState(0);
     const [syncing, setSyncing] = useState(false);
     const isMounted = useRef(false);
+    const pathname = usePathname();
+    const isDemoPath = pathname?.startsWith('/demo');
 
     const triggerRefresh = useCallback(() => {
         setRefreshKey(prev => prev + 1);
@@ -95,6 +99,10 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     // Fetch accounts on mount
     useEffect(() => {
         const fetchAccounts = async () => {
+            if (isDemoPath) {
+                setAccounts(DEMO_ACCOUNTS);
+                return;
+            }
             try {
                 const res = await fetch('/api/accounts');
                 if (res.ok) {
@@ -106,7 +114,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
             }
         };
         fetchAccounts();
-    }, []);
+    }, [isDemoPath]);
 
     // Persist to localStorage when filters change (skip initial render)
     useEffect(() => {

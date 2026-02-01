@@ -1,6 +1,11 @@
 // Demo data for showcase pages
 import type { Metrics, Trade, DisplayPosition } from "@/types/trading";
 
+export const DEMO_ACCOUNTS = [
+  { id: "demo-acc-1", brokerName: "Robinhood", snapTradeAccountId: "rh-1", accountNumber: "1234" },
+  { id: "demo-acc-2", brokerName: "Webull", snapTradeAccountId: "wb-1", accountNumber: "5678" }
+];
+
 // Generate realistic trade data spanning 3 months
 export const DEMO_TRADES: Trade[] = [
   // January 2026 trades
@@ -139,8 +144,8 @@ export const DEMO_TRADES: Trade[] = [
     timestamp: "2026-01-29T14:00:00Z",
     type: "STOCK",
     fees: 1.00,
-    accountId: "demo-acc-1",
-    account: { brokerName: "Demo Broker" },
+    accountId: "demo-acc-2",
+    account: { brokerName: "Webull" },
     tags: [],
     positionKey: null,
   },
@@ -252,8 +257,8 @@ export const DEMO_TRADES: Trade[] = [
     timestamp: "2026-02-21T11:15:00Z",
     type: "STOCK",
     fees: 1.00,
-    accountId: "demo-acc-1",
-    account: { brokerName: "Demo Broker" },
+    accountId: "demo-acc-2",
+    account: { brokerName: "Webull" },
     tags: [],
     positionKey: null,
   },
@@ -739,8 +744,8 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     pnl: null,
     openedAt: "2026-03-26T11:30:00Z",
     closedAt: null,
-    broker: "Demo Broker",
-    accountId: "demo-acc-1",
+    broker: "Webull",
+    accountId: "demo-acc-2",
     status: "open",
     tradeId: "demo-open-2",
     type: "STOCK",

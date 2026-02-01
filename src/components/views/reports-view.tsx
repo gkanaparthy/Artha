@@ -166,8 +166,8 @@ export function ReportsView({
       if (filters.startDate) params.append("startDate", filters.startDate);
       if (filters.endDate) params.append("endDate", filters.endDate);
       if (filters.symbol) params.append("symbol", filters.symbol);
-      if (filters.accountId && filters.accountId !== "all")
-        params.append("accountId", filters.accountId);
+      if (filters.accountId && filters.accountId.length > 0)
+        params.append("accountId", filters.accountId.join(","));
       if (filters.assetType && filters.assetType !== "all")
         params.append("assetType", filters.assetType);
 

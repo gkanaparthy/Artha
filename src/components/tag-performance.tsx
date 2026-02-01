@@ -60,7 +60,9 @@ export function TagPerformance({ isDemo = false }: TagPerformanceProps) {
                 const params = new URLSearchParams();
                 if (filters.startDate) params.append("startDate", filters.startDate);
                 if (filters.endDate) params.append("endDate", filters.endDate);
-                if (filters.accountId && filters.accountId !== "all") params.append("accountId", filters.accountId);
+                if (filters.accountId && filters.accountId.length > 0) {
+                    params.append("accountId", filters.accountId.join(","));
+                }
 
                 const res = await fetch(`/api/tags/analytics?${params.toString()}`);
                 if (res.ok) {
