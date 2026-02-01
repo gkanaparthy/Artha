@@ -38,7 +38,7 @@ function Calendar({
                 weekday: `${defaultClassNames.weekday} text-muted-foreground font-normal text-[0.8rem]`,
                 day_button: cn(
                     buttonVariants({ variant: "ghost" }),
-                    "h-9 w-9 p-0 font-normal transition-none"
+                    "h-9 w-9 sm:h-9 sm:w-9 p-0 font-normal transition-none md:scale-100 scale-110"
                 ),
                 range_start: "bg-primary text-primary-foreground rounded-r-none rounded-l-md",
                 range_end: "bg-primary text-primary-foreground rounded-l-none rounded-r-md",
