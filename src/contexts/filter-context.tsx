@@ -19,7 +19,7 @@ interface FilterState {
     endDate: string;
     status: FilterStatus;
     action: FilterAction;
-    accountId: string;
+    accountId: string[];
     assetType: FilterAssetType;
     tagIds: string[];
     tagFilterMode: 'any' | 'all';
@@ -43,7 +43,7 @@ const defaultFilters: FilterState = {
     endDate: new Date().toISOString().split('T')[0], // Default to today
     status: "all",
     action: "ALL",
-    accountId: "all",
+    accountId: [], // Empty array means All Accounts
     assetType: "all",
     tagIds: [],
     tagFilterMode: 'any',
@@ -66,7 +66,9 @@ function loadFiltersFromStorage(): FilterState {
                     endDate: typeof parsed.endDate === 'string' ? parsed.endDate : '',
                     status: ['all', 'open', 'winners', 'losers'].includes(parsed.status) ? parsed.status : 'all',
                     action: ['ALL', 'BUY', 'SELL'].includes(parsed.action) ? parsed.action : 'ALL',
-                    accountId: typeof parsed.accountId === 'string' ? parsed.accountId : 'all',
+                    accountId: Array.isArray(parsed.accountId)
+                        ? parsed.accountId
+                        : (typeof parsed.accountId === 'string' && parsed.accountId !== 'all' ? [parsed.accountId] : []),
                     assetType: ['all', 'STOCK', 'OPTION'].includes(parsed.assetType) ? parsed.assetType : 'all',
                     tagIds: Array.isArray(parsed.tagIds) ? parsed.tagIds : [],
                     tagFilterMode: ['any', 'all'].includes(parsed.tagFilterMode) ? parsed.tagFilterMode : 'any',

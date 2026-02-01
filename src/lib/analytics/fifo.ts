@@ -418,8 +418,14 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
             }
         }
         if (filters.accountId && filters.accountId !== 'all') {
-            filteredTrades = filteredTrades.filter(t => t.accountId === filters.accountId);
-            filteredOpenPositions = filteredOpenPositions.filter(p => p.accountId === filters.accountId);
+            const accountIds = Array.isArray(filters.accountId)
+                ? filters.accountId
+                : filters.accountId.split(',').filter(Boolean);
+
+            if (accountIds.length > 0) {
+                filteredTrades = filteredTrades.filter(t => accountIds.includes(t.accountId));
+                filteredOpenPositions = filteredOpenPositions.filter(p => accountIds.includes(p.accountId));
+            }
         }
         if (filters.assetType && filters.assetType !== 'all') {
             filteredTrades = filteredTrades.filter(t => t.type === filters.assetType);

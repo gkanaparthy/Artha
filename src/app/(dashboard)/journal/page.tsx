@@ -76,8 +76,8 @@ export default function JournalPage() {
     try {
       setStrategiesLoading(true);
       const params = new URLSearchParams();
-      if (filters.accountId && filters.accountId !== "all") {
-        params.append("accountId", filters.accountId);
+      if (filters.accountId && filters.accountId.length > 0) {
+        params.append("accountId", filters.accountId.join(","));
       }
       const res = await fetch(`/api/strategies?${params.toString()}`);
       const data = await res.json();
@@ -246,8 +246,8 @@ export default function JournalPage() {
     }
 
     // Filter by account
-    if (filters.accountId && filters.accountId !== "all") {
-      result = result.filter(t => t.accountId === filters.accountId);
+    if (filters.accountId && filters.accountId.length > 0) {
+      result = result.filter(t => filters.accountId.includes(t.accountId));
     }
 
     // Filter by date range
@@ -295,8 +295,8 @@ export default function JournalPage() {
     filters.symbol ||
     filters.startDate ||
     filters.endDate ||
-    filters.action !== "ALL" ||
-    filters.accountId !== "all" ||
+    filters.status !== "all" ||
+    (filters.accountId && filters.accountId.length > 0) ||
     filters.assetType !== "all" ||
     (filters.tagIds && filters.tagIds.length > 0); // Fix Bug #10
 

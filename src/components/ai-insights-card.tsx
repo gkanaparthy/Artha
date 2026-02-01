@@ -11,7 +11,7 @@ import { toast } from "sonner";
 interface AIInsightsCardProps {
     startDate?: string;
     endDate?: string;
-    accountId?: string;
+    accountId?: string | string[];
     isDemo?: boolean;
 }
 
@@ -80,7 +80,10 @@ export function AIInsightsCard({ startDate, endDate, accountId, isDemo = false }
             const params = new URLSearchParams();
             if (startDate) params.set("startDate", startDate);
             if (endDate) params.set("endDate", endDate);
-            if (accountId && accountId !== "all") params.set("accountId", accountId);
+            if (accountId) {
+                const accountValue = Array.isArray(accountId) ? accountId.join(",") : accountId;
+                if (accountValue !== "all") params.set("accountId", accountValue);
+            }
 
             const response = await fetch(`/api/insights?${params.toString()}`);
 

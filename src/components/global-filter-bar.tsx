@@ -21,6 +21,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { TagFilterDropdown } from "@/components/tag-filter-dropdown";
+import { AccountFilterDropdown } from "@/components/account-filter-dropdown";
 
 interface GlobalFilterBarProps {
     showStatusFilter?: boolean;
@@ -42,7 +43,7 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
         filters.startDate ||
         filters.endDate ||
         filters.status !== "all" ||
-        filters.accountId !== "all" ||
+        (filters.accountId && filters.accountId.length > 0) ||
         filters.assetType !== "all" ||
         (filters.tagIds && filters.tagIds.length > 0);
 
@@ -74,14 +75,15 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
             });
         }
 
-        if (filters.accountId && filters.accountId !== 'all') {
-            const account = accounts.find(a => a.id === filters.accountId);
-            const last4 = account ? (account.accountNumber ? account.accountNumber.slice(-4) : account.snapTradeAccountId.slice(-4)) : '';
-            const accountLabel = account ? `${account.brokerName} (${last4})` : 'Account';
+        if (filters.accountId && filters.accountId.length > 0) {
+            const label = filters.accountId.length === 1
+                ? accounts.find(a => a.id === filters.accountId[0])?.brokerName || 'Account'
+                : `${filters.accountId.length} Accounts`;
+
             labels.push({
                 key: 'accountId',
-                label: `Account: ${accountLabel}`,
-                onRemove: () => setFilters(prev => ({ ...prev, accountId: 'all' }))
+                label: `Account: ${label}`,
+                onRemove: () => setFilters(prev => ({ ...prev, accountId: [] }))
             });
         }
 
@@ -152,22 +154,7 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                     <div className="px-3 pb-3 space-y-3 border-t pt-3">
                         {/* Account Filter */}
                         {accounts.length > 0 && (
-                            <Select
-                                value={filters.accountId}
-                                onValueChange={(value) => setFilters(prev => ({ ...prev, accountId: value }))}
-                            >
-                                <SelectTrigger className="w-full h-9">
-                                    <SelectValue placeholder="All Accounts" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Accounts</SelectItem>
-                                    {accounts.map((account) => (
-                                        <SelectItem key={account.id} value={account.id}>
-                                            {account.brokerName || "Unknown"} ({account.accountNumber ? `****${account.accountNumber.slice(-4)}` : account.snapTradeAccountId.slice(-4)})
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <AccountFilterDropdown isMobile={true} />
                         )}
 
                         {/* Asset Type Filter */}
@@ -259,27 +246,7 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
 
                 {/* Account Filter */}
                 {accounts.length > 0 && (
-                    <Select
-                        value={filters.accountId}
-                        onValueChange={(value) => setFilters(prev => ({ ...prev, accountId: value }))}
-                    >
-                        <SelectTrigger className="w-[140px] h-8 text-xs bg-background/50 border-border/50">
-                            <SelectValue placeholder="All Accounts" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Accounts</SelectItem>
-                            {accounts.map((account) => {
-                                const last4 = account.accountNumber
-                                    ? account.accountNumber.slice(-4)
-                                    : account.snapTradeAccountId.slice(-4);
-                                return (
-                                    <SelectItem key={account.id} value={account.id} className="text-xs">
-                                        {account.brokerName || "Unknown"} ({last4})
-                                    </SelectItem>
-                                );
-                            })}
-                        </SelectContent>
-                    </Select>
+                    <AccountFilterDropdown />
                 )}
 
                 {/* Asset Type Filter */}

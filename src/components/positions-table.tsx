@@ -146,7 +146,7 @@ export function PositionsTable({
     };
 
     const hasActiveFilters = filters.symbol || filters.startDate || filters.endDate ||
-        filters.status !== "all" || filters.accountId !== "all" || filters.assetType !== "all";
+        filters.status !== "all" || (filters.accountId && filters.accountId.length > 0) || filters.assetType !== "all";
 
     const openCount = allPositions.filter(p => p.status === "open").length;
     const closedCount = allPositions.filter(p => p.status === "closed").length;

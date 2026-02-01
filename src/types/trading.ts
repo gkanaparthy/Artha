@@ -123,7 +123,7 @@ export interface FilterOptions {
   startDate?: Date;
   endDate?: Date;
   symbol?: string;
-  accountId?: string;
+  accountId?: string | string[];
   assetType?: string;
   tagIds?: string[];
   tagFilterMode?: 'any' | 'all';

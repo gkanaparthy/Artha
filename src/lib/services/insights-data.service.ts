@@ -12,7 +12,13 @@ export class InsightsDataService {
         };
 
         if (filters.accountId && filters.accountId !== 'all') {
-            where.accountId = filters.accountId;
+            const accountIds = Array.isArray(filters.accountId)
+                ? filters.accountId
+                : filters.accountId.split(',').filter(Boolean);
+
+            if (accountIds.length > 0) {
+                where.accountId = { in: accountIds };
+            }
         }
 
         // We can safely filter by endDate at the SQL level

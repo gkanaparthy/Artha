@@ -43,7 +43,10 @@ export async function GET(req: NextRequest) {
     }
 
     if (accountId && accountId !== 'all') {
-      whereClause.accountId = accountId;
+      const accountIds = accountId.split(',').filter(Boolean);
+      if (accountIds.length > 0) {
+        whereClause.accountId = { in: accountIds };
+      }
     }
 
     const strategies = await prisma.tradeGroup.findMany({
