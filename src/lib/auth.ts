@@ -33,6 +33,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.id = user.id;
       }
+
+      // Fallback: if token.id is missing but we have an email, look up the user
+      // This handles cases where users have old JWTs without the id field
+      if (!token.id && token.email) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: token.email },
+          select: { id: true }
+        });
+        if (dbUser) {
+          token.id = dbUser.id;
+        }
+      }
+
       return token;
     },
     session: async ({ session, token }) => {

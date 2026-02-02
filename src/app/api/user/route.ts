@@ -7,7 +7,16 @@ export async function GET() {
     try {
         const session = await auth();
 
+        // Debug logging for connection issues
+        console.log('[API /user] Session check:', {
+            hasSession: !!session,
+            hasUser: !!session?.user,
+            userId: session?.user?.id || 'MISSING',
+            email: session?.user?.email || 'MISSING'
+        });
+
         if (!session?.user?.id) {
+            console.error('[API /user] Unauthorized - session.user.id is missing');
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 

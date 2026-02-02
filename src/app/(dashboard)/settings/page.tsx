@@ -71,13 +71,24 @@ export default function SettingsPage() {
 
   const fetchUserData = async () => {
     try {
+      console.log('[Settings] Fetching user data, session:', session?.user?.id);
       const res = await fetch(`/api/user`);
-      if (res.ok) {
-        const data = await res.json();
-        setUserData(data);
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error('[Settings] API error:', res.status, data);
+        toast.error(`Failed to load accounts: ${data.error || res.statusText}`);
+        return;
       }
+
+      console.log('[Settings] User data received:', {
+        accountsCount: data.accounts?.length,
+        hasAccounts: !!data.accounts
+      });
+      setUserData(data);
     } catch (e) {
-      console.error(e);
+      console.error('[Settings] Fetch error:', e);
+      toast.error('Failed to load account data');
     } finally {
       setLoading(false);
     }
