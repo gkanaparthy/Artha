@@ -25,11 +25,13 @@ Artha competes in the premium trading journal market. The primary competitors ar
 
 ## 2. Pricing Strategy
 
-**Baseline: $29 / month**
-- **Rationale**: This is the industry "standard" for serious journals. Users expect to pay this for automatic sync.
-- **Anchor**: $290 / year (gives 2 months free) is a standard upsell.
+**Confirmed Pricing Model (Jan 2026):**
+- **Founder's Pricing**: $12/month or $120/year (First 100 users).
+- **Regular Pricing**: $20/month or $200/year (Undercutting competition by ~33%).
+- **Lifetime Deals**: Starting at $99 (Founder) -> $149 -> $199+ (Price Ladder).
+- **Grandfather Clause**: All users in the database prior to pricing launch get free lifetime access as "Early Adopters".
 
-**Growth Strategy (Undercutting): $19 / month**
+**Growth Strategy (Undercutting):**
 - Position as "The most beautiful, automated journal. No bloat, just clarity."
 - Target users who find TraderSync/TradeZella too expensive or overly complex.
 

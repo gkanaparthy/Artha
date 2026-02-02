@@ -57,3 +57,10 @@ pravaha_plan/
 
 # backups
 /backups/
+
+# pricing and strategy (private)
+docs/PRICING_*.md
+scripts/debug-*
+scripts/fix-*
+scripts/test-*
+scripts/check-*
