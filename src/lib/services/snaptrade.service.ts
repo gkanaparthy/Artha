@@ -2,6 +2,36 @@ import { snapTrade } from '@/lib/snaptrade';
 import { prisma } from '@/lib/prisma';
 import { encrypt, safeDecrypt } from '@/lib/encryption';
 
+const FUTURES_MULTIPLIERS: Record<string, number> = {
+    // Indices
+    'ES': 50, 'MES': 5,     // S&P 500
+    'NQ': 20, 'MNQ': 2,     // Nasdaq 100
+    'RTY': 50, 'M2K': 5,    // Russell 2000
+    'YM': 5, 'MYM': 0.5,    // Dow Jones
+
+    // Commodities
+    'GC': 100, 'MGC': 10,   // Gold
+    'SI': 5000, 'SIL': 1000, // Silver
+    'CL': 1000, 'MCL': 100, // Crude Oil
+    'HG': 25000,            // Copper
+    'NG': 10000,            // Natural Gas
+
+    // Agriculture
+    'ZC': 50,               // Corn
+    'ZW': 50,               // Wheat
+    'ZS': 50,               // Soybeans
+
+    // Currencies
+    '6E': 125000,           // Euro
+    '6B': 62500,            // British Pound
+    '6J': 12500000,         // Japanese Yen
+    '6A': 100000,           // Australian Dollar
+
+    // Crypto
+    'BTC': 5, 'MBT': 0.1,   // Bitcoin
+    'ETH': 50, 'MET': 1.0,  // Ethereum
+};
+
 export class SnapTradeService {
     /**
      * Registers a new user with SnapTrade (if not already registered)
@@ -90,6 +120,92 @@ export class SnapTradeService {
     }
 
     /**
+     * Discovers and registers/updates broker accounts from SnapTrade.
+     * This is a fast operation suitable for onboarding.
+     */
+    async syncAccounts(localUserId: string): Promise<{ accounts: number; error?: string }> {
+        const user = await prisma.user.findUnique({
+            where: { id: localUserId },
+            include: { brokerAccounts: true },
+        });
+
+        if (!user) return { accounts: 0, error: 'User not found' };
+        if (!user.snapTradeUserId || !user.snapTradeUserSecret) {
+            return { accounts: 0, error: 'No broker connected' };
+        }
+
+        const decryptedSecret = safeDecrypt(user.snapTradeUserSecret);
+        if (!decryptedSecret) return { accounts: 0, error: 'Decryption failed' };
+
+        const [accounts, authorizations] = await Promise.all([
+            snapTrade.accountInformation.listUserAccounts({
+                userId: user.snapTradeUserId,
+                userSecret: decryptedSecret,
+            }),
+            snapTrade.connections.listBrokerageAuthorizations({
+                userId: user.snapTradeUserId,
+                userSecret: decryptedSecret,
+            })
+        ]);
+
+        const matchedLocalAccountIds = new Set<string>();
+
+        for (const acc of accounts.data || []) {
+            const authId = (acc as any).brokerage_authorization;
+            const matchingAuth = (authorizations.data || []).find(a => a.id === authId);
+            const isDisabled = matchingAuth?.disabled === true;
+            const encryptedAccountNumber = acc.number ? encrypt(acc.number) : null;
+
+            const upsertedAccount = await prisma.brokerAccount.upsert({
+                where: { snapTradeAccountId: acc.id },
+                update: {
+                    brokerName: acc.institution_name,
+                    accountNumber: encryptedAccountNumber,
+                    disabled: isDisabled,
+                    disabledAt: isDisabled ? (user.brokerAccounts.find(a => a.snapTradeAccountId === acc.id)?.disabledAt || new Date()) : null,
+                    disabledReason: isDisabled ? 'Connection broken - requires re-authentication' : null,
+                    lastCheckedAt: new Date(),
+                    authorizationId: matchingAuth?.id || undefined,
+                },
+                create: {
+                    userId: localUserId,
+                    snapTradeAccountId: acc.id,
+                    brokerName: acc.institution_name,
+                    accountNumber: encryptedAccountNumber,
+                    disabled: isDisabled,
+                    disabledAt: isDisabled ? new Date() : null,
+                    disabledReason: isDisabled ? 'Connection broken - requires re-authentication' : null,
+                    lastCheckedAt: new Date(),
+                    authorizationId: matchingAuth?.id || null,
+                },
+            });
+
+            matchedLocalAccountIds.add(upsertedAccount.id);
+        }
+
+        // Handle missing accounts
+        const missingAccounts = user.brokerAccounts.filter(
+            acc => acc.authorizationId && !matchedLocalAccountIds.has(acc.id) && !acc.disabled
+        );
+
+        if (missingAccounts.length > 0) {
+            for (const acc of missingAccounts) {
+                await prisma.brokerAccount.update({
+                    where: { id: acc.id },
+                    data: {
+                        disabled: true,
+                        disabledAt: new Date(),
+                        disabledReason: 'Connection removed or missing from provider',
+                        lastCheckedAt: new Date()
+                    }
+                });
+            }
+        }
+
+        return { accounts: accounts.data?.length || 0 };
+    }
+
+    /**
      * Syncs trade activities/transactions for all accounts of the user.
      * Returns detailed sync result including any partial failures.
      */
@@ -124,92 +240,10 @@ export class SnapTradeService {
         const failedAccounts: string[] = [];
         let skippedTrades = 0;
 
-        // 1. Get Accounts (to ensure we have them all)
-        console.log('[SnapTrade Sync] Fetching accounts for user:', snapTradeUserId);
-
-        // Fetch both accounts and authorizations to link the authorizationId
-        const [accounts, authorizations] = await Promise.all([
-            snapTrade.accountInformation.listUserAccounts({
-                userId: snapTradeUserId,
-                userSecret: snapTradeUserSecret,
-            }),
-            snapTrade.connections.listBrokerageAuthorizations({
-                userId: snapTradeUserId,
-                userSecret: snapTradeUserSecret,
-            })
-        ]);
-
-        console.log('[SnapTrade Sync] Found', accounts.data?.length || 0, 'accounts and', authorizations.data?.length || 0, 'authorizations');
-
-        // Update/Create Accounts in DB
-        const matchedLocalAccountIds = new Set<string>();
-
-        for (const acc of accounts.data || []) {
-            const authId = (acc as any).brokerage_authorization;
-            console.log('[SnapTrade Sync] Account:', acc.id, acc.institution_name, 'Number:', acc.number, '→ Auth:', authId);
-
-            // Find matching authorization using the brokerage_authorization field
-            // This field directly links the account to its authorization
-            // Note: One authorization can have multiple accounts (e.g., 3 Schwab accounts under 1 OAuth connection)
-            const matchingAuth = (authorizations.data || []).find(
-                a => a.id === authId
-            );
-
-            // Determine disabled status from the authorization
-            const isDisabled = matchingAuth?.disabled === true;
-
-            // Encrypt account number (PII) before storing
-            const encryptedAccountNumber = acc.number ? encrypt(acc.number) : null;
-
-            const upsertedAccount = await prisma.brokerAccount.upsert({
-                where: { snapTradeAccountId: acc.id },
-                update: {
-                    brokerName: acc.institution_name,
-                    accountNumber: encryptedAccountNumber,
-                    // Clear/update disabled status based on actual authorization state
-                    disabled: isDisabled,
-                    disabledAt: isDisabled ? (user.brokerAccounts.find(a => a.snapTradeAccountId === acc.id)?.disabledAt || new Date()) : null,
-                    disabledReason: isDisabled ? 'Connection broken - requires re-authentication' : null,
-                    lastCheckedAt: new Date(),
-                    lastSyncedAt: new Date(),
-                    authorizationId: matchingAuth?.id || undefined,
-                },
-                create: {
-                    userId: localUserId,
-                    snapTradeAccountId: acc.id,
-                    brokerName: acc.institution_name,
-                    accountNumber: encryptedAccountNumber,
-                    disabled: isDisabled,
-                    disabledAt: isDisabled ? new Date() : null,
-                    disabledReason: isDisabled ? 'Connection broken - requires re-authentication' : null,
-                    lastCheckedAt: new Date(),
-                    lastSyncedAt: new Date(),
-                    authorizationId: matchingAuth?.id || null,
-                },
-            });
-
-            matchedLocalAccountIds.add(upsertedAccount.id);
-        }
-
-        // Handle accounts that were NOT in the SnapTrade list but have an authorizationId
-        // This handles cases where an authorization was deleted in SnapTrade
-        const missingAccounts = user.brokerAccounts.filter(
-            acc => acc.authorizationId && !matchedLocalAccountIds.has(acc.id) && !acc.disabled
-        );
-
-        if (missingAccounts.length > 0) {
-            console.warn(`[SnapTrade Sync] Found ${missingAccounts.length} accounts missing from SnapTrade, marking as disabled`);
-            for (const acc of missingAccounts) {
-                await prisma.brokerAccount.update({
-                    where: { id: acc.id },
-                    data: {
-                        disabled: true,
-                        disabledAt: new Date(),
-                        disabledReason: 'Connection removed or missing from provider',
-                        lastCheckedAt: new Date()
-                    }
-                });
-            }
+        // 1. Sync Accounts first (Discovery)
+        const accountDiscovery = await this.syncAccounts(localUserId);
+        if (accountDiscovery.error) {
+            return { synced: 0, accounts: 0, failedAccounts: [], skippedTrades: 0, error: accountDiscovery.error };
         }
 
         // 2. Fetch Activities (Trades)
@@ -234,11 +268,16 @@ export class SnapTradeService {
         console.log('[SnapTrade Sync] Fetching activities from', startDateStr, 'to', endDateStr);
 
         const allActivities: any[] = [];
-        const activityPromises = (accounts.data || []).map(async (acc) => {
-            const accountName = acc.institution_name || acc.id;
+        // Re-fetch user accounts from DB to get the latest snapshot (including the ones we just added)
+        const activeAccounts = await prisma.brokerAccount.findMany({
+            where: { userId: localUserId, disabled: false }
+        });
+
+        const activityPromises = activeAccounts.map(async (acc) => {
+            const accountName = acc.brokerName || acc.snapTradeAccountId;
             try {
                 const activities = await snapTrade.accountInformation.getAccountActivities({
-                    accountId: acc.id,
+                    accountId: acc.snapTradeAccountId,
                     userId: snapTradeUserId,
                     userSecret: snapTradeUserSecret,
                     startDate: startDateStr,
@@ -277,7 +316,18 @@ export class SnapTradeService {
             where: {
                 accountId: { in: userAccounts.map(a => a.id) }
             },
-            select: { snapTradeTradeId: true, id: true, symbol: true, quantity: true, price: true, action: true, timestamp: true, expiryDate: true }
+            select: {
+                snapTradeTradeId: true,
+                id: true,
+                symbol: true,
+                quantity: true,
+                price: true,
+                action: true,
+                timestamp: true,
+                expiryDate: true,
+                type: true,
+                contractMultiplier: true
+            }
         });
         const existingTradeMap = new Map(
             existingTrades
@@ -339,20 +389,33 @@ export class SnapTradeService {
             const optionSymbol = trade.option_symbol;
             const isOption = !!optionSymbol;
 
+            // Futures Detection Strategy:
+            // 1. Symbol starting with / (e.g. /ES)
+            // 2. Explicit type from SnapTrade (if available)
+            // 3. Raw symbol patterns
+            const rawSym = trade.symbol?.symbol || trade.symbol?.raw_symbol || '';
+            const isFuture = trade.symbol?.type === 'FUTURE' || rawSym.startsWith('/');
+
             const tradeSymbol = isOption
                 ? (optionSymbol.ticker || trade.symbol?.symbol || 'UNKNOWN')
                 : (trade.symbol?.symbol || trade.symbol?.raw_symbol || 'UNKNOWN');
 
-            const contractMultiplier = isOption
-                ? (optionSymbol.is_mini_option ? 10 : 100)
-                : 1;
+            let contractMultiplier = 1;
+            if (isOption) {
+                contractMultiplier = optionSymbol.is_mini_option ? 10 : 100;
+            } else if (isFuture) {
+                // Extract root ticker: e.g. /ESZ3 -> ES, /NQ -> NQ, ESZ24 -> ES
+                const cleanSymbol = rawSym.startsWith('/') ? rawSym.substring(1) : rawSym;
+                const rootTicker = cleanSymbol.replace(/[0-9]+$/, '').replace(/[FGHJKMNQUVXZ]$/i, '');
+                contractMultiplier = FUTURES_MULTIPLIERS[rootTicker.toUpperCase()] || 1;
+            }
 
             const optionAction = trade.option_type || null;
             const quantity = trade.units || 0;
             const price = trade.price || 0;
             const fees = trade.fee || 0;
             const currency = trade.currency?.code || 'USD';
-            const type = isOption ? 'OPTION' : 'STOCK';
+            const type = isOption ? 'OPTION' : (isFuture ? 'FUTURE' : 'STOCK');
             const expiryDate = optionSymbol?.expiration_date ? new Date(optionSymbol.expiration_date) : null;
 
             // Process Trade
@@ -401,7 +464,9 @@ export class SnapTradeService {
                     existing.quantity !== quantity ||
                     existing.price !== price ||
                     existing.action !== action.trim() ||
-                    existing.expiryDate?.getTime() !== expiryDate?.getTime();
+                    existing.expiryDate?.getTime() !== expiryDate?.getTime() ||
+                    existing.type !== type ||
+                    existing.contractMultiplier !== contractMultiplier;
 
                 if (hasChanged) {
                     if (!isProvisionalUpgrade) {
@@ -499,7 +564,7 @@ export class SnapTradeService {
             console.error('[SnapTrade Sync] Cleanup failed:', e);
         }
 
-        const accountCount = accounts.data?.length || 0;
+        const accountCount = activeAccounts.length;
         console.log('[SnapTrade Sync] Completed. Synced:', count, 'Accounts:', accountCount, 'Failed:', failedAccounts.length, 'Skipped:', skippedTrades);
 
         return {
@@ -757,13 +822,26 @@ export class SnapTradeService {
 
             const optionSymbol = order.option_symbol;
             const isOption = !!optionSymbol;
+
+            // Futures Detection Strategy (same as syncTrades):
+            // 1. Symbol starting with / (e.g. /ES)
+            // 2. Explicit type from SnapTrade (if available)
+            const rawSym = order.universal_symbol?.symbol || '';
+            const isFuture = order.universal_symbol?.type === 'FUTURE' || rawSym.startsWith('/');
+
             const symbol = isOption
                 ? (optionSymbol.ticker || order.universal_symbol?.symbol || 'UNKNOWN')
                 : (order.universal_symbol?.symbol || 'UNKNOWN');
 
-            const contractMultiplier = isOption
-                ? (optionSymbol.is_mini_option ? 10 : 100)
-                : 1;
+            let contractMultiplier = 1;
+            if (isOption) {
+                contractMultiplier = optionSymbol.is_mini_option ? 10 : 100;
+            } else if (isFuture) {
+                // Extract root ticker: e.g. /ESZ3 -> ES, /NQ -> NQ, ESZ24 -> ES
+                const cleanSymbol = rawSym.startsWith('/') ? rawSym.substring(1) : rawSym;
+                const rootTicker = cleanSymbol.replace(/[0-9]+$/, '').replace(/[FGHJKMNQUVXZ]$/i, '');
+                contractMultiplier = FUTURES_MULTIPLIERS[rootTicker.toUpperCase()] || 1;
+            }
 
             const quantity = order.filled_units || order.total_quantity || 0;
             const price = order.average_price || order.limit_price || 0;
@@ -781,7 +859,7 @@ export class SnapTradeService {
                         timestamp: timestamp,
                         fees: 0, // Recent orders may not include fees
                         currency: order.universal_symbol?.currency?.code || 'USD',
-                        type: isOption ? 'OPTION' : 'STOCK',
+                        type: isOption ? 'OPTION' : (isFuture ? 'FUTURE' : 'STOCK'),
                         snapTradeTradeId: null, // Provisional: not yet a settled Activity ID from daily sync
                         snapTradeOrderId: orderId, // Track source Order ID
                         contractMultiplier: contractMultiplier,
