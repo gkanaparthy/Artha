@@ -3,10 +3,10 @@
 
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Chrome, Loader2, Info, Mail, ArrowRight, CheckCircle } from "lucide-react";
+import { Chrome, Loader2, Info, Mail, ArrowRight, CheckCircle, AlertTriangle, X } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Playfair_Display, Inter } from "next/font/google";
@@ -18,6 +18,32 @@ export default function LoginPage() {
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
+  const [cookiesBlocked, setCookiesBlocked] = useState(false);
+  const [showCookieWarning, setShowCookieWarning] = useState(true);
+
+  // Check if cookies are enabled
+  useEffect(() => {
+    const checkCookies = () => {
+      try {
+        // Try to set a test cookie
+        document.cookie = "cookietest=1; SameSite=Lax";
+        const cookiesEnabled = document.cookie.indexOf("cookietest=") !== -1;
+
+        // Delete test cookie
+        document.cookie = "cookietest=1; expires=Thu, 01-Jan-1970 00:00:01 GMT";
+
+        if (!cookiesEnabled) {
+          setCookiesBlocked(true);
+          console.warn('[Login] Cookies are blocked - user may have login issues');
+        }
+      } catch (e) {
+        setCookiesBlocked(true);
+        console.error('[Login] Cookie detection failed:', e);
+      }
+    };
+
+    checkCookies();
+  }, []);
 
   const handleSignIn = async (provider: "google") => {
     setLoading(provider);
@@ -154,6 +180,35 @@ export default function LoginPage() {
               Please enter your details to sign in.
             </p>
           </div>
+
+          {/* Cookie Warning Banner */}
+          {cookiesBlocked && showCookieWarning && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 rounded-xl bg-[#E59889]/10 border border-[#E59889]/30 relative"
+            >
+              <button
+                onClick={() => setShowCookieWarning(false)}
+                className="absolute top-2 right-2 p-1 hover:bg-[#E59889]/20 rounded-lg transition-colors"
+                aria-label="Dismiss cookie warning"
+              >
+                <X className="h-4 w-4 text-[#2E4A3B]/60" />
+              </button>
+              <div className="flex gap-3 pr-6">
+                <AlertTriangle className="h-5 w-5 text-[#E59889] flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-[#2E4A3B]">
+                    Cookies Required
+                  </p>
+                  <p className="text-xs text-[#2E4A3B]/70 leading-relaxed">
+                    Cookies are currently blocked in your browser. Please enable cookies to sign in.
+                    Check your browser settings or disable ad blockers.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           <div className="space-y-4 pt-4">
             {/* Email Magic Link Form */}
