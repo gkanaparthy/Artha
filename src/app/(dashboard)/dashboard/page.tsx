@@ -24,6 +24,7 @@ import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "@/lib/export";
 import { TagPerformance } from "@/components/tag-performance";
 import { AIInsightsCard } from "@/components/ai-insights-card";
+import { TrustOnboardingCard } from "@/components/onboarding/trust-card";
 
 interface Metrics {
     netPnL: number;
@@ -138,6 +139,7 @@ export default function DashboardPage() {
     const [hasDisabledConnections, setHasDisabledConnections] = useState(false);
     const [allPositions, setAllPositions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [hasAccounts, setHasAccounts] = useState<boolean | null>(null);
 
     // Fetch metrics whenever ANY filter changes
     const fetchMetrics = useCallback(async () => {
@@ -217,11 +219,14 @@ export default function DashboardPage() {
             const res = await fetch('/api/user');
             if (res.ok) {
                 const data = await res.json();
-                const hasDisabled = data.accounts?.some((acc: { disabled: boolean }) => acc.disabled) || false;
+                const accounts = data.accounts || [];
+                const hasDisabled = accounts.some((acc: { disabled: boolean }) => acc.disabled) || false;
                 setHasDisabledConnections(hasDisabled);
+                setHasAccounts(accounts.length > 0);
             }
         } catch (e) {
             console.error('Failed to check connection status:', e);
+            setHasAccounts(false);
         }
     }, []);
 
@@ -381,8 +386,18 @@ export default function DashboardPage() {
                     )
                 }
 
+                {/* Empty State / Trust Card */}
+                {!loading && hasAccounts === false && (
+                    <div className="py-12 flex justify-center">
+                        <TrustOnboardingCard />
+                    </div>
+                )}
+
                 {/* Metrics Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className={cn(
+                    "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4",
+                    !hasAccounts && "opacity-20 pointer-events-none grayscale select-none"
+                )}>
                     <MetricCard
                         title="Net P&L"
                         value={formatCurrency(metrics.netPnL, true)}
@@ -475,7 +490,10 @@ export default function DashboardPage() {
 
                 {/* Positions Table */}
                 <AnimatedCard delay={0.7}>
-                    <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
+                    <Card className={cn(
+                        "border-none shadow-md bg-card/50 backdrop-blur-sm",
+                        !hasAccounts && "opacity-20 pointer-events-none grayscale select-none"
+                    )}>
                         <CardHeader className="p-4 sm:p-6">
                             <CardTitle className="text-base sm:text-lg font-medium flex items-center gap-2">
                                 <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />

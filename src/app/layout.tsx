@@ -24,23 +24,30 @@ export const metadata: Metadata = {
     siteName: "Artha",
     title: "Artha - Free Trading Journal & Analytics",
     description: "The beautiful, automated trading journal for serious traders. Sync trades instantly, track performance, and refine your edge—completely free.",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Artha - Trading Journal & Analytics",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Artha - Free Trading Journal & Analytics",
     description: "The beautiful, automated trading journal for serious traders. Sync trades instantly, track performance, and refine your edge—completely free.",
+    images: ["/twitter-image"],
+    creator: "@arthatrades",
   },
   robots: {
     index: true,
     follow: true,
   },
   icons: {
-    icon: [
-      { url: "/logo.png", type: "image/png" },
-    ],
-    apple: [
-      { url: "/logo.png" },
-    ],
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
   },
 };
 
