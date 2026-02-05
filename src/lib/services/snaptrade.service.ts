@@ -310,6 +310,7 @@ export class SnapTradeService {
             where: { userId: localUserId }
         });
         const accountMap = new Map(userAccounts.map(a => [a.snapTradeAccountId, a]));
+        const localAccountMap = new Map(userAccounts.map(a => [a.id, a]));
 
         // Pre-fetch existing trade IDs for the user to avoid individual checks and unique constraint errors
         const existingTrades = await prisma.trade.findMany({
@@ -356,13 +357,13 @@ export class SnapTradeService {
                 continue;
             }
 
-            const snapTradeAccountId = trade._accountId || trade.account?.id;
-            if (!snapTradeAccountId) {
-                skippedTrades++;
-                continue;
-            }
+            const snapTradeAccountId = trade.account?.id;
+            const localAccountId = trade._accountId;
 
-            const account = accountMap.get(snapTradeAccountId);
+            // Try matching by Prisma ID first (set during activity mapping)
+            // Then fallback to SnapTrade Account ID
+            const account = localAccountId ? localAccountMap.get(localAccountId) : (snapTradeAccountId ? accountMap.get(snapTradeAccountId) : null);
+
             if (!account) {
                 skippedTrades++;
                 continue;
