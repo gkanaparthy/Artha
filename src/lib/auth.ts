@@ -33,7 +33,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: "/login",
     error: "/login", // Redirect errors to login page with error parameter
   },
-  debug: process.env.NODE_ENV === "development",
+  debug: true,
   callbacks: {
     jwt: async ({ token, user, account, trigger }) => {
       // Add user ID to token on sign in
@@ -132,6 +132,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return true;
     },
     redirect: async ({ url, baseUrl }) => {
+      // Diagnostic logging for redirects
+      console.log('[Auth] Redirecting to:', url, 'Base:', baseUrl);
+
       // After sign in, redirect to dashboard
       if (url.startsWith(baseUrl)) return url;
       if (url.startsWith("/")) return `${baseUrl}${url}`;
