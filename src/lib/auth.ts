@@ -44,18 +44,38 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Fetch onboarding status from DB
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id as string },
-          select: { onboardingCompleted: true }
+          select: { onboardingCompleted: true, _count: { select: { brokerAccounts: true } } }
         });
-        token.onboardingCompleted = dbUser?.onboardingCompleted ?? false;
+
+        // Auto-complete onboarding for existing users who already have broker accounts
+        if (dbUser && !dbUser.onboardingCompleted && dbUser._count.brokerAccounts > 0) {
+          await prisma.user.update({
+            where: { id: user.id as string },
+            data: { onboardingCompleted: true },
+          });
+          token.onboardingCompleted = true;
+        } else {
+          token.onboardingCompleted = dbUser?.onboardingCompleted ?? false;
+        }
       }
 
       // Refresh onboarding status when session is updated (after completing onboarding)
       if (trigger === "update" && token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { onboardingCompleted: true }
+          select: { onboardingCompleted: true, _count: { select: { brokerAccounts: true } } }
         });
-        token.onboardingCompleted = dbUser?.onboardingCompleted ?? false;
+
+        // Auto-complete onboarding for existing users who already have broker accounts
+        if (dbUser && !dbUser.onboardingCompleted && dbUser._count.brokerAccounts > 0) {
+          await prisma.user.update({
+            where: { id: token.id as string },
+            data: { onboardingCompleted: true },
+          });
+          token.onboardingCompleted = true;
+        } else {
+          token.onboardingCompleted = dbUser?.onboardingCompleted ?? false;
+        }
       }
 
       // Log account linking (OAuth)
