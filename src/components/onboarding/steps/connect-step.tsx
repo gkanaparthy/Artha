@@ -1,14 +1,28 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Lock, EyeOff, CheckCircle2 } from "lucide-react";
+import { Lock, EyeOff, CheckCircle2, Loader2 } from "lucide-react";
 import { ConnectBrokerButton } from "@/components/connect-broker-button";
 
 interface ConnectStepProps {
     onConnected: () => void;
+    saving?: boolean;
 }
 
-export function ConnectStep({ onConnected }: ConnectStepProps) {
+export function ConnectStep({ onConnected, saving }: ConnectStepProps) {
+    const [connecting, setConnecting] = useState(false);
+
+    const handleConnected = () => {
+        setConnecting(true);
+        onConnected();
+    };
+
+    const handleSkip = () => {
+        setConnecting(true);
+        onConnected();
+    };
+
     return (
         <div className="space-y-8">
             <div className="space-y-3 text-center">
@@ -59,12 +73,20 @@ export function ConnectStep({ onConnected }: ConnectStepProps) {
                         {/* Connect button */}
                         <div className="flex flex-col items-center gap-3">
                             <div className="scale-125">
-                                <ConnectBrokerButton onSuccess={onConnected} />
+                                <ConnectBrokerButton onSuccess={handleConnected} />
                             </div>
                             <p className="text-xs text-[#2E4A3B]/40 text-center">
                                 25+ brokers including Robinhood, Schwab, Fidelity, and IBKR
                             </p>
                         </div>
+
+                        {/* Loading indicator */}
+                        {(connecting || saving) && (
+                            <div className="flex items-center justify-center gap-2 text-sm text-[#2E4A3B]/60 mt-4">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span>Saving your progress...</span>
+                            </div>
+                        )}
                     </div>
                 </motion.div>
 
@@ -76,8 +98,9 @@ export function ConnectStep({ onConnected }: ConnectStepProps) {
                     className="text-center mt-6"
                 >
                     <button
-                        onClick={onConnected}
-                        className="text-sm text-[#2E4A3B]/50 hover:text-[#2E4A3B]/70 underline underline-offset-4 transition-colors cursor-pointer"
+                        onClick={handleSkip}
+                        disabled={connecting || saving}
+                        className="text-sm text-[#2E4A3B]/50 hover:text-[#2E4A3B]/70 underline underline-offset-4 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                         I&apos;ll connect later
                     </button>

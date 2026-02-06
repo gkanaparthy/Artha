@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
@@ -37,13 +37,60 @@ interface OnboardingWizardProps {
 
 export function OnboardingWizard({ userName }: OnboardingWizardProps) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { update } = useSession();
     const [currentStep, setCurrentStep] = useState(0);
     const [direction, setDirection] = useState(1);
     const [saving, setSaving] = useState(false);
 
-    const [tradingStyle, setTradingStyle] = useState<TradingStyle | null>(null);
-    const [challenge, setChallenge] = useState<Challenge | null>(null);
+    const [tradingStyle, setTradingStyle] = useState<TradingStyle | null>(() => {
+        if (typeof window !== "undefined") {
+            const saved = localStorage.getItem("onboarding_tradingStyle");
+            return saved ? (saved as TradingStyle) : null;
+        }
+        return null;
+    });
+    const [challenge, setChallenge] = useState<Challenge | null>(() => {
+        if (typeof window !== "undefined") {
+            const saved = localStorage.getItem("onboarding_challenge");
+            return saved ? (saved as Challenge) : null;
+        }
+        return null;
+    });
+
+    // Persist to localStorage on change
+    useEffect(() => {
+        if (tradingStyle) {
+            localStorage.setItem("onboarding_tradingStyle", tradingStyle);
+        }
+    }, [tradingStyle]);
+
+    useEffect(() => {
+        if (challenge) {
+            localStorage.setItem("onboarding_challenge", challenge);
+        }
+    }, [challenge]);
+
+    // Set sessionStorage flag on mount to track onboarding flow
+    useEffect(() => {
+        sessionStorage.setItem("onboarding_in_progress", "true");
+        return () => {
+            sessionStorage.removeItem("onboarding_in_progress");
+            // Clear localStorage on unmount (onboarding complete)
+            localStorage.removeItem("onboarding_tradingStyle");
+            localStorage.removeItem("onboarding_challenge");
+        };
+    }, []);
+
+    // Check if broker was connected via callback redirect
+    useEffect(() => {
+        const connected = searchParams.get("connected");
+        if (connected === "true") {
+            // User connected broker in popup-blocked scenario, complete onboarding
+            saveAndRedirect();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams]);
 
     const canContinue = (() => {
         switch (currentStep) {
@@ -59,7 +106,7 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
     const saveAndRedirect = useCallback(async (skippedAtStep?: number) => {
         setSaving(true);
         try {
-            await fetch("/api/onboarding", {
+            const response = await fetch("/api/onboarding", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -68,12 +115,22 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
                     skippedAtStep: skippedAtStep ?? null,
                 }),
             });
+
+            if (!response.ok) {
+                throw new Error("Failed to save onboarding data");
+            }
+
             // Refresh JWT to include onboardingCompleted = true
             await update();
             router.push("/dashboard");
-        } catch {
-            // Still redirect on error — don't trap users in onboarding
+        } catch (error) {
+            console.error("Onboarding save error:", error);
+            toast.error("Failed to save progress. Redirecting anyway...");
+            // Still refresh JWT and redirect to avoid trapping users
+            await update();
             router.push("/dashboard");
+        } finally {
+            setSaving(false);
         }
     }, [tradingStyle, challenge, update, router]);
 
@@ -153,7 +210,7 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
                                 <SolutionStep challenge={challenge} />
                             )}
                             {currentStep === 4 && (
-                                <ConnectStep onConnected={handleConnected} />
+                                <ConnectStep onConnected={handleConnected} saving={saving} />
                             )}
                         </motion.div>
                     </AnimatePresence>

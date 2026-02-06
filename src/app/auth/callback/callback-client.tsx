@@ -47,9 +47,16 @@ export function CallbackClient() {
           window.opener.postMessage({ type: "SNAPTRADE_CONNECTION_SUCCESS" }, "*");
           setTimeout(() => window.close(), 3000); // Extended to 3s to let user read message
         } else {
-          // If not opened as popup, redirect to dashboard
+          // If not opened as popup, check if we're in onboarding flow
+          const isOnboarding = sessionStorage.getItem("onboarding_in_progress") === "true";
           setTimeout(() => {
-            window.location.href = "/dashboard";
+            if (isOnboarding) {
+              // Redirect back to onboarding with success flag
+              window.location.href = "/onboarding?connected=true";
+            } else {
+              // Normal flow - redirect to dashboard
+              window.location.href = "/dashboard";
+            }
           }, 3000);
         }
       } catch (error) {
