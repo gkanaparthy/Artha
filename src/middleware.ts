@@ -3,6 +3,16 @@ import { NextResponse } from "next/server";
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
+
+  // Diagnostic logging
+  if (process.env.NODE_ENV === 'production') {
+    console.log('[Middleware] Request:', {
+      path: req.nextUrl.pathname,
+      isLoggedIn,
+      hasSessionCookie: !!req.cookies.get("next-auth.session-token") || !!req.cookies.get("__Secure-next-auth.session-token"),
+      host: req.headers.get("host"),
+    });
+  }
   const isLoginPage = req.nextUrl.pathname === "/login";
   const isLandingPage = req.nextUrl.pathname === "/";
   const isOnboardingPage = req.nextUrl.pathname.startsWith("/onboarding");
