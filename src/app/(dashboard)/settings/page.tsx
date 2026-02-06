@@ -273,16 +273,54 @@ export default function SettingsPage() {
       }
 
       // Show success message
-      toast.success('Redirecting to broker login...', {
+      toast.success('Opening broker login...', {
         id: `reconnect-${accountId}`,
         description: `Log in to the SAME ${brokerName} account to preserve your trade history.`,
-        duration: 3000
+        duration: 5000
       });
 
-      // Redirect to SnapTrade OAuth flow
-      setTimeout(() => {
-        window.location.href = data.redirectURI;
-      }, 1000);
+      // Open in popup window to prevent session loss
+      const width = 500;
+      const height = 700;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+
+      const popup = window.open(
+        data.redirectURI,
+        'SnapTrade Reconnection',
+        `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
+      );
+
+      // Check if popup was blocked
+      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+        // Popup was blocked - redirect in same window as fallback
+        toast.info('Popup blocked - redirecting in this window...', {
+          id: `reconnect-${accountId}`,
+          duration: 2000
+        });
+        setTimeout(() => {
+          window.location.href = data.redirectURI;
+        }, 1500);
+        return;
+      }
+
+      // Focus the popup
+      popup.focus();
+
+      // Monitor popup close and refresh page
+      const checkClosed = setInterval(() => {
+        try {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            setReconnecting(null);
+            // Refresh the page to check for updated broker status
+            window.location.reload();
+          }
+        } catch {
+          // Cross-origin error - popup is on different domain
+          clearInterval(checkClosed);
+        }
+      }, 500);
 
     } catch (error) {
       console.error('[Reconnect] Error:', error);
