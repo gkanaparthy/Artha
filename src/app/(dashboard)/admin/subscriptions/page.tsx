@@ -69,7 +69,7 @@ export default function AdminSubscriptionsPage() {
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-[#2E4A3B]">Subscriptions Management</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-[#2E4A3B] dark:text-[#E8EFE0]">Subscriptions Management</h1>
                     <p className="text-muted-foreground mt-1 text-lg">
                         Monitor revenue, user tiers, and billing events.
                     </p>
@@ -82,7 +82,7 @@ export default function AdminSubscriptionsPage() {
 
             {/* Top Metrics */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
-                <Card className="border-[#2E4A3B]/10 shadow-sm hover:shadow-md transition-shadow">
+                <Card className="border-[#2E4A3B]/10 dark:border-[#E8EFE0]/10 shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                         <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
                         <TrendingUp className="h-4 w-4 text-green-600" />
@@ -93,7 +93,7 @@ export default function AdminSubscriptionsPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-[#2E4A3B]/10 shadow-sm hover:shadow-md transition-shadow ring-1 ring-primary/20">
+                <Card className="border-[#2E4A3B]/10 dark:border-[#E8EFE0]/10 shadow-sm hover:shadow-md transition-shadow ring-1 ring-primary/20">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                         <CardTitle className="text-sm font-medium">Est. MRR</CardTitle>
                         <TrendingUp className="h-4 w-4 text-primary" />
@@ -104,7 +104,7 @@ export default function AdminSubscriptionsPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-[#2E4A3B]/10 shadow-sm hover:shadow-md transition-shadow">
+                <Card className="border-[#2E4A3B]/10 dark:border-[#E8EFE0]/10 shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                         <CardTitle className="text-sm font-medium">Active Founders</CardTitle>
                         <ShieldCheck className="h-4 w-4 text-blue-600" />
@@ -120,7 +120,7 @@ export default function AdminSubscriptionsPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-[#2E4A3B]/10 shadow-sm hover:shadow-md transition-shadow">
+                <Card className="border-[#2E4A3B]/10 dark:border-[#E8EFE0]/10 shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                         <CardTitle className="text-sm font-medium">Trialing Users</CardTitle>
                         <Clock className="h-4 w-4 text-amber-500" />
@@ -131,7 +131,7 @@ export default function AdminSubscriptionsPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-[#2E4A3B]/10 shadow-sm hover:shadow-md transition-shadow">
+                <Card className="border-[#2E4A3B]/10 dark:border-[#E8EFE0]/10 shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                         <CardTitle className="text-sm font-medium">Paying Active</CardTitle>
                         <CreditCard className="h-4 w-4 text-primary" />
@@ -144,14 +144,14 @@ export default function AdminSubscriptionsPage() {
             </div>
 
             <Tabs defaultValue="users" className="space-y-6">
-                <TabsList className="bg-[#E8EFE0]/50 border border-[#2E4A3B]/10 p-1 rounded-xl">
-                    <TabsTrigger value="users" className="rounded-lg px-6 py-2 data-[state=active]:bg-white data-[state=active]:text-[#2E4A3B] data-[state=active]:shadow-sm">
+                <TabsList className="bg-[#E8EFE0]/50 dark:bg-[#2E4A3B]/30 border border-[#2E4A3B]/10 dark:border-[#E8EFE0]/10 p-1 rounded-xl">
+                    <TabsTrigger value="users" className="rounded-lg px-6 py-2 data-[state=active]:bg-white dark:data-[state=active]:bg-[#2E4A3B] data-[state=active]:text-[#2E4A3B] dark:data-[state=active]:text-[#E8EFE0] data-[state=active]:shadow-sm">
                         Users
                     </TabsTrigger>
-                    <TabsTrigger value="stats" className="rounded-lg px-6 py-2 data-[state=active]:bg-white data-[state=active]:text-[#2E4A3B] data-[state=active]:shadow-sm">
+                    <TabsTrigger value="stats" className="rounded-lg px-6 py-2 data-[state=active]:bg-white dark:data-[state=active]:bg-[#2E4A3B] data-[state=active]:text-[#2E4A3B] dark:data-[state=active]:text-[#E8EFE0] data-[state=active]:shadow-sm">
                         Plan Distribution
                     </TabsTrigger>
-                    <TabsTrigger value="activity" className="rounded-lg px-6 py-2 data-[state=active]:bg-white data-[state=active]:text-[#2E4A3B] data-[state=active]:shadow-sm">
+                    <TabsTrigger value="activity" className="rounded-lg px-6 py-2 data-[state=active]:bg-white dark:data-[state=active]:bg-[#2E4A3B] data-[state=active]:text-[#2E4A3B] dark:data-[state=active]:text-[#E8EFE0] data-[state=active]:shadow-sm">
                         Recent Payments
                     </TabsTrigger>
                 </TabsList>
@@ -162,8 +162,8 @@ export default function AdminSubscriptionsPage() {
 
                 <TabsContent value="stats">
                     <div className="grid gap-8 md:grid-cols-2">
-                        <Card className="border-[#2E4A3B]/10 overflow-hidden">
-                            <CardHeader className="bg-[#FAFBF6] border-b border-[#2E4A3B]/5">
+                        <Card className="border-[#2E4A3B]/10 dark:border-[#E8EFE0]/10 overflow-hidden">
+                            <CardHeader className="bg-[#FAFBF6] dark:bg-[#2E4A3B]/20 border-b border-[#2E4A3B]/5 dark:border-[#E8EFE0]/10">
                                 <CardTitle>Plan Distribution</CardTitle>
                                 <CardDescription>Breakdown by billing cycle and status</CardDescription>
                             </CardHeader>
@@ -173,15 +173,15 @@ export default function AdminSubscriptionsPage() {
                                         <div key={status} className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <StatusBadge status={status} />
-                                                <span className="text-sm font-medium uppercase tracking-wider text-[#2E4A3B]/60">{status.replace('_', ' ')}</span>
+                                                <span className="text-sm font-medium uppercase tracking-wider text-[#2E4A3B]/60 dark:text-[#E8EFE0]/70">{status.replace('_', ' ')}</span>
                                             </div>
                                             <span className="font-bold">{count}</span>
                                         </div>
                                     ))}
                                 </div>
 
-                                <div className="mt-8 pt-6 border-t border-[#2E4A3B]/5">
-                                    <h4 className="text-sm font-bold text-[#2E4A3B] mb-4 uppercase tracking-widest">Active Plans</h4>
+                                <div className="mt-8 pt-6 border-t border-[#2E4A3B]/5 dark:border-[#E8EFE0]/10">
+                                    <h4 className="text-sm font-bold text-[#2E4A3B] dark:text-[#E8EFE0] mb-4 uppercase tracking-widest">Active Plans</h4>
                                     <div className="grid grid-cols-3 gap-4">
                                         <div className="text-center p-3 rounded-xl bg-primary/5">
                                             <p className="text-xs text-muted-foreground mb-1 uppercase">Monthly</p>
@@ -203,32 +203,32 @@ export default function AdminSubscriptionsPage() {
                 </TabsContent>
 
                 <TabsContent value="activity">
-                    <Card className="border-[#2E4A3B]/10 overflow-hidden">
-                        <CardHeader className="bg-[#FAFBF6] border-b border-[#2E4A3B]/5">
+                    <Card className="border-[#2E4A3B]/10 dark:border-[#E8EFE0]/10 overflow-hidden">
+                        <CardHeader className="bg-[#FAFBF6] dark:bg-[#2E4A3B]/20 border-b border-[#2E4A3B]/5 dark:border-[#E8EFE0]/10">
                             <CardTitle>Recent Payments</CardTitle>
                             <CardDescription>Latest successful transactions</CardDescription>
                         </CardHeader>
                         <CardContent className="p-0">
-                            <div className="divide-y divide-[#2E4A3B]/5">
+                            <div className="divide-y divide-[#2E4A3B]/5 dark:divide-[#E8EFE0]/10">
                                 {stats.recentPayments.length === 0 ? (
                                     <div className="p-8 text-center text-muted-foreground">
                                         No payments recorded yet.
                                     </div>
                                 ) : (
                                     stats.recentPayments.map((payment) => (
-                                        <div key={payment.id} className="p-4 hover:bg-[#FAFBF6] transition-colors group">
+                                        <div key={payment.id} className="p-4 hover:bg-[#FAFBF6] dark:hover:bg-[#2E4A3B]/20 transition-colors group">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="h-10 w-10 rounded-full bg-[#E8EFE0] flex items-center justify-center text-[#2E4A3B] font-bold">
+                                                    <div className="h-10 w-10 rounded-full bg-[#E8EFE0] dark:bg-[#2E4A3B]/50 flex items-center justify-center text-[#2E4A3B] dark:text-[#E8EFE0] font-bold">
                                                         {payment.user?.name?.[0] || payment.user?.email?.[0]?.toUpperCase() || '?'}
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-bold text-[#2E4A3B]">{payment.user?.name || 'Anonymous'}</p>
+                                                        <p className="text-sm font-bold text-[#2E4A3B] dark:text-[#E8EFE0]">{payment.user?.name || 'Anonymous'}</p>
                                                         <p className="text-xs text-muted-foreground">{payment.user?.email}</p>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-sm font-bold text-[#2E4A3B]">+${payment.amount}</p>
+                                                    <p className="text-sm font-bold text-[#2E4A3B] dark:text-[#E8EFE0]">+${payment.amount}</p>
                                                     <p className="text-[10px] text-muted-foreground">{format(new Date(payment.createdAt), 'MMM d, h:mm a')}</p>
                                                 </div>
                                             </div>

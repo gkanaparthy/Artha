@@ -121,10 +121,10 @@ export function UserManagementTable() {
                 </div>
             </div>
 
-            <div className="border border-[#2E4A3B]/10 rounded-xl overflow-hidden bg-white">
+            <div className="border border-[#2E4A3B]/10 dark:border-[#E8EFE0]/10 rounded-xl overflow-hidden bg-white dark:bg-transparent">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
-                        <thead className="bg-[#FAFBF6] border-b border-[#2E4A3B]/5 text-[#2E4A3B]/60 uppercase text-[10px] tracking-widest font-bold">
+                        <thead className="bg-[#FAFBF6] dark:bg-[#2E4A3B]/20 border-b border-[#2E4A3B]/5 dark:border-[#E8EFE0]/10 text-[#2E4A3B]/60 dark:text-[#E8EFE0]/70 uppercase text-[10px] tracking-widest font-bold">
                             <tr>
                                 <th className="px-6 py-4">User</th>
                                 <th className="px-6 py-4">Status & Plan</th>
@@ -133,7 +133,7 @@ export function UserManagementTable() {
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#2E4A3B]/5">
+                        <tbody className="divide-y divide-[#2E4A3B]/5 dark:divide-[#E8EFE0]/10">
                             {loading && users.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="py-20 text-center">
@@ -149,14 +149,14 @@ export function UserManagementTable() {
                                 </tr>
                             ) : (
                                 users.map((user) => (
-                                    <tr key={user.id} className="hover:bg-[#FAFBF6]/50 transition-colors">
+                                    <tr key={user.id} className="hover:bg-[#FAFBF6]/50 dark:hover:bg-[#2E4A3B]/20 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="h-9 w-9 rounded-full bg-[#E8EFE0] flex items-center justify-center text-[#2E4A3B] font-bold text-xs">
+                                                <div className="h-9 w-9 rounded-full bg-[#E8EFE0] dark:bg-[#2E4A3B]/50 flex items-center justify-center text-[#2E4A3B] dark:text-[#E8EFE0] font-bold text-xs">
                                                     {user.name?.[0] || user.email?.[0]?.toUpperCase()}
                                                 </div>
                                                 <div className="max-w-[150px] truncate">
-                                                    <p className="font-bold text-[#2E4A3B] truncate">{user.name || "No name"}</p>
+                                                    <p className="font-bold text-[#2E4A3B] dark:text-[#E8EFE0] truncate">{user.name || "No name"}</p>
                                                     <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                                                 </div>
                                             </div>
@@ -166,12 +166,12 @@ export function UserManagementTable() {
                                                 <Badge variant="outline" className={`w-fit text-[10px] ${getStatusColor(user.subscriptionStatus)}`}>
                                                     {user.subscriptionStatus}
                                                 </Badge>
-                                                <span className="text-xs text-[#2E4A3B]/70 capitalize">
+                                                <span className="text-xs text-[#2E4A3B]/70 dark:text-[#E8EFE0]/70 capitalize">
                                                     {user.subscriptionPlan?.toLowerCase().replace('_', ' ') || 'No plan'} • {user.subscriptionTier}
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-xs font-serif text-[#2E4A3B]/80">
+                                        <td className="px-6 py-4 text-xs font-serif text-[#2E4A3B]/80 dark:text-[#E8EFE0]/80">
                                             {user.subscriptionStatus === 'TRIALING' ? (
                                                 <div className="flex items-center gap-1">
                                                     <Clock className="h-3 w-3 text-amber-500" />
@@ -247,7 +247,7 @@ export function UserManagementTable() {
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="p-4 border-t border-[#2E4A3B]/5 flex items-center justify-between bg-[#FAFBF6]">
+                    <div className="p-4 border-t border-[#2E4A3B]/5 dark:border-[#E8EFE0]/10 flex items-center justify-between bg-[#FAFBF6] dark:bg-[#2E4A3B]/20">
                         <p className="text-xs text-muted-foreground font-serif">
                             Page {page} of {totalPages}
                         </p>
@@ -280,12 +280,12 @@ export function UserManagementTable() {
 
 function getStatusColor(status: string) {
     switch (status) {
-        case 'ACTIVE': return 'bg-green-100 text-green-700 border-green-200';
-        case 'TRIALING': return 'bg-amber-100 text-amber-700 border-amber-200';
-        case 'GRANDFATHERED': return 'bg-blue-100 text-blue-700 border-blue-200';
-        case 'CANCELLED': return 'bg-gray-100 text-gray-700 border-gray-200';
-        case 'EXPIRED': return 'bg-red-50 text-red-600 border-red-100';
-        case 'PAST_DUE': return 'bg-red-100 text-red-700 border-red-200';
-        default: return 'bg-gray-50 text-gray-500 border-gray-200';
+        case 'ACTIVE': return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800';
+        case 'TRIALING': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800';
+        case 'GRANDFATHERED': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800';
+        case 'CANCELLED': return 'bg-gray-100 dark:bg-gray-800/30 text-gray-700 dark:text-gray-400 border-gray-200 dark:border-gray-700';
+        case 'EXPIRED': return 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-100 dark:border-red-800';
+        case 'PAST_DUE': return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800';
+        default: return 'bg-gray-50 dark:bg-gray-800/30 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700';
     }
 }
