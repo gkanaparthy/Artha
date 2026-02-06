@@ -7,6 +7,7 @@ export default auth((req) => {
   const isLandingPage = req.nextUrl.pathname === "/";
   const isOnboardingPage = req.nextUrl.pathname.startsWith("/onboarding");
   const isAuthCallback = req.nextUrl.pathname.startsWith("/api/auth");
+  const isSnapTradeCallback = req.nextUrl.pathname.startsWith("/auth/callback"); // SnapTrade broker connection callback
   const isDebugApi = req.nextUrl.pathname.startsWith("/api/debug");
   const isPublicApi = req.nextUrl.pathname === "/api/health";
   const isCronApi = req.nextUrl.pathname.startsWith("/api/cron");
@@ -19,8 +20,8 @@ export default auth((req) => {
   const isStripeWebhook = req.nextUrl.pathname === "/api/stripe/webhook";
   const isApiRoute = req.nextUrl.pathname.startsWith("/api/");
 
-  // Allow auth callbacks, cron jobs, demo pages, debug APIs, and public APIs
-  if (isAuthCallback || isPublicApi || isCronApi || isPublicPage || isDemoPage || isDebugApi || isPublicStatsApi || isStripeWebhook) {
+  // Allow auth callbacks, SnapTrade callback, cron jobs, demo pages, debug APIs, and public APIs
+  if (isAuthCallback || isSnapTradeCallback || isPublicApi || isCronApi || isPublicPage || isDemoPage || isDebugApi || isPublicStatsApi || isStripeWebhook) {
     return NextResponse.next();
   }
 
