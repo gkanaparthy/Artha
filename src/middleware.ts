@@ -9,7 +9,10 @@ export default auth((req) => {
     console.log('[Middleware] Request:', {
       path: req.nextUrl.pathname,
       isLoggedIn,
-      hasSessionCookie: !!req.cookies.get("next-auth.session-token") || !!req.cookies.get("__Secure-next-auth.session-token"),
+      hasSessionCookie: !!req.cookies.get("next-auth.session-token") ||
+        !!req.cookies.get("__Secure-next-auth.session-token") ||
+        !!req.cookies.get("authjs.session-token") ||
+        !!req.cookies.get("__Secure-authjs.session-token"),
       host: req.headers.get("host"),
     });
   }
