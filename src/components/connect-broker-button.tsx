@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Link2, Loader2 } from "lucide-react";
+import { PaywallDialog } from "@/components/paywall-dialog";
 
 interface ConnectBrokerButtonProps {
     onSuccess?: () => void;
@@ -10,6 +11,7 @@ interface ConnectBrokerButtonProps {
 
 export function ConnectBrokerButton({ onSuccess }: ConnectBrokerButtonProps = {}) {
     const [loading, setLoading] = useState(false);
+    const [showPaywall, setShowPaywall] = useState(false);
 
     useEffect(() => {
         // Listen for messages from popup window
@@ -31,6 +33,17 @@ export function ConnectBrokerButton({ onSuccess }: ConnectBrokerButtonProps = {}
     const handleConnect = async () => {
         try {
             setLoading(true);
+
+            // 0. Check subscription status
+            const subRes = await fetch("/api/subscription");
+            if (subRes.ok) {
+                const subData = await subRes.json();
+                if (!subData.canAccessPro) {
+                    setLoading(false);
+                    setShowPaywall(true);
+                    return;
+                }
+            }
 
             // 1. Register with SnapTrade (idempotent - uses session user)
             const registerRes = await fetch("/api/auth/snaptrade/register", {
@@ -105,9 +118,16 @@ export function ConnectBrokerButton({ onSuccess }: ConnectBrokerButtonProps = {}
     };
 
     return (
-        <Button onClick={handleConnect} disabled={loading} size="sm" className="gap-2">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
-            Connect Broker
-        </Button>
+        <>
+            <Button onClick={handleConnect} disabled={loading} size="sm" className="gap-2">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                Connect Broker
+            </Button>
+            <PaywallDialog
+                open={showPaywall}
+                onOpenChange={setShowPaywall}
+                feature="broker connection"
+            />
+        </>
     );
 }
