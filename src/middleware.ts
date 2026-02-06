@@ -4,18 +4,6 @@ import { NextResponse } from "next/server";
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
 
-  // Diagnostic logging
-  if (process.env.NODE_ENV === 'production') {
-    console.log('[Middleware] Request:', {
-      path: req.nextUrl.pathname,
-      isLoggedIn,
-      hasSessionCookie: !!req.cookies.get("next-auth.session-token") ||
-        !!req.cookies.get("__Secure-next-auth.session-token") ||
-        !!req.cookies.get("authjs.session-token") ||
-        !!req.cookies.get("__Secure-authjs.session-token"),
-      host: req.headers.get("host"),
-    });
-  }
   const isLoginPage = req.nextUrl.pathname === "/login";
   const isLandingPage = req.nextUrl.pathname === "/";
   const isOnboardingPage = req.nextUrl.pathname.startsWith("/onboarding");
@@ -45,7 +33,7 @@ export default auth((req) => {
 
   // Redirect non-logged-in users to login page if they are not on public pages
   if (!isLoggedIn && !isLoginPage && !isLandingPage) {
-    return NextResponse.redirect(new URL("/login?reason=middleware", req.url));
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
   // Check onboarding status from both JWT and fallback cookie.

@@ -34,7 +34,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: "/login",
     error: "/login", // Redirect errors to login page with error parameter
   },
-  debug: true,
+  debug: false,
   secret: process.env.AUTH_SECRET,
   trustHost: true,
   useSecureCookies: process.env.NODE_ENV === 'production' && !process.env.AUTH_URL?.includes('localhost'),
