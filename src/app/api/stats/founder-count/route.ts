@@ -23,7 +23,8 @@ export async function GET() {
         });
 
         return NextResponse.json({
-            count: founderCount,
+            // Sum both for specific "Social Proof" (shows 77 remaining instead of 100)
+            count: founderCount + grandfatheredCount,
             grandfatheredCount
         });
     } catch (error) {
