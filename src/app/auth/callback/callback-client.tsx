@@ -33,6 +33,16 @@ export function CallbackClient() {
           method: "POST",
         });
 
+        // Check if session expired (user got logged out during redirect chain)
+        if (syncRes.status === 401) {
+          setStatus("error");
+          setMessage("Your session expired. Please log in again to complete the connection.");
+          setTimeout(() => {
+            window.location.href = "/login?callbackUrl=/dashboard";
+          }, 2000);
+          return;
+        }
+
         if (syncRes.ok) {
           setStatus("success");
           setMessage("Broker connected! Your trades are syncing in the background and will appear shortly.");
@@ -62,7 +72,7 @@ export function CallbackClient() {
       } catch (error) {
         console.error("Callback error:", error);
         setStatus("error");
-        setMessage("Failed to complete connection");
+        setMessage("Failed to complete connection. Please try again.");
       }
     };
 
