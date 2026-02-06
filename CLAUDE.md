@@ -82,6 +82,9 @@ Protects all routes except these public bypasses:
 - `/api/auth/*`, `/api/health`, `/api/cron/*`, `/api/debug/*`
 - `/api/stats/*` — Public stats (founder count)
 - `/api/stripe/webhook` — Stripe cannot follow 302 redirects
+- Static assets: `.svg`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.txt`, `.xml`, `.ico`
+
+**CRITICAL**: SEO files (`robots.txt`, `sitemap.xml`) must be excluded in the matcher regex to prevent redirecting Googlebot to `/login`
 
 ### Key Services
 
@@ -134,6 +137,11 @@ NONE → GRANDFATHERED (admin/script, free forever)
 
 **Pro-gated routes** check `canAccessPro` and return 402:
 - `/api/trades/sync`, `/api/trades/sync-recent`, `/api/insights`
+
+**Paywall UI patterns**:
+- Broker connection button checks subscription before allowing SnapTrade OAuth flow
+- 402 responses trigger `PaywallDialog` component (professional modal with trial CTA)
+- Never use generic browser `alert()` for payment prompts
 
 ## SnapTrade API Integration
 
@@ -225,6 +233,13 @@ Notes:
 - Grandfather script must skip ACTIVE/LIFETIME/TRIALING users to avoid desyncing from Stripe
 - MRR prices must match Stripe: Founder monthly=$12, annual=$120; Regular monthly=$20, annual=$200
 
+### NextAuth & Magic Links
+- Magic link tokens are single-use — reusing causes silent redirect to login
+- Session cookies: `__Secure-authjs.session-token` (production), `authjs.session-token` (localhost)
+- `?reason=middleware` in URL indicates middleware redirected due to missing/invalid session
+- Environment variables must be synced between `.env` and `.env.local` for local testing
+- Production requires: `AUTH_SECRET`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL` all properly set
+
 ### Database & Prisma
 - NEVER run `prisma migrate reset` or `db push --force-reset` without explicit user approval
 - Always `pnpm prisma generate` after schema changes
@@ -234,3 +249,17 @@ Notes:
 - Trade sync has 25s Vercel timeout — avoid blocking operations
 - AI insights cached 1hr in Redis — clear cache when testing new prompts
 - Use client-side filtering (FilterContext) for instant UI updates
+
+### SEO & Metadata
+- Middleware must NOT intercept SEO files — ensure `.txt`, `.xml`, `.ico` are in matcher exclusions
+- Page-specific metadata requires `layout.tsx` files (metadata exports only work in server components)
+- `src/app/robots.ts` and `src/app/sitemap.ts` generate `/robots.txt` and `/sitemap.xml` as Next.js route files
+- JSON-LD structured data in `src/components/seo/json-ld.tsx` (Organization, SoftwareApplication, FAQPage schemas)
+- All logo `<Image>` tags must have descriptive alt text, never empty strings
+
+### UI & Styling
+- Dark mode uses Tailwind `dark:` prefix variants
+- When fixing dark mode visibility, test both light/dark themes with contrasting colors
+- Common dark mode pattern: `bg-white dark:bg-[#2E4A3B]/20`, `text-[#2E4A3B] dark:text-[#E8EFE0]`
+- Status badges need separate dark mode color schemes (e.g., `bg-green-100 dark:bg-green-900/30`)
+- Use `sr-only` class for SEO-critical H1s that shouldn't be visually rendered
