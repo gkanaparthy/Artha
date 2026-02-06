@@ -125,6 +125,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         email: user.email,
         provider: account?.provider || 'email',
         userId: user.id,
+        host: typeof window !== 'undefined' ? window.location.host : 'server-side',
       });
 
       // Always allow sign-in

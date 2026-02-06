@@ -92,7 +92,7 @@ function LoginContent() {
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !email.includes("@")) return;
+    if (!email || !email.includes("@") || loading === "email") return;
 
     setLoading("email");
     try {
@@ -109,11 +109,16 @@ function LoginContent() {
         setEmailSent(true);
       } else {
         console.error("Email sign in error:", result.error);
+        setAuthError("Failed to send magic link. Please try again or use Google.");
       }
     } catch (error) {
       console.error("Email sign in error:", error);
+      setAuthError("An unexpected error occurred. Please try again.");
     } finally {
-      setLoading(null);
+      // Don't clear loading immediately on success to prevent re-clicks during visual transition
+      if (!emailSent) {
+        setLoading(null);
+      }
     }
   };
 
