@@ -21,6 +21,7 @@ export default function PricingPage() {
                 </header>
 
                 <main>
+                    <h1 className="sr-only">Trading Journal Pricing Plans</h1>
                     <PricingSection className="py-10" />
                     <FAQSection />
                 </main>

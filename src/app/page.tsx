@@ -40,7 +40,7 @@ export default function LandingPage() {
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-6xl">
                     <div className="flex items-center gap-2 sm:gap-3">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 relative flex items-center justify-center">
-                            <Image src="/logo.png" alt="" fill className="object-contain" />
+                            <Image src="/logo.png" alt="Artha Logo" fill className="object-contain" />
                         </div>
                         <span className={cn("text-[#2E4A3B] text-xl sm:text-2xl font-bold tracking-tight", playfair.className)}>
                             Artha
@@ -328,7 +328,7 @@ export default function LandingPage() {
                 <div className="container mx-auto px-4 max-w-6xl flex flex-col md:flex-row justify-between items-center gap-6 sm:gap-8">
                     <div className="flex items-center gap-2 sm:gap-3">
                         <div className="w-7 h-7 sm:w-8 sm:h-8 relative flex items-center justify-center">
-                            <Image src="/logo.png" alt="" fill className="object-contain brightness-0 invert" />
+                            <Image src="/logo.png" alt="Artha Logo" fill className="object-contain brightness-0 invert" />
                         </div>
                         <span className={cn("text-xl sm:text-2xl font-bold", playfair.className)}>Artha</span>
                     </div>

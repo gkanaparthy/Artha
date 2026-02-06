@@ -4,6 +4,7 @@ import "./globals.css";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "sonner";
+import { JsonLd } from "@/components/seo/json-ld";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -58,6 +59,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <JsonLd />
+      </head>
       <body className={inter.className}>
         <SessionProvider>
           <ThemeProvider
