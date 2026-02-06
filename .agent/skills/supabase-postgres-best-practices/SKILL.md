@@ -102,3 +102,63 @@ When debugging performance issues, check:
 2.  Is the query resulting in a Sequential Scan on a large table?
 3.  Are there too many open connections?
 4.  Are RLS policies using subqueries that run for every row?
+
+---
+
+## 🚨 MANDATORY: RLS for New Tables
+
+**CRITICAL REQUIREMENT**: Whenever a new table is added to the Prisma schema, RLS MUST be enabled immediately after running the migration.
+
+### Why This Matters
+Without RLS, if Supabase API keys are ever exposed, an attacker could directly query all data in that table via PostgREST. Our backend uses the `service_role` (postgres user) which bypasses RLS, so the app continues to work normally.
+
+### Steps for New Tables
+
+1. **Add table to Prisma schema** (`prisma/schema.prisma`)
+2. **Run Prisma migration**: `npx prisma migrate dev --name add_new_table`
+3. **Enable RLS immediately** in Supabase SQL Editor:
+
+```sql
+-- Replace "new_table_name" with the actual table name from schema.prisma
+-- Use the @@map name if defined, otherwise the model name
+ALTER TABLE "new_table_name" ENABLE ROW LEVEL SECURITY;
+
+-- NO POLICIES = Deny-All pattern (service_role bypasses RLS)
+```
+
+4. **Verify RLS is enabled**:
+
+```sql
+SELECT tablename, rowsecurity as "RLS Enabled"
+FROM pg_tables
+WHERE schemaname = 'public'
+ORDER BY tablename;
+```
+
+### Template for Multiple Tables
+
+```sql
+-- Enable RLS on new tables (run after each Prisma migration)
+ALTER TABLE "table_name_1" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "table_name_2" ENABLE ROW LEVEL SECURITY;
+-- Add more as needed
+```
+
+### Current RLS Status (as of 2026-02-05)
+
+All user data tables have RLS enabled with deny-all policies:
+- ✅ User, auth_accounts, broker_accounts, sessions, trades
+- ✅ payment_history, subscription_events
+- ✅ tag_definitions, position_tags
+- ✅ trade_groups, trade_group_legs
+- ⚪ verification_tokens (excluded - no userId, managed by NextAuth)
+
+### Migration Scripts Location
+All RLS migration scripts are stored in:
+```
+scripts/manual-migrations/
+├── harden_db_enable_rls.sql      # Original v1 (core tables)
+├── harden_db_enable_rls_v2.sql   # Extended tables
+├── enable_missing_rls.sql        # Catch-up script
+└── harden_db_rollback.sql        # Rollback if needed
+```
