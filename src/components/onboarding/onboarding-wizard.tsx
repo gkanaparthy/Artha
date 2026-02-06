@@ -122,13 +122,14 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
 
             // Refresh JWT to include onboardingCompleted = true
             await update();
-            router.push("/dashboard");
+            // Force hard navigation to ensure middleware sees new token state
+            window.location.href = "/dashboard";
         } catch (error) {
             console.error("Onboarding save error:", error);
             toast.error("Failed to save progress. Redirecting anyway...");
             // Still refresh JWT and redirect to avoid trapping users
             await update();
-            router.push("/dashboard");
+            window.location.href = "/dashboard";
         } finally {
             setSaving(false);
         }
