@@ -210,7 +210,11 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
                                 <SolutionStep challenge={challenge} />
                             )}
                             {currentStep === 4 && (
-                                <ConnectStep onConnected={handleConnected} saving={saving} />
+                                <ConnectStep
+                                    onConnected={handleConnected}
+                                    onConnectLater={handleSkip}
+                                    saving={saving}
+                                />
                             )}
                         </motion.div>
                     </AnimatePresence>

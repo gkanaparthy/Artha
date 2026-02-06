@@ -7,10 +7,11 @@ import { ConnectBrokerButton } from "@/components/connect-broker-button";
 
 interface ConnectStepProps {
     onConnected: () => void;
+    onConnectLater?: () => void;
     saving?: boolean;
 }
 
-export function ConnectStep({ onConnected, saving }: ConnectStepProps) {
+export function ConnectStep({ onConnected, onConnectLater, saving }: ConnectStepProps) {
     const [connecting, setConnecting] = useState(false);
 
     const handleConnected = () => {
@@ -20,7 +21,12 @@ export function ConnectStep({ onConnected, saving }: ConnectStepProps) {
 
     const handleSkip = () => {
         setConnecting(true);
-        onConnected();
+        if (onConnectLater) {
+            onConnectLater();
+        } else {
+            // Fallback if no specific skip handler passed
+            onConnected();
+        }
     };
 
     return (
