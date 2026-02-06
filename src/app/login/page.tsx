@@ -2,10 +2,10 @@
 
 
 import Link from "next/link";
-import { signIn } from "next-auth/react";
 import { useState, useEffect, Suspense } from "react";
 import { Button } from "@/components/ui/button";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useSession, signIn } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Chrome, Loader2, Info, Mail, ArrowRight, CheckCircle, AlertTriangle, X } from "lucide-react";
 import Image from "next/image";
@@ -16,6 +16,8 @@ const playfair = Playfair_Display({ subsets: ["latin"] });
 const inter = Inter({ subsets: ["latin"] });
 
 function LoginContent() {
+  const router = useRouter();
+  const { status: sessionStatus } = useSession();
   const searchParams = useSearchParams();
   const errorParam = searchParams.get("error");
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
@@ -25,9 +27,18 @@ function LoginContent() {
   const [showCookieWarning, setShowCookieWarning] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  // If already logged in, redirect away from login page immediately
+  // This helps when a magic link was "consumed" by a previewer but the session was established
+  useEffect(() => {
+    if (sessionStatus === "authenticated") {
+      router.replace("/dashboard");
+    }
+  }, [sessionStatus, router]);
+
   // Set auth error based on query param
   useEffect(() => {
-    if (errorParam) {
+    // Only show errors if we aren't already authenticated
+    if (errorParam && sessionStatus !== "authenticated") {
       switch (errorParam) {
         case "Verification":
           setAuthError("The sign-in link has expired or has already been used. Please request a new one.");
@@ -42,7 +53,7 @@ function LoginContent() {
           setAuthError("An unexpected error occurred during sign in. Please try again.");
       }
     }
-  }, [errorParam]);
+  }, [errorParam, sessionStatus]);
 
   // Check if cookies are enabled
   useEffect(() => {
