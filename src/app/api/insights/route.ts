@@ -16,6 +16,15 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        // Pro Access Check
+        const { getSubscriptionInfo } = await import('@/lib/subscription');
+        const sub = await getSubscriptionInfo(session.user.id);
+        if (!sub.canAccessPro) {
+            return NextResponse.json({
+                error: "Artha Pro required for AI Behavioral Coaching. Your trial may have ended."
+            }, { status: 402 });
+        }
+
         // 1. Rate Limit Check (10 requests per hour for insights)
         const rateLimitResponse = await applyRateLimit(req, "insights");
         if (rateLimitResponse) return rateLimitResponse;

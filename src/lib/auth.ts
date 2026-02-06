@@ -40,6 +40,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.id = user.id;
         console.log('[Auth] JWT created for user:', user.email, 'ID:', user.id);
+
+        // Fetch onboarding status from DB
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id as string },
+          select: { onboardingCompleted: true }
+        });
+        token.onboardingCompleted = dbUser?.onboardingCompleted ?? false;
+      }
+
+      // Refresh onboarding status when session is updated (after completing onboarding)
+      if (trigger === "update" && token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { onboardingCompleted: true }
+        });
+        token.onboardingCompleted = dbUser?.onboardingCompleted ?? false;
       }
 
       // Log account linking (OAuth)
@@ -79,6 +95,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // Add user ID from token to session
       if (session.user && token.id) {
         session.user.id = token.id as string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (session.user as any).onboardingCompleted = token.onboardingCompleted ?? false;
       } else if (session.user && !token.id) {
         console.error('[Auth] ❌ Session created without user ID for:', session.user.email);
       }

@@ -15,7 +15,8 @@ import {
     AlertCircle,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
 import { cn } from "@/lib/utils";
@@ -24,7 +25,7 @@ import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "@/lib/export";
 import { TagPerformance } from "@/components/tag-performance";
 import { AIInsightsCard } from "@/components/ai-insights-card";
-import { TrustOnboardingCard } from "@/components/onboarding/trust-card";
+import { ConnectBrokerButton } from "@/components/connect-broker-button";
 
 interface Metrics {
     netPnL: number;
@@ -118,6 +119,7 @@ function MetricCard({
 export default function DashboardPage() {
     const { filters, refreshKey, syncing } = useFilters();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [metrics, setMetrics] = useState<Metrics>({
         netPnL: 0,
         winRate: 0,
@@ -273,6 +275,21 @@ export default function DashboardPage() {
         }
     }, [fetchMetrics]);
 
+    // Check for subscription success
+    useEffect(() => {
+        if (searchParams.get('subscription') === 'success') {
+            toast.success("Welcome to Artha Pro!", {
+                description: "Your subscription has been activated successfully. Check your email for confirmation.",
+                duration: 5000,
+            });
+            // Clean up URL
+            const newParams = new URLSearchParams(searchParams.toString());
+            newParams.delete('subscription');
+            const newUrl = window.location.pathname + (newParams.toString() ? `?${newParams.toString()}` : '');
+            window.history.replaceState({}, '', newUrl);
+        }
+    }, [searchParams]);
+
     // Refetch when filters or global refreshKey change
     useEffect(() => {
         Promise.all([fetchMetrics(), fetchLivePositions(), checkDisabledConnections()]);
@@ -389,11 +406,19 @@ export default function DashboardPage() {
                     )
                 }
 
-                {/* Empty State / Trust Card */}
+                {/* Empty State / Connect Broker Nudge */}
                 {!loading && hasAccounts === false && (
-                    <div className="py-12 flex justify-center">
-                        <TrustOnboardingCard />
-                    </div>
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-5 rounded-xl bg-white border border-[#2E4A3B]/10 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4"
+                    >
+                        <div>
+                            <h3 className="font-semibold text-slate-900">Ready to see your real P&L?</h3>
+                            <p className="text-sm text-slate-500 mt-1">Connect your broker to automatically import your trades.</p>
+                        </div>
+                        <ConnectBrokerButton />
+                    </motion.div>
                 )}
 
                 {/* Metrics Cards */}

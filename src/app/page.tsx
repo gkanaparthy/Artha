@@ -22,6 +22,7 @@ import { PsychologyPreview } from "@/components/landing/psychology-preview";
 import { ComparisonTable } from "@/components/landing/comparison-table";
 import { BrokerLogos } from "@/components/landing/broker-logos";
 import { FAQSection } from "@/components/landing/faq-section";
+import { PricingSection } from "@/components/subscription/pricing-section";
 
 const playfair = Playfair_Display({ subsets: ["latin"] });
 const inter = Inter({ subsets: ["latin"] });
@@ -194,7 +195,7 @@ export default function LandingPage() {
                                 </Link>
                             </motion.div>
                             <p className="text-xs sm:text-sm text-[#2E4A3B]/70 font-medium">
-                                No credit card required
+                                30-day free trial &middot; Cancel anytime
                             </p>
 
                             {/* Dashboard Preview Mockup */}
@@ -259,54 +260,7 @@ export default function LandingPage() {
 
                 <BrokerLogos />
 
-                {/* Pricing Section (Free) */}
-                <section id="pricing" className="py-16 sm:py-20 md:py-24 bg-[#FAFBF6]">
-                    <div className="container mx-auto px-4 max-w-4xl text-center">
-                        <h2 className={cn("text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#2E4A3B] mb-4 sm:mb-6", playfair.className)}>
-                            Free During Early Access
-                        </h2>
-                        <p className="text-[#2E4A3B]/70 text-base sm:text-lg mb-8 sm:mb-12 max-w-2xl mx-auto px-4">
-                            Get full access while we're in beta. Help us build the best trading journal - your feedback shapes the product.
-                        </p>
-
-                        <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 shadow-xl border border-[#2E4A3B]/5 max-w-md mx-auto relative overflow-hidden">
-                            <div className="absolute top-0 right-0 bg-[#E59889] text-white text-xs font-bold px-3 sm:px-4 py-1 rounded-bl-xl">
-                                EARLY ACCESS
-                            </div>
-                            <div className="text-4xl sm:text-5xl font-bold text-[#2E4A3B] mb-2 mt-4 sm:mt-0">$0 <span className="text-base font-normal text-[#2E4A3B]/50">/ month</span></div>
-                            <p className="text-[#2E4A3B]/70 mb-6 sm:mb-8">Early Access Membership</p>
-
-                            <ul className="space-y-3 sm:space-y-4 text-left mb-6 sm:mb-8 max-w-xs mx-auto">
-                                <li className="flex items-center gap-3 text-[#2E4A3B] text-sm sm:text-base">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-                                    <span>Unlimited trade sync</span>
-                                </li>
-                                <li className="flex items-center gap-3 text-[#2E4A3B] text-sm sm:text-base">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-                                    <span>All analytics & P&L tracking</span>
-                                </li>
-                                <li className="flex items-center gap-3 text-[#2E4A3B] text-sm sm:text-base">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-                                    <span>Psychology & mistake tagging</span>
-                                </li>
-                                <li className="flex items-center gap-3 text-[#2E4A3B] text-sm sm:text-base">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-                                    <span>25+ broker integrations</span>
-                                </li>
-                                <li className="flex items-center gap-3 text-[#2E4A3B] text-sm sm:text-base">
-                                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-                                    <span>AI Performance Coaching</span>
-                                </li>
-                            </ul>
-
-                            <Link href="/login">
-                                <Button className="w-full h-11 sm:h-12 rounded-xl bg-[#2E4A3B] hover:bg-[#2E4A3B]/90 text-white font-medium text-sm sm:text-base">
-                                    Start Free
-                                </Button>
-                            </Link>
-                        </div>
-                    </div>
-                </section>
+                <PricingSection />
 
                 <FAQSection />
             </main>

@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, BookOpen, Home, Settings, Menu, X, LogOut, User } from "lucide-react";
+import { BarChart3, BookOpen, Home, Settings, Menu, X, LogOut, User, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
+import { SubscriptionStatus } from "@/components/subscription/subscription-status";
+import { SubscriptionInfo } from "@/lib/subscription";
 
 const sidebarItems = [
     { icon: Home, label: "Dashboard", href: "/dashboard" },
@@ -16,10 +18,24 @@ const sidebarItems = [
     { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
-export function MobileNav() {
+interface MobileNavProps {
+    isAdmin?: boolean;
+}
+
+export function MobileNav({ isAdmin }: MobileNavProps) {
     const pathname = usePathname();
     const { data: session } = useSession();
     const [isOpen, setIsOpen] = useState(false);
+    const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+
+    useEffect(() => {
+        if (session?.user?.id) {
+            fetch('/api/subscription')
+                .then(res => res.ok ? res.json() : null)
+                .then(data => { if (data) setSubscription(data); })
+                .catch(() => {});
+        }
+    }, [session?.user?.id]);
 
     // Close menu when route changes
     useEffect(() => {
@@ -138,7 +154,28 @@ export function MobileNav() {
                                 </Link>
                             );
                         })}
+                        {isAdmin && (
+                            <Link href="/admin/subscriptions">
+                                <Button
+                                    variant={pathname === "/admin/subscriptions" ? "secondary" : "ghost"}
+                                    className={cn(
+                                        "w-full justify-start h-12 text-base",
+                                        pathname === "/admin/subscriptions" && "bg-secondary"
+                                    )}
+                                >
+                                    <CreditCard className="mr-3 h-5 w-5" />
+                                    Admin
+                                </Button>
+                            </Link>
+                        )}
                     </nav>
+
+                    {/* Subscription Status */}
+                    {session?.user && subscription && (
+                        <div className="px-4 py-3 border-t">
+                            <SubscriptionStatus subscription={subscription} />
+                        </div>
+                    )}
 
                     {/* Sign Out */}
                     <div className="px-4 py-4 border-t">

@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, BookOpen, Home, Settings, Wallet, LogOut, User } from "lucide-react";
+import { BarChart3, BookOpen, Home, Settings, Wallet, LogOut, User, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
+import { SubscriptionStatus } from "@/components/subscription/subscription-status";
+import { SubscriptionInfo } from "@/lib/subscription";
 
 const sidebarItems = [
     { icon: Home, label: "Dashboard", href: "/dashboard" },
@@ -21,26 +23,41 @@ interface Account {
     brokerName: string;
 }
 
-export function AppSidebar() {
+interface AppSidebarProps {
+    isAdmin?: boolean;
+}
+
+export function AppSidebar({ isAdmin }: AppSidebarProps) {
     const pathname = usePathname();
     const { data: session } = useSession();
     const [accounts, setAccounts] = useState<Account[]>([]);
+    const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
 
     useEffect(() => {
-        const fetchAccounts = async () => {
+        const fetchData = async () => {
             try {
                 if (!session?.user?.id) return;
 
-                const res = await fetch(`/api/accounts`);
-                if (res.ok) {
-                    const data = await res.json();
+                // Fetch accounts and subscription in parallel
+                const [accountsRes, subRes] = await Promise.all([
+                    fetch(`/api/accounts`),
+                    fetch(`/api/subscription`)
+                ]);
+
+                if (accountsRes.ok) {
+                    const data = await accountsRes.json();
                     setAccounts(data.accounts || []);
                 }
+
+                if (subRes.ok) {
+                    const data = await subRes.json();
+                    setSubscription(data);
+                }
             } catch (e) {
-                console.error("Failed to fetch accounts:", e);
+                console.error("Failed to fetch sidebar data:", e);
             }
         };
-        fetchAccounts();
+        fetchData();
     }, [session?.user?.id]);
 
     const handleSignOut = () => {
@@ -131,6 +148,24 @@ export function AppSidebar() {
                             </p>
                         </div>
                     </div>
+
+                    {/* Admin Section */}
+                    {isAdmin && (
+                        <div className="mb-3 space-y-1">
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-2 mb-1">Admin</p>
+                            <Link href="/admin/subscriptions">
+                                <Button
+                                    variant={pathname === "/admin/subscriptions" ? "secondary" : "ghost"}
+                                    size="sm"
+                                    className={cn("w-full justify-start", pathname === "/admin/subscriptions" && "bg-secondary")}
+                                >
+                                    <CreditCard className="mr-2 h-4 w-4" />
+                                    Subscriptions
+                                </Button>
+                            </Link>
+                        </div>
+                    )}
+
                     <Button
                         variant="ghost"
                         size="sm"
@@ -140,6 +175,13 @@ export function AppSidebar() {
                         <LogOut className="h-4 w-4 mr-2" />
                         Sign Out
                     </Button>
+                </div>
+            )}
+
+            {/* Subscription Section */}
+            {session?.user && subscription && (
+                <div className="px-4 py-3 border-t">
+                    <SubscriptionStatus subscription={subscription} />
                 </div>
             )}
 

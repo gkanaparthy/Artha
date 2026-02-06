@@ -36,6 +36,15 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Pro Access Check
+        const { getSubscriptionInfo } = await import('@/lib/subscription');
+        const sub = await getSubscriptionInfo(session.user.id);
+        if (!sub.canAccessPro) {
+            return NextResponse.json({
+                error: 'Pro access required for trade syncing. Your trial may have ended.'
+            }, { status: 402 });
+        }
+
         // Give the sync operation a 25‑second ceiling (Vercel max is 30s).
         const result = await timeout(
             snapTradeService.syncTrades(session.user.id),

@@ -4,21 +4,29 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Link2, Loader2 } from "lucide-react";
 
-export function ConnectBrokerButton() {
+interface ConnectBrokerButtonProps {
+    onSuccess?: () => void;
+}
+
+export function ConnectBrokerButton({ onSuccess }: ConnectBrokerButtonProps = {}) {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         // Listen for messages from popup window
         const handleMessage = (event: MessageEvent) => {
             if (event.data?.type === "SNAPTRADE_CONNECTION_SUCCESS") {
-                // Refresh the page to show new data
-                window.location.reload();
+                if (onSuccess) {
+                    onSuccess();
+                } else {
+                    // Refresh the page to show new data
+                    window.location.reload();
+                }
             }
         };
 
         window.addEventListener("message", handleMessage);
         return () => window.removeEventListener("message", handleMessage);
-    }, []);
+    }, [onSuccess]);
 
     const handleConnect = async () => {
         try {

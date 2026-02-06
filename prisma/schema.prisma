@@ -25,6 +25,50 @@ model User {
   aiPersona           AiPersona       @default(PROFESSIONAL)
   tagDefinitions      TagDefinition[]
   tradeGroups         TradeGroup[]
+
+  // Subscription fields
+  subscriptionStatus    SubscriptionStatus @default(NONE)
+  subscriptionPlan      SubscriptionPlan?
+  subscriptionTier      SubscriptionTier   @default(REGULAR)
+
+  // Stripe fields
+  stripeCustomerId      String?            @unique
+  stripeSubscriptionId  String?            @unique
+  stripePriceId         String?
+
+  // Trial & billing dates
+  trialStartedAt        DateTime?
+  trialEndsAt           DateTime?
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  cancelledAt           DateTime?
+
+  // Lifetime deal tracking
+  lifetimePurchasedAt   DateTime?
+  lifetimeAmount        Float?
+
+  // Founder tracking
+  isFounder             Boolean            @default(false)
+  founderNumber         Int?
+
+  // Grandfathered users (free forever)
+  isGrandfathered       Boolean            @default(false)
+  grandfatheredAt       DateTime?
+  grandfatheredReason   String?
+
+  // Onboarding
+  onboardingCompleted   Boolean            @default(false)
+  onboardingData        Json?
+
+  // Feature usage tracking
+  aiInsightsUsedThisMonth Int              @default(0)
+  aiInsightsResetAt     DateTime?
+
+  // Relations for payments and billing
+  paymentHistory        PaymentHistory[]
+  subscriptionEvents    SubscriptionEvent[]
+
+  @@index([subscriptionStatus])
 }
 
 model Account {
@@ -43,6 +87,7 @@ model Account {
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
   @@map("auth_accounts")
 }
 
@@ -53,6 +98,7 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("sessions")
 }
 
@@ -118,6 +164,7 @@ model Trade {
   @@index([timestamp])
   @@index([positionKey])
   @@index([accountId, positionKey])
+  @@index([universalSymbolId])
   @@map("trades")
 }
 
@@ -182,6 +229,8 @@ model TradeGroup {
 
   @@index([userId, underlyingSymbol])
   @@index([userId, openedAt])
+  @@index([accountId])
+  @@index([closedAt])
   @@map("trade_groups")
 }
 
@@ -202,6 +251,8 @@ model TradeGroupLeg {
   trade          Trade      @relation(fields: [tradeId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, tradeId])
+  @@index([groupId])
+  @@index([tradeId])
   @@map("trade_group_legs")
 }
 
@@ -228,4 +279,68 @@ enum TagCategory {
 enum AiPersona {
   PROFESSIONAL
   CANDOR
+}
+
+// Payment history for audit trail
+model PaymentHistory {
+  id                  String    @id @default(cuid())
+  userId              String
+  stripePaymentId     String    @unique
+  stripeInvoiceId     String?
+  amount              Float
+  currency            String    @default("USD")
+  status              PaymentStatus
+  description         String?
+  createdAt           DateTime  @default(now())
+
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("payment_history")
+}
+
+// Subscription events log
+model SubscriptionEvent {
+  id              String    @id @default(cuid())
+  userId          String
+  eventType       String    // e.g., "trial_started", "subscription_created"
+  eventData       Json?
+  stripeEventId   String?   @unique
+  createdAt       DateTime  @default(now())
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([eventType])
+  @@map("subscription_events")
+}
+
+enum SubscriptionStatus {
+  NONE           // Never subscribed
+  TRIALING       // In free trial
+  ACTIVE         // Paying subscriber
+  PAST_DUE       // Payment failed, grace period
+  CANCELLED      // Cancelled, access until period end
+  EXPIRED        // Subscription ended
+  LIFETIME       // Lifetime deal purchased
+  GRANDFATHERED  // Free forever (early supporters)
+}
+
+enum SubscriptionPlan {
+  MONTHLY
+  ANNUAL
+  LIFETIME
+}
+
+enum SubscriptionTier {
+  FOUNDER   // $12/mo or $99 lifetime
+  REGULAR   // $20/mo or $149+ lifetime
+}
+
+enum PaymentStatus {
+  SUCCEEDED
+  FAILED
+  REFUNDED
+  PENDING
 }

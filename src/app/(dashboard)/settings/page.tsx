@@ -33,6 +33,8 @@ import {
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
 import { cn } from "@/lib/utils";
+import { BillingCard } from "@/components/subscription/billing-card";
+import { SubscriptionInfo } from "@/lib/subscription";
 
 interface Account {
   id: string;
@@ -62,6 +64,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [reconnecting, setReconnecting] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -72,20 +75,24 @@ export default function SettingsPage() {
   const fetchUserData = async () => {
     try {
       console.log('[Settings] Fetching user data, session:', session?.user?.id);
-      const res = await fetch(`/api/user`);
-      const data = await res.json();
+      const [userRes, subRes] = await Promise.all([
+        fetch(`/api/user`),
+        fetch(`/api/subscription`)
+      ]);
 
-      if (!res.ok) {
-        console.error('[Settings] API error:', res.status, data);
-        toast.error(`Failed to load accounts: ${data.error || res.statusText}`);
+      const data = await userRes.json();
+      const subData = await subRes.json();
+
+      if (!userRes.ok) {
+        console.error('[Settings] API error:', userRes.status, data);
+        toast.error(`Failed to load accounts: ${data.error || userRes.statusText}`);
         return;
       }
 
-      console.log('[Settings] User data received:', {
-        accountsCount: data.accounts?.length,
-        hasAccounts: !!data.accounts
-      });
       setUserData(data);
+      if (subRes.ok) {
+        setSubscription(subData);
+      }
     } catch (e) {
       console.error('[Settings] Fetch error:', e);
       toast.error('Failed to load account data');
@@ -143,6 +150,17 @@ export default function SettingsPage() {
           description: error || 'An unknown error occurred'
         });
         window.history.replaceState({}, '', '/settings');
+      } else if (params.get('subscription') === 'cancelled') {
+        toast.error('Subscription Cancelled', {
+          description: 'You cancelled the checkout process. No charges were made.'
+        });
+        window.history.replaceState({}, '', '/settings');
+      } else if (params.get('billing_updated') === 'true') {
+        toast.success('Billing Updated', {
+          description: 'Your billing information has been updated successfully.'
+        });
+        window.history.replaceState({}, '', '/settings');
+        fetchUserData();
       }
     }
   }, []);
@@ -666,6 +684,13 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </AnimatedCard>
+
+        {/* Subscription & Billing */}
+        {subscription && (
+          <AnimatedCard delay={0.29}>
+            <BillingCard subscription={subscription} />
+          </AnimatedCard>
+        )}
 
         {/* Preferences */}
         <AnimatedCard delay={0.3}>

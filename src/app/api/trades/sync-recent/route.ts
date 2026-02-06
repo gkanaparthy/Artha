@@ -20,6 +20,15 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Pro Access Check
+        const { getSubscriptionInfo } = await import('@/lib/subscription');
+        const sub = await getSubscriptionInfo(session.user.id);
+        if (!sub.canAccessPro) {
+            return NextResponse.json({
+                error: 'Pro access required for trade syncing. Your trial may have ended.'
+            }, { status: 402 });
+        }
+
         console.log(`[Recent Sync API] Starting for user ${session.user.id}`);
         const result = await snapTradeService.syncRecentOrders(session.user.id);
 
