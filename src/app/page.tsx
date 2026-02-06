@@ -26,6 +26,7 @@ import { BrokerLogos } from "@/components/landing/broker-logos";
 import { FAQSection } from "@/components/landing/faq-section";
 import { FinalCTA } from "@/components/landing/final-cta";
 import { PricingSection } from "@/components/subscription/pricing-section";
+import { BlogPreview } from "@/components/landing/blog-preview";
 
 const playfair = Playfair_Display({ subsets: ["latin"] });
 const inter = Inter({ subsets: ["latin"] });
@@ -318,6 +319,8 @@ export default function LandingPage() {
                 <BrokerLogos />
 
                 <PricingSection />
+
+                <BlogPreview />
 
                 <FAQSection />
 
