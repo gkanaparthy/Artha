@@ -35,6 +35,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     error: "/login", // Redirect errors to login page with error parameter
   },
   debug: true,
+  secret: process.env.AUTH_SECRET,
+  trustHost: true,
   callbacks: {
     jwt: async ({ token, user, account, trigger }) => {
       // Add user ID to token on sign in
@@ -196,5 +198,4 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
     },
   },
-  trustHost: true,
 });
