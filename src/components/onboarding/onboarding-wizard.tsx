@@ -117,22 +117,22 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
             });
 
             if (!response.ok) {
-                throw new Error("Failed to save onboarding data");
+                const data = await response.json().catch(() => ({}));
+                console.error("Onboarding API error:", response.status, data);
             }
-
-            // Refresh JWT to include onboardingCompleted = true
-            await update();
-            // Force hard navigation to ensure middleware sees new token state
-            window.location.href = "/dashboard";
         } catch (error) {
             console.error("Onboarding save error:", error);
-            toast.error("Failed to save progress. Redirecting anyway...");
-            // Still refresh JWT and redirect to avoid trapping users
-            await update();
-            window.location.href = "/dashboard";
-        } finally {
-            setSaving(false);
         }
+
+        // Always redirect — the JWT callback self-heals by checking the DB
+        // when onboardingCompleted is not true in the token. No need to await
+        // update() which can fail silently in next-auth v5 beta.
+        try {
+            await update();
+        } catch {
+            // update() failure is non-critical — JWT callback self-heals
+        }
+        window.location.href = "/dashboard";
     }, [tradingStyle, challenge, update]);
 
     const goNext = useCallback(() => {

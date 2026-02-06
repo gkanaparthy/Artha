@@ -25,8 +25,19 @@ export async function POST(req: Request) {
             },
         });
 
-        return NextResponse.json({ success: true });
-    } catch {
+        // Set a direct cookie as a fallback — middleware can check this
+        // independently of the JWT, which may not refresh reliably.
+        const response = NextResponse.json({ success: true });
+        response.cookies.set("onboarding_completed", "true", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            path: "/",
+            maxAge: 60 * 60 * 24 * 365, // 1 year
+        });
+        return response;
+    } catch (error) {
+        console.error("Onboarding save error:", error);
         return NextResponse.json(
             { error: "Failed to save onboarding data" },
             { status: 500 }

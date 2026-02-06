@@ -35,22 +35,25 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
+  // Check onboarding status from both JWT and fallback cookie.
+  // The JWT may not refresh reliably in Edge runtime, so the API sets
+  // a direct cookie as a belt-and-suspenders fallback.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const jwtOnboarded = (req.auth as any)?.user?.onboardingCompleted === true;
+  const cookieOnboarded = req.cookies.get("onboarding_completed")?.value === "true";
+  const onboardingCompleted = jwtOnboarded || cookieOnboarded;
+
   // Onboarding redirect for logged-in users who haven't completed onboarding
   // Only redirect page navigations, not API routes (broker connection needs APIs during onboarding)
   if (isLoggedIn && !isOnboardingPage && !isLoginPage && !isLandingPage && !isApiRoute) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const onboardingCompleted = (req.auth as any)?.user?.onboardingCompleted;
-    // Catch undefined/null cases (old JWTs) - redirect to onboarding if not explicitly true
-    if (onboardingCompleted !== true) {
+    if (!onboardingCompleted) {
       return NextResponse.redirect(new URL("/onboarding", req.url));
     }
   }
 
   // Already completed onboarding but visiting /onboarding — send to dashboard
   if (isLoggedIn && isOnboardingPage) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const onboardingCompleted = (req.auth as any)?.user?.onboardingCompleted;
-    if (onboardingCompleted === true) {
+    if (onboardingCompleted) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
   }
