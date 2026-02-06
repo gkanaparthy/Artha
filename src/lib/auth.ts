@@ -7,9 +7,10 @@ import { sendVerificationRequest } from "./email";
 
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: PrismaAdapter(prisma) as ReturnType<typeof PrismaAdapter>,
+  adapter: PrismaAdapter(prisma),
   session: {
-    strategy: "jwt", // Use JWT for Edge Runtime compatibility
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   providers: [
     Google({
@@ -17,8 +18,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
       authorization: {
         params: {
-          access_type: "offline",  // Request refresh token
-          prompt: "consent",       // Force consent screen to get refresh token
+          access_type: "offline",
+          prompt: "consent",
         },
       },
     }),
@@ -29,6 +30,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       maxAge: 4 * 60 * 60, // 4 hours
     }),
   ],
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true,
+      },
+    },
+  },
   pages: {
     signIn: "/login",
     error: "/login", // Redirect errors to login page with error parameter

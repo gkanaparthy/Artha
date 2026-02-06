@@ -32,7 +32,7 @@ export default auth((req) => {
 
   // Redirect non-logged-in users to login page if they are not on public pages
   if (!isLoggedIn && !isLoginPage && !isLandingPage) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(new URL("/login?reason=middleware", req.url));
   }
 
   // Check onboarding status from both JWT and fallback cookie.
