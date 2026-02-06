@@ -40,42 +40,39 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.id = user.id;
         console.log('[Auth] JWT created for user:', user.email, 'ID:', user.id);
-
-        // Fetch onboarding status from DB
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id as string },
-          select: { onboardingCompleted: true, _count: { select: { brokerAccounts: true } } }
-        });
-
-        // Auto-complete onboarding for existing users who already have broker accounts
-        if (dbUser && !dbUser.onboardingCompleted && dbUser._count.brokerAccounts > 0) {
-          await prisma.user.update({
-            where: { id: user.id as string },
-            data: { onboardingCompleted: true },
-          });
-          token.onboardingCompleted = true;
-        } else {
-          token.onboardingCompleted = dbUser?.onboardingCompleted ?? false;
-        }
       }
 
-      // Refresh onboarding status when session is updated (after completing onboarding)
-      if (trigger === "update" && token.id) {
+      // Refresh onboarding status from DB whenever token says not completed.
+      // This self-heals stale JWTs: once the DB has onboardingCompleted=true,
+      // the very next request updates the token and stops further DB checks.
+      if (token.id && token.onboardingCompleted !== true) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
           select: { onboardingCompleted: true, _count: { select: { brokerAccounts: true } } }
         });
 
-        // Auto-complete onboarding for existing users who already have broker accounts
-        if (dbUser && !dbUser.onboardingCompleted && dbUser._count.brokerAccounts > 0) {
+        if (dbUser?.onboardingCompleted) {
+          // DB says completed — update token
+          token.onboardingCompleted = true;
+        } else if (dbUser && dbUser._count.brokerAccounts > 0) {
+          // Existing user with broker accounts — auto-complete onboarding
           await prisma.user.update({
             where: { id: token.id as string },
             data: { onboardingCompleted: true },
           });
           token.onboardingCompleted = true;
         } else {
-          token.onboardingCompleted = dbUser?.onboardingCompleted ?? false;
+          token.onboardingCompleted = false;
         }
+      }
+
+      // Also refresh on explicit session update (e.g. after completing onboarding wizard)
+      if (trigger === "update" && token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { onboardingCompleted: true }
+        });
+        token.onboardingCompleted = dbUser?.onboardingCompleted ?? false;
       }
 
       // Log account linking (OAuth)
