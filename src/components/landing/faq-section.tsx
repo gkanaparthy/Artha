@@ -26,7 +26,7 @@ const faqs = [
     },
     {
         question: "Is there a free trial?",
-        answer: "Yes! Every new user gets a full 30-day free trial of Artha Pro — no credit card required. After that, choose between monthly ($12/mo founder pricing) or annual plans, or grab lifetime access for a one-time payment. Early adopters who signed up before subscriptions launched are grandfathered into Pro free forever."
+        answer: "Yes! Every new user gets a full 30-day free trial of Artha Pro. You can cancel anytime before the trial ends to strictly avoid being charged. After that, choose between monthly ($12/mo founder pricing) or annual plans, or grab lifetime access for a one-time payment. Early adopters who signed up before subscriptions launched are grandfathered into Pro free forever."
     },
     {
         question: "How is this different from other trading journals?",

@@ -44,7 +44,7 @@ export function FinalCTA() {
                     </div>
 
                     <p className="text-sm text-white/40 mt-6">
-                        30-day free trial &middot; No credit card required &middot; Cancel anytime
+                        30-day free trial &middot; Cancel anytime &middot; Secure payment
                     </p>
                 </motion.div>
             </div>

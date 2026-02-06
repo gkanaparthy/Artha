@@ -188,7 +188,7 @@ export default function LandingPage() {
                                 transition={{ duration: 0.6, delay: 0.3 }}
                                 className="text-xs sm:text-sm text-white/40 font-medium"
                             >
-                                30-day free trial &middot; No credit card required &middot; Cancel anytime
+                                30-day free trial &middot; Cancel anytime &middot; Secure payment
                             </motion.p>
 
                             {/* Dashboard Preview Mockup */}
