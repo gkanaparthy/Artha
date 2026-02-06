@@ -26,7 +26,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       apiKey: process.env.RESEND_API_KEY,
       from: process.env.RESEND_FROM_EMAIL || "Artha <login@arthatrades.com>",
       sendVerificationRequest,
-      maxAge: 60 * 60, // 1 hour instead of default 24 hours
+      maxAge: 4 * 60 * 60, // 4 hours
     }),
   ],
   pages: {

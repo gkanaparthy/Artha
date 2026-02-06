@@ -3,9 +3,10 @@
 
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { Chrome, Loader2, Info, Mail, ArrowRight, CheckCircle, AlertTriangle, X } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -14,12 +15,34 @@ import { Playfair_Display, Inter } from "next/font/google";
 const playfair = Playfair_Display({ subsets: ["latin"] });
 const inter = Inter({ subsets: ["latin"] });
 
-export default function LoginPage() {
+function LoginContent() {
+  const searchParams = useSearchParams();
+  const errorParam = searchParams.get("error");
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const [cookiesBlocked, setCookiesBlocked] = useState(false);
   const [showCookieWarning, setShowCookieWarning] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Set auth error based on query param
+  useEffect(() => {
+    if (errorParam) {
+      switch (errorParam) {
+        case "Verification":
+          setAuthError("The sign-in link has expired or has already been used. Please request a new one.");
+          break;
+        case "Configuration":
+          setAuthError("There is a problem with the server configuration. Please try again later.");
+          break;
+        case "AccessDenied":
+          setAuthError("You do not have permission to sign in.");
+          break;
+        default:
+          setAuthError("An unexpected error occurred during sign in. Please try again.");
+      }
+    }
+  }, [errorParam]);
 
   // Check if cookies are enabled
   useEffect(() => {
@@ -181,6 +204,30 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {/* Auth Error Banner */}
+          <AnimatePresence>
+            {authError && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="p-4 rounded-xl bg-red-50 border border-red-100 mb-6 flex gap-3">
+                  <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-red-900">
+                      Sign in failed
+                    </p>
+                    <p className="text-xs text-red-700 leading-relaxed">
+                      {authError}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Cookie Warning Banner */}
           {cookiesBlocked && showCookieWarning && (
             <motion.div
@@ -306,5 +353,17 @@ export default function LoginPage() {
         </motion.button>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#FAFBF6]">
+        <Loader2 className="h-10 w-10 animate-spin text-[#2E4A3B]/20" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }
