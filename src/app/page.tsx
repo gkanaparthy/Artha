@@ -10,18 +10,21 @@ import {
     BarChart3,
     Target,
     ArrowRight,
-    CheckCircle2,
     Zap,
     LucideIcon,
     Menu,
-    X
+    X,
+    Shield,
+    Lock,
+    Users,
 } from "lucide-react";
-import { CursorParticles } from "@/components/cursor-particles";
 import { useState } from "react";
 import { PsychologyPreview } from "@/components/landing/psychology-preview";
+import { HowItWorks } from "@/components/landing/how-it-works";
 import { ComparisonTable } from "@/components/landing/comparison-table";
 import { BrokerLogos } from "@/components/landing/broker-logos";
 import { FAQSection } from "@/components/landing/faq-section";
+import { FinalCTA } from "@/components/landing/final-cta";
 import { PricingSection } from "@/components/subscription/pricing-section";
 
 const playfair = Playfair_Display({ subsets: ["latin"] });
@@ -32,7 +35,6 @@ export default function LandingPage() {
 
     return (
         <div className={cn("min-h-screen bg-[#FAFBF6] flex flex-col", inter.className)}>
-            <CursorParticles />
             {/* Navbar */}
             <header className="sticky top-0 z-50 w-full border-b border-[#2E4A3B]/5 bg-[#FAFBF6]/80 backdrop-blur-md">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-6xl">
@@ -131,11 +133,11 @@ export default function LandingPage() {
             </header>
 
             <main className="flex-1">
-                {/* Hero Section */}
-                <section className="relative overflow-hidden pt-12 sm:pt-16 md:pt-20 pb-16 sm:pb-24 md:pb-32">
-                    {/* Background Blobs (Decoration) */}
-                    <div className="absolute top-0 right-0 w-[50vw] h-[50vw] bg-[#E8EFE0] rounded-full blur-[100px] -translate-y-1/2 translate-x-1/4 opacity-60 pointer-events-none" />
-                    <div className="absolute bottom-0 left-0 w-[40vw] h-[40vw] bg-[#E59889]/10 rounded-full blur-[80px] translate-y-1/4 -translate-x-1/4 pointer-events-none" />
+                {/* Hero Section — Dark Gradient */}
+                <section className="relative overflow-hidden pt-16 sm:pt-20 md:pt-28 pb-16 sm:pb-24 md:pb-32 bg-gradient-to-b from-[#1A2F25] via-[#1A2F25] to-[#2E4A3B]">
+                    {/* Subtle radial glows */}
+                    <div className="absolute top-0 right-0 w-[50vw] h-[50vw] bg-[#4ADE80]/5 rounded-full blur-[120px] -translate-y-1/3 translate-x-1/4 pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-[40vw] h-[40vw] bg-[#E59889]/5 rounded-full blur-[100px] translate-y-1/4 -translate-x-1/4 pointer-events-none" />
 
                     <div className="container mx-auto px-4 max-w-6xl relative z-10">
                         <div className="flex flex-col items-center text-center max-w-3xl mx-auto space-y-6 sm:space-y-8">
@@ -144,36 +146,21 @@ export default function LandingPage() {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.6 }}
                             >
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8EFE0] text-[#2E4A3B] text-xs font-medium mb-4 sm:mb-6">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white/80 text-xs font-medium mb-4 sm:mb-6 border border-white/10">
                                     <span className="relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4ADE80] opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#4ADE80]"></span>
                                     </span>
                                     v1.0 is now live
                                 </div>
-                                <h1 className={cn("text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-[#2E4A3B] leading-[1.1] mb-4 sm:mb-6", playfair.className)}>
+                                <h1 className={cn("text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.1] mb-4 sm:mb-6", playfair.className)}>
                                     Your Trades Tell a Story. <br />
-                                    <span className="italic text-[#E59889]">Artha Finds the Patterns.</span>
+                                    <span className="italic text-[#4ADE80]">Artha Finds the Patterns.</span>
                                 </h1>
-                                <p className="text-base sm:text-lg md:text-xl text-[#2E4A3B]/70 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0">
+                                <p className="text-base sm:text-lg md:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0">
                                     The psychology-first trading journal for active traders.
                                     Identify winning setups, track emotional patterns, and finally understand why you lose.
                                 </p>
-
-                                <div className="flex flex-col gap-3 text-left max-w-md mx-auto mt-8 bg-[#E8EFE0]/30 p-6 rounded-2xl border border-[#2E4A3B]/5">
-                                    <div className="flex items-start gap-3">
-                                        <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
-                                        <p className="text-[#2E4A3B]/80 text-sm sm:text-base font-medium">Stop repeating the same costly mistakes</p>
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
-                                        <p className="text-[#2E4A3B]/80 text-sm sm:text-base font-medium">See exactly which setups actually make you money</p>
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
-                                        <p className="text-[#2E4A3B]/80 text-sm sm:text-base font-medium">Track the emotions draining your account</p>
-                                    </div>
-                                </div>
                             </motion.div>
 
                             <motion.div
@@ -183,20 +170,26 @@ export default function LandingPage() {
                                 className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full sm:w-auto px-4 sm:px-0"
                             >
                                 <Link href="/login" className="w-full sm:w-auto">
-                                    <Button className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-full bg-[#2E4A3B] hover:bg-[#2E4A3B]/90 text-white text-base sm:text-lg shadow-lg hover:shadow-xl transition-all group">
+                                    <Button className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-full bg-[#4ADE80] hover:bg-[#4ADE80]/90 text-[#1A2F25] font-bold text-base sm:text-lg shadow-lg shadow-[#4ADE80]/20 hover:shadow-xl hover:shadow-[#4ADE80]/30 transition-all group">
                                         Start Journaling Free
                                         <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
                                     </Button>
                                 </Link>
                                 <Link href="/demo" className="w-full sm:w-auto">
-                                    <Button variant="outline" className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-full border-[#2E4A3B] text-[#2E4A3B] hover:bg-[#2E4A3B]/5 text-base sm:text-lg">
+                                    <Button variant="outline" className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-full border-white/20 text-white hover:bg-white/5 text-base sm:text-lg">
                                         Try Demo
                                     </Button>
                                 </Link>
                             </motion.div>
-                            <p className="text-xs sm:text-sm text-[#2E4A3B]/70 font-medium">
-                                30-day free trial &middot; Cancel anytime
-                            </p>
+
+                            <motion.p
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.6, delay: 0.3 }}
+                                className="text-xs sm:text-sm text-white/40 font-medium"
+                            >
+                                30-day free trial &middot; No credit card required &middot; Cancel anytime
+                            </motion.p>
 
                             {/* Dashboard Preview Mockup */}
                             <motion.div
@@ -205,22 +198,83 @@ export default function LandingPage() {
                                 transition={{ duration: 0.8, delay: 0.4 }}
                                 className="w-full max-w-5xl mt-8 sm:mt-12 relative"
                             >
-                                <div className="rounded-lg sm:rounded-xl overflow-hidden shadow-xl sm:shadow-2xl border border-[#2E4A3B]/10 bg-white p-1 sm:p-2 md:p-4">
-                                    <div className="rounded-md sm:rounded-lg overflow-hidden bg-[#F3F7E8] relative border border-[#2E4A3B]/5">
+                                <div className="rounded-lg sm:rounded-xl overflow-hidden shadow-2xl shadow-black/40 border border-white/10 bg-[#0f1f18] p-1 sm:p-2 md:p-4">
+                                    <div className="rounded-md sm:rounded-lg overflow-hidden relative">
                                         <Image
                                             src="/dashboard-preview.png"
                                             alt="Artha Dashboard Preview"
                                             width={1024}
                                             height={1024}
-                                            className="w-full h-auto shadow-sm"
+                                            className="w-full h-auto"
                                             priority
                                         />
                                     </div>
                                 </div>
+
+                                {/* Annotation Callouts */}
+                                <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ duration: 0.5, delay: 1.0 }}
+                                    className="hidden md:flex absolute -left-4 top-[20%] items-center gap-2"
+                                >
+                                    <div className="bg-white rounded-full px-4 py-2 shadow-lg text-xs font-bold text-[#2E4A3B] whitespace-nowrap">
+                                        FIFO P&L Engine
+                                    </div>
+                                    <div className="w-8 h-px bg-white/40" />
+                                </motion.div>
+
+                                <motion.div
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ duration: 0.5, delay: 1.2 }}
+                                    className="hidden md:flex absolute -right-4 top-[35%] items-center gap-2"
+                                >
+                                    <div className="w-8 h-px bg-white/40" />
+                                    <div className="bg-white rounded-full px-4 py-2 shadow-lg text-xs font-bold text-[#2E4A3B] whitespace-nowrap">
+                                        Psychology Tags
+                                    </div>
+                                </motion.div>
+
+                                <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ duration: 0.5, delay: 1.4 }}
+                                    className="hidden md:flex absolute -left-4 top-[55%] items-center gap-2"
+                                >
+                                    <div className="bg-white rounded-full px-4 py-2 shadow-lg text-xs font-bold text-[#2E4A3B] whitespace-nowrap">
+                                        Win Rate & Metrics
+                                    </div>
+                                    <div className="w-8 h-px bg-white/40" />
+                                </motion.div>
                             </motion.div>
                         </div>
                     </div>
                 </section>
+
+                {/* Trust Strip */}
+                <section className="py-6 sm:py-8 bg-white border-b border-[#2E4A3B]/5">
+                    <div className="container mx-auto px-4 max-w-6xl">
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 text-[#2E4A3B]/50">
+                            <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4" />
+                                <span className="text-xs sm:text-sm font-medium">Trusted by active traders</span>
+                            </div>
+                            <div className="hidden sm:block w-px h-4 bg-[#2E4A3B]/10" />
+                            <div className="flex items-center gap-2">
+                                <Lock className="h-4 w-4" />
+                                <span className="text-xs sm:text-sm font-medium">AES-256 Encrypted</span>
+                            </div>
+                            <div className="hidden sm:block w-px h-4 bg-[#2E4A3B]/10" />
+                            <div className="flex items-center gap-2">
+                                <Shield className="h-4 w-4" />
+                                <span className="text-xs sm:text-sm font-medium">Bank-level security via SnapTrade</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <HowItWorks />
 
                 <PsychologyPreview />
 
@@ -240,17 +294,20 @@ export default function LandingPage() {
                             <FeatureCard
                                 icon={Target}
                                 title="Psychology Tracking"
-                                description="Tag every trade with setups, mistakes, and emotions. See exactly which patterns cost you money - and which make it."
+                                description="Tag every trade with setups, mistakes, and emotions. See exactly which patterns cost you money — and which make it."
+                                accentColor="border-t-[#E59889]"
                             />
                             <FeatureCard
                                 icon={Zap}
                                 title="Zero Manual Entry"
                                 description="Connect your broker once. Every trade syncs automatically from 100+ brokerages including Interactive Brokers, Schwab, Zerodha, and Robinhood."
+                                accentColor="border-t-[#4ADE80]"
                             />
                             <FeatureCard
                                 icon={BarChart3}
                                 title="Real P&L Clarity"
                                 description="FIFO-calculated profits, win rates, and R:R ratios. Filter by date, account, symbol, or tag to find what's working."
+                                accentColor="border-t-[#2E4A3B]"
                             />
                         </div>
                     </div>
@@ -263,9 +320,11 @@ export default function LandingPage() {
                 <PricingSection />
 
                 <FAQSection />
+
+                <FinalCTA />
             </main>
 
-            <footer className="bg-[#2E4A3B] text-white py-8 sm:py-10 md:py-12">
+            <footer className="bg-[#1A2F25] text-white py-8 sm:py-10 md:py-12">
                 <div className="container mx-auto px-4 max-w-6xl flex flex-col md:flex-row justify-between items-center gap-6 sm:gap-8">
                     <div className="flex items-center gap-2 sm:gap-3">
                         <div className="w-7 h-7 sm:w-8 sm:h-8 relative flex items-center justify-center">
@@ -281,7 +340,7 @@ export default function LandingPage() {
                     </div>
 
                     <p className="text-white/40 text-xs text-center md:text-left">
-                        © {new Date().getFullYear()} Artha. All rights reserved.
+                        &copy; {new Date().getFullYear()} Artha. All rights reserved.
                     </p>
                 </div>
             </footer>
@@ -289,16 +348,24 @@ export default function LandingPage() {
     );
 }
 
-function FeatureCard({ icon: Icon, title, description }: { icon: LucideIcon, title: string, description: string }) {
+function FeatureCard({ icon: Icon, title, description, accentColor }: { icon: LucideIcon, title: string, description: string, accentColor: string }) {
     return (
-        <div className="p-6 sm:p-8 rounded-xl sm:rounded-2xl bg-[#FAFBF6] border border-[#2E4A3B]/5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-            <div className="w-12 h-12 rounded-full bg-[#E8EFE0] flex items-center justify-center mb-4 sm:mb-6 text-[#2E4A3B]">
+        <div className={cn(
+            "p-6 sm:p-8 rounded-xl sm:rounded-2xl bg-[#FAFBF6] border border-[#2E4A3B]/5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300",
+            "border-t-[3px]",
+            accentColor
+        )}>
+            <div className="w-12 h-12 rounded-xl bg-[#E8EFE0] flex items-center justify-center mb-4 sm:mb-6 text-[#2E4A3B]">
                 <Icon className="h-6 w-6" />
             </div>
             <h3 className="text-lg sm:text-xl font-bold text-[#2E4A3B] mb-2 sm:mb-3">{title}</h3>
-            <p className="text-sm sm:text-base text-[#2E4A3B]/70 leading-relaxed">
+            <p className="text-sm sm:text-base text-[#2E4A3B]/70 leading-relaxed mb-4">
                 {description}
             </p>
+            <Link href="/demo" className="text-[#E59889] font-medium text-sm hover:underline inline-flex items-center gap-1 group">
+                See it in action
+                <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
         </div>
     )
 }

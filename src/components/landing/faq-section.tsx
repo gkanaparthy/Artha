@@ -25,8 +25,8 @@ const faqs = [
         answer: "100+ brokerages including Robinhood, Fidelity, Interactive Brokers, Zerodha (India), Schwab, Webull, Trading 212, Coinbase, Binance, and more. Coverage includes US, Canada, India, Europe, and Australia."
     },
     {
-        question: "Is this really free?",
-        answer: "Yes - during early access, everything is free. We're focused on building the best trading journal possible, and your feedback helps us get there. Paid tiers may come later, but early adopters will always get special treatment."
+        question: "Is there a free trial?",
+        answer: "Yes! Every new user gets a full 30-day free trial of Artha Pro — no credit card required. After that, choose between monthly ($12/mo founder pricing) or annual plans, or grab lifetime access for a one-time payment. Early adopters who signed up before subscriptions launched are grandfathered into Pro free forever."
     },
     {
         question: "How is this different from other trading journals?",
