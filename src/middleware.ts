@@ -15,7 +15,8 @@ export default auth((req) => {
   const isPublicPage = req.nextUrl.pathname.startsWith("/privacy") ||
     req.nextUrl.pathname.startsWith("/terms") ||
     req.nextUrl.pathname.startsWith("/contact") ||
-    req.nextUrl.pathname.startsWith("/pricing");
+    req.nextUrl.pathname.startsWith("/pricing") ||
+    req.nextUrl.pathname.startsWith("/learn");
   const isDemoPage = req.nextUrl.pathname.startsWith("/demo");
   const isPublicStatsApi = req.nextUrl.pathname.startsWith("/api/stats");
   const isStripeWebhook = req.nextUrl.pathname === "/api/stripe/webhook";
