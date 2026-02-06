@@ -1,0 +1,29 @@
+{
+  "name": "postgres-best-practices",
+  "version": "1.0.0",
+  "author": "Based on Supabase Agent Skills",
+  "description": "Postgres performance optimization and best practices for AI agents. Covers query performance, connection management, security/RLS, schema design, concurrency, pagination, and monitoring.",
+  "triggers": [
+    "postgres",
+    "postgresql",
+    "sql",
+    "database",
+    "query",
+    "index",
+    "rls",
+    "row level security",
+    "schema",
+    "migration",
+    "prisma",
+    "connection pool",
+    "deadlock",
+    "transaction",
+    "pagination",
+    "performance",
+    "slow query"
+  ],
+  "category": "database",
+  "priority": "high",
+  "lastUpdated": "2026-02-05",
+  "source": "https://supabase.com/blog/postgres-best-practices-for-ai-agents"
+}
