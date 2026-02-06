@@ -37,108 +37,52 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   debug: true,
   secret: process.env.AUTH_SECRET,
   trustHost: true,
+  useSecureCookies: process.env.NODE_ENV === 'production' && !process.env.AUTH_URL?.includes('localhost'),
   callbacks: {
     jwt: async ({ token, user, account, trigger }) => {
       // Add user ID to token on sign in
       if (user) {
         token.id = user.id;
-        console.log('[Auth] JWT created for user:', user.email, 'ID:', user.id);
+        console.log('[Auth] JWT created for user:', user.id);
       }
 
-      // Refresh onboarding status from DB whenever token says not completed.
-      // This self-heals stale JWTs: once the DB has onboardingCompleted=true,
-      // the very next request updates the token and stops further DB checks.
+      // Refresh onboarding status from DB
       if (token.id && token.onboardingCompleted !== true) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { onboardingCompleted: true, _count: { select: { brokerAccounts: true } } }
-        });
-
-        if (dbUser?.onboardingCompleted) {
-          // DB says completed — update token
-          token.onboardingCompleted = true;
-        } else if (dbUser && dbUser._count.brokerAccounts > 0) {
-          // Existing user with broker accounts — auto-complete onboarding
-          await prisma.user.update({
+        try {
+          const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            data: { onboardingCompleted: true },
+            select: { onboardingCompleted: true, _count: { select: { brokerAccounts: true } } }
           });
-          token.onboardingCompleted = true;
-        } else {
-          token.onboardingCompleted = false;
-        }
-      }
 
-      // Also refresh on explicit session update (e.g. after completing onboarding wizard)
-      if (trigger === "update" && token.id) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { onboardingCompleted: true }
-        });
-        token.onboardingCompleted = dbUser?.onboardingCompleted ?? false;
-      }
-
-      // Log account linking (OAuth)
-      if (account) {
-        console.log('[Auth] Account linked:', {
-          provider: account.provider,
-          type: account.type,
-          hasRefreshToken: !!account.refresh_token,
-          expiresAt: account.expires_at ? new Date(account.expires_at * 1000).toISOString() : 'N/A',
-        });
-
-        // Warning if no refresh token (user will need to re-auth frequently)
-        if (account.provider === 'google' && !account.refresh_token) {
-          console.warn('[Auth] ⚠️ No refresh token from Google - user may have previously authorized this app');
-        }
-      }
-
-      // Fallback: if token.id is missing but we have an email, look up the user
-      // This handles cases where users have old JWTs without the id field
-      if (!token.id && token.email) {
-        console.log('[Auth] Token missing ID, looking up user by email:', token.email);
-        const dbUser = await prisma.user.findUnique({
-          where: { email: token.email },
-          select: { id: true }
-        });
-        if (dbUser) {
-          token.id = dbUser.id;
-          console.log('[Auth] User ID found:', dbUser.id);
-        } else {
-          console.error('[Auth] ❌ User not found for email:', token.email);
+          if (dbUser?.onboardingCompleted) {
+            token.onboardingCompleted = true;
+          } else if (dbUser && dbUser._count.brokerAccounts > 0) {
+            token.onboardingCompleted = true;
+          } else {
+            token.onboardingCompleted = false;
+          }
+        } catch (e) {
+          console.error('[Auth] JWT Error:', e);
         }
       }
 
       return token;
     },
     session: async ({ session, token }) => {
-      // Add user ID from token to session
       if (session.user && token.id) {
         session.user.id = token.id as string;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (session.user as any).onboardingCompleted = token.onboardingCompleted ?? false;
-      } else if (session.user && !token.id) {
-        console.error('[Auth] ❌ Session created without user ID for:', session.user.email);
       }
       return session;
     },
-    signIn: async ({ user, account, profile }) => {
-      // Log successful sign-ins
-      console.log('[Auth] Sign-in attempt:', {
-        email: user.email,
-        provider: account?.provider || 'email',
-        userId: user.id,
-        host: typeof window !== 'undefined' ? window.location.host : 'server-side',
-      });
-
-      // Always allow sign-in
+    signIn: async ({ user, account }) => {
+      console.log('[Auth] SignIn attempt:', user.email, account?.provider);
       return true;
     },
     redirect: async ({ url, baseUrl }) => {
-      // Force baseUrl to arthatrades.com if on production to prevent cross-domain session loss
-      const base = process.env.NODE_ENV === 'production' ? 'https://arthatrades.com' : baseUrl;
-      console.log('[Auth] Redirecting to:', url, 'via Base:', base);
-
+      // Force arthatrades.com to ensure session stickiness
+      const base = 'https://arthatrades.com';
       if (url.startsWith(base)) return url;
       if (url.startsWith("/")) return `${base}${url}`;
       return base;
