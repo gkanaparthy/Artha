@@ -30,17 +30,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       maxAge: 4 * 60 * 60, // 4 hours
     }),
   ],
-  cookies: {
-    sessionToken: {
-      name: `next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: true,
-      },
-    },
-  },
   pages: {
     signIn: "/login",
     error: "/login", // Redirect errors to login page with error parameter
@@ -144,13 +133,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return true;
     },
     redirect: async ({ url, baseUrl }) => {
-      // Diagnostic logging for redirects
-      console.log('[Auth] Redirecting to:', url, 'Base:', baseUrl);
+      // Force baseUrl to arthatrades.com if on production to prevent cross-domain session loss
+      const base = process.env.NODE_ENV === 'production' ? 'https://arthatrades.com' : baseUrl;
+      console.log('[Auth] Redirecting to:', url, 'via Base:', base);
 
-      // After sign in, redirect to dashboard
-      if (url.startsWith(baseUrl)) return url;
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
-      return baseUrl;
+      if (url.startsWith(base)) return url;
+      if (url.startsWith("/")) return `${base}${url}`;
+      return base;
     },
   },
   events: {
