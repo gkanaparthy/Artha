@@ -205,7 +205,7 @@ export default function SettingsPage() {
   };
 
   const handleDisconnect = async (accountId: string) => {
-    if (!confirm("Are you sure you want to disconnect this broker? This will DELETE ALL TRADES associated with this account.")) {
+    if (!confirm("Are you sure you want to disconnect this broker? Your trade history will be preserved, but this account will stop syncing new trades.")) {
       return;
     }
 
@@ -218,11 +218,15 @@ export default function SettingsPage() {
         throw new Error("Failed to disconnect");
       }
 
+      toast.success('Broker disconnected', {
+        description: 'This account will no longer sync trades. You can reconnect it anytime.'
+      });
+
       // Refresh data
       await fetchUserData();
     } catch (e) {
       console.error(e);
-      alert("Failed to disconnect broker. Please try again.");
+      toast.error("Failed to disconnect broker. Please try again.");
     }
   };
 
@@ -351,9 +355,13 @@ export default function SettingsPage() {
     );
   }
 
-  // Check if there are any disabled connections
-  const hasDisabledConnections = userData?.accounts.some(acc => acc.disabled) || false;
-  const disabledCount = userData?.accounts.filter(acc => acc.disabled).length || 0;
+  // Check if there are any disabled connections (excluding user-disconnected ones)
+  const hasDisabledConnections = userData?.accounts.some(acc =>
+    acc.disabled && acc.disabledReason !== 'User disconnected - will not sync'
+  ) || false;
+  const disabledCount = userData?.accounts.filter(acc =>
+    acc.disabled && acc.disabledReason !== 'User disconnected - will not sync'
+  ).length || 0;
 
   return (
     <PageTransition>

@@ -220,8 +220,11 @@ export default function DashboardPage() {
             if (res.ok) {
                 const data = await res.json();
                 const accounts = data.accounts || [];
-                const hasDisabled = accounts.some((acc: { disabled: boolean }) => acc.disabled) || false;
-                setHasDisabledConnections(hasDisabled);
+                // Only show warning for broken connections, not user-disconnected ones
+                const hasBrokenConnection = accounts.some((acc: { disabled: boolean; disabledReason: string | null }) =>
+                    acc.disabled && acc.disabledReason !== 'User disconnected - will not sync'
+                ) || false;
+                setHasDisabledConnections(hasBrokenConnection);
                 setHasAccounts(accounts.length > 0);
             }
         } catch (e) {

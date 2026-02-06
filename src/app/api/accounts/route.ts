@@ -54,6 +54,7 @@ export async function DELETE(req: NextRequest) {
 
         const { searchParams } = new URL(req.url);
         const accountId = searchParams.get('id');
+        const hardDelete = searchParams.get('hard') === 'true'; // Optional hard delete flag
 
         if (!accountId) {
             return NextResponse.json({ error: 'Account ID required' }, { status: 400 });
@@ -68,15 +69,28 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ error: 'Account not found or unauthorized' }, { status: 404 });
         }
 
-        // Transaction to delete trades then account
-        await prisma.$transaction([
-            prisma.trade.deleteMany({
-                where: { accountId: accountId }
-            }),
-            prisma.brokerAccount.delete({
-                where: { id: accountId }
-            })
-        ]);
+        if (hardDelete) {
+            // Hard delete: Remove account and all trades (original behavior)
+            await prisma.$transaction([
+                prisma.trade.deleteMany({
+                    where: { accountId: accountId }
+                }),
+                prisma.brokerAccount.delete({
+                    where: { id: accountId }
+                })
+            ]);
+        } else {
+            // Soft delete: Mark as disabled with user-initiated reason
+            // This preserves trade history and prevents future syncs
+            await prisma.brokerAccount.update({
+                where: { id: accountId },
+                data: {
+                    disabled: true,
+                    disabledAt: new Date(),
+                    disabledReason: 'User disconnected - will not sync',
+                }
+            });
+        }
 
         return NextResponse.json({ success: true });
 
