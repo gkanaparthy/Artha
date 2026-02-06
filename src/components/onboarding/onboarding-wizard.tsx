@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ProgressBar } from "./progress-bar";
 import { WelcomeStep, type TradingStyle } from "./steps/welcome-step";
@@ -36,7 +37,6 @@ interface OnboardingWizardProps {
 }
 
 export function OnboardingWizard({ userName }: OnboardingWizardProps) {
-    const router = useRouter();
     const searchParams = useSearchParams();
     const { update } = useSession();
     const [currentStep, setCurrentStep] = useState(0);
@@ -133,7 +133,7 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
         } finally {
             setSaving(false);
         }
-    }, [tradingStyle, challenge, update, router]);
+    }, [tradingStyle, challenge, update]);
 
     const goNext = useCallback(() => {
         if (currentStep < TOTAL_STEPS - 1) {
@@ -167,9 +167,9 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
                 <button
                     onClick={handleSkip}
                     disabled={saving}
-                    className="text-sm text-[#2E4A3B]/50 hover:text-[#2E4A3B]/70 transition-colors cursor-pointer"
+                    className="text-sm text-[#2E4A3B]/50 hover:text-[#2E4A3B]/70 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                    Skip for now
+                    {saving ? "Saving..." : "Skip for now"}
                 </button>
             </header>
 
@@ -225,25 +225,37 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
             {/* Navigation (hidden on connect step — it has its own CTA) */}
             {currentStep < 4 && (
                 <div className="px-6 pb-8 sm:pb-10">
-                    <div className="flex items-center justify-between max-w-2xl mx-auto">
-                        <Button
-                            variant="ghost"
-                            onClick={goBack}
-                            disabled={currentStep === 0}
-                            className="text-[#2E4A3B]/60 hover:text-[#2E4A3B] hover:bg-[#2E4A3B]/5 gap-2"
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                            Back
-                        </Button>
+                    <div className="flex flex-col items-center max-w-2xl mx-auto gap-3">
+                        <div className="flex items-center justify-between w-full">
+                            <Button
+                                variant="ghost"
+                                onClick={goBack}
+                                disabled={currentStep === 0}
+                                className="text-[#2E4A3B]/60 hover:text-[#2E4A3B] hover:bg-[#2E4A3B]/5 gap-2"
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                                Back
+                            </Button>
 
-                        <Button
-                            onClick={goNext}
-                            disabled={!canContinue}
-                            className="bg-[#2E4A3B] hover:bg-[#2E4A3B]/90 text-white gap-2 px-6 h-11 rounded-xl shadow-lg shadow-[#2E4A3B]/20"
-                        >
-                            Continue
-                            <ArrowRight className="h-4 w-4" />
-                        </Button>
+                            <Button
+                                onClick={goNext}
+                                disabled={!canContinue}
+                                className={cn(
+                                    "gap-2 px-6 h-11 rounded-xl transition-all",
+                                    canContinue
+                                        ? "bg-[#2E4A3B] hover:bg-[#2E4A3B]/90 text-white shadow-lg shadow-[#2E4A3B]/20"
+                                        : "bg-[#2E4A3B]/20 text-[#2E4A3B]/40 cursor-not-allowed shadow-none"
+                                )}
+                            >
+                                Continue
+                                <ArrowRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        {!canContinue && (currentStep === 0 || currentStep === 1) && (
+                            <p className="text-xs text-[#2E4A3B]/40">
+                                Select an option above to continue
+                            </p>
+                        )}
                     </div>
                 </div>
             )}
