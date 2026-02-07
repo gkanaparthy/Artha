@@ -64,15 +64,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                     </div>
                 </header>
 
-                <div className="prose prose-lg prose-slate max-w-none 
-          prose-headings:font-serif prose-headings:text-[#2E4A3B] 
-          prose-p:text-[#2E4A3B]/80 prose-p:leading-relaxed
-          prose-strong:text-[#2E4A3B] prose-strong:font-bold
-          prose-a:text-[#E59889] prose-a:no-underline hover:prose-a:underline
-          prose-li:text-[#2E4A3B]/80
-          prose-img:rounded-2xl
-          prose-blockquote:border-[#E59889] prose-blockquote:bg-[#E59889]/5 prose-blockquote:py-1 prose-blockquote:px-6 prose-blockquote:rounded-r-xl
-        ">
+                <div className="prose prose-lg prose-slate max-w-none prose-h1:font-serif prose-h1:text-[#2E4A3B] prose-h1:text-4xl prose-h1:font-bold prose-h1:mt-12 prose-h1:mb-6 prose-h1:leading-tight prose-h2:font-serif prose-h2:text-[#2E4A3B] prose-h2:text-2xl prose-h2:font-semibold prose-h2:mt-10 prose-h2:mb-4 prose-h2:pb-2 prose-h2:border-b prose-h2:border-[#2E4A3B]/10 prose-h3:font-serif prose-h3:text-[#2E4A3B] prose-h3:text-xl prose-h3:font-semibold prose-h3:mt-8 prose-h3:mb-3 prose-p:text-[#2E4A3B]/80 prose-p:leading-[1.8] prose-p:mb-6 prose-p:text-[17px] prose-strong:text-[#2E4A3B] prose-strong:font-bold prose-a:text-[#E59889] prose-a:font-medium prose-a:no-underline hover:prose-a:underline prose-ul:my-6 prose-ul:pl-6 prose-ol:my-6 prose-ol:pl-6 prose-li:text-[#2E4A3B]/80 prose-li:mb-3 prose-li:leading-[1.7] prose-img:rounded-2xl prose-img:shadow-lg prose-img:my-8 prose-blockquote:border-l-4 prose-blockquote:border-[#E59889] prose-blockquote:bg-[#E59889]/5 prose-blockquote:py-4 prose-blockquote:px-6 prose-blockquote:rounded-r-xl prose-blockquote:my-8 prose-blockquote:not-italic prose-blockquote:text-[#2E4A3B]/90 prose-blockquote:font-medium prose-code:text-[#E59889] prose-code:bg-[#E8EFE0] prose-code:px-2 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono prose-hr:border-[#2E4A3B]/10 prose-hr:my-10">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {postData.content}
                     </ReactMarkdown>
