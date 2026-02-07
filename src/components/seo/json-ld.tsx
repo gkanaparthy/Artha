@@ -6,11 +6,18 @@ export function JsonLd() {
         "@context": "https://schema.org",
         "@type": "Organization",
         "name": "Artha",
+        "alternateName": "Artha Trades",
         "url": "https://arthatrades.com",
         "logo": "https://arthatrades.com/logo.png",
+        "description": "The beautiful, automated trading journal for serious traders. Master your psychology and find your edge.",
         "sameAs": [
-            "https://x.com/arthatrades"
-        ]
+            "https://x.com/arthatrades",
+            "https://github.com/gkanaparthy/Pravaha"
+        ],
+        "founder": {
+            "@type": "Person",
+            "name": "Gautham Kanaparthy"
+        }
     };
 
     const softwareSchema = {

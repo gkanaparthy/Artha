@@ -21,7 +21,14 @@ export default function PricingPage() {
                 </header>
 
                 <main>
-                    <h1 className="sr-only">Trading Journal Pricing Plans</h1>
+                    <div className="container mx-auto px-4 max-w-6xl mb-12">
+                        <h1 className="text-4xl md:text-5xl font-bold text-[#2E4A3B] mb-4 text-center">
+                            Pricing Plans for Every Trader
+                        </h1>
+                        <p className="text-[#2E4A3B]/60 text-center text-lg max-w-2xl mx-auto">
+                            Choose the plan that fits your trading journey. No hidden fees, cancel anytime.
+                        </p>
+                    </div>
                     <PricingSection className="py-10" />
                     <FAQSection />
                 </main>

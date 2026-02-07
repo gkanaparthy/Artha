@@ -36,6 +36,9 @@ export default function LearnPage() {
                         Master Your Mind, <br />
                         <span className="italic text-[#E59889]">Master the Markets.</span>
                     </h1>
+                    <div className="flex items-center gap-3 mb-8 text-[#2E4A3B]/60 italic">
+                        <span className="text-sm font-medium">Curated by Gautham Kanaparthy &middot; Lead Strategist at Artha</span>
+                    </div>
                     <p className="text-lg text-[#2E4A3B]/70 leading-relaxed">
                         Deep dives into trading psychology, risk management, and data-driven performance.
                         Automate your journal, identify your leaks, and scale your edge.

@@ -15,8 +15,8 @@ export const metadata: Metadata = {
   },
   description: "The beautiful, automated trading journal for serious traders. Sync trades instantly, track performance, and refine your edge—completely free.",
   keywords: ["trading journal", "stock trading", "options trading", "trade tracker", "trading analytics", "portfolio tracker", "free trading journal"],
-  authors: [{ name: "Artha" }],
-  creator: "Artha",
+  authors: [{ name: "Gautham Kanaparthy" }],
+  creator: "Gautham Kanaparthy",
   metadataBase: new URL("https://arthatrades.com"),
   openGraph: {
     type: "website",

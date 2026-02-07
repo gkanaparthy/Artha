@@ -17,8 +17,38 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     const { slug } = await params;
     const postData = await getPostData(slug);
 
+    const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": postData.title,
+        "description": postData.description,
+        "image": postData.image || "https://arthatrades.com/blog/revenge-trading.png",
+        "datePublished": postData.date,
+        "author": {
+            "@type": "Person",
+            "name": postData.author || "Gautham Kanaparthy",
+            "url": "https://arthatrades.com/learn"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "Artha",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://arthatrades.com/logo.png"
+            }
+        },
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": `https://arthatrades.com/learn/${slug}`
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#FAFBF6]">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
             <header className="border-b border-[#2E4A3B]/5 bg-white/80 backdrop-blur-md sticky top-0 z-50">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-4xl">
                     <Link href="/learn" className="flex items-center gap-2 text-[#2E4A3B]/70 hover:text-[#2E4A3B] transition-colors font-medium text-sm">
