@@ -1,0 +1,6 @@
+video/
+.agent/
+scripts/
+docs/
+.git/
+node_modules/
