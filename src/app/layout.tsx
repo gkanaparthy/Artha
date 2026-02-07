@@ -27,9 +27,9 @@ export const metadata: Metadata = {
     description: "The beautiful, automated trading journal for serious traders. Sync trades instantly, track performance, and refine your edge—completely free.",
     images: [
       {
-        url: "/opengraph-image",
+        url: "https://arthatrades.com/og-image.png",
         width: 1200,
-        height: 630,
+        height: 1200,
         alt: "Artha - Trading Journal & Analytics",
       },
     ],
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Artha - Free Trading Journal & Analytics",
     description: "The beautiful, automated trading journal for serious traders. Sync trades instantly, track performance, and refine your edge—completely free.",
-    images: ["/twitter-image"],
+    images: ["https://arthatrades.com/og-image.png"],
     creator: "@arthatrades",
   },
   robots: {
