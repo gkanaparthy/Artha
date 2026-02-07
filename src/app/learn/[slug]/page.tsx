@@ -13,8 +13,8 @@ export async function generateStaticParams() {
     return getAllPostSlugs();
 }
 
-export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-    const { slug } = params;
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
     const postData = await getPostData(slug);
 
     return (

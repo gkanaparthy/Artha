@@ -12,9 +12,7 @@ export function getSortedPostsData() {
 
 export function getAllPostSlugs() {
     return BLOG_POSTS.map((post) => ({
-        params: {
-            slug: post.slug,
-        },
+        slug: post.slug,
     }));
 }
 
