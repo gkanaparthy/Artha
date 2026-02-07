@@ -3,7 +3,8 @@ import { Playfair_Display } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { ArrowLeft, Calendar, User, Tag } from 'lucide-react';
-import { MDXRemote } from 'next-mdx-remote/rsc';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import Image from 'next/image';
 
 const playfair = Playfair_Display({ subsets: ['latin'] });
@@ -72,7 +73,9 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           prose-img:rounded-2xl
           prose-blockquote:border-[#E59889] prose-blockquote:bg-[#E59889]/5 prose-blockquote:py-1 prose-blockquote:px-6 prose-blockquote:rounded-r-xl
         ">
-                    <MDXRemote source={postData.content} />
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {postData.content}
+                    </ReactMarkdown>
                 </div>
 
                 <footer className="mt-16 pt-8 border-t border-[#2E4A3B]/10 flex flex-col items-center text-center">
