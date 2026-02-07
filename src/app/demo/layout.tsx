@@ -15,6 +15,23 @@ export default function DemoLayout({
 }) {
   return (
     <FilterProvider>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "Artha Demo",
+            "applicationCategory": "FinanceApplication",
+            "description": "Try the Artha trading journal with sample data. No sign-up required.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            }
+          })
+        }}
+      />
       <div className="flex bg-background h-screen w-full overflow-hidden text-foreground relative">
         {/* Ambient Background Effects */}
         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">

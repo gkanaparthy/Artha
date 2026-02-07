@@ -34,6 +34,22 @@ export default function ContactPage() {
             </header>
 
             <main className="flex-1 py-16">
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@type": "ContactPage",
+                            "name": "Contact Artha",
+                            "description": "Get in touch for support, feedback, or general inquiries about the Artha trading journal.",
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "Artha",
+                                "email": "hello@arthatrades.com"
+                            }
+                        })
+                    }}
+                />
                 <div className="container mx-auto px-4 max-w-4xl">
                     <div className="text-center mb-16">
                         <h1 className={cn("text-4xl md:text-5xl font-bold text-[#2E4A3B] mb-6", playfair.className)}>

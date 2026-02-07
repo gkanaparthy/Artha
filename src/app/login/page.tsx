@@ -124,6 +124,21 @@ function LoginContent() {
 
   return (
     <div className={cn("min-h-screen flex bg-[#FAFBF6]", inter.className)}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "Sign In to Artha",
+            "description": "Sign in to access your Artha trading journal dashboard with Google or Email.",
+            "publisher": {
+              "@type": "Organization",
+              "name": "Artha"
+            }
+          })
+        }}
+      />
       {/* Left Panel - Illustration */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#E8EFE0] flex-col justify-between p-12">
         {/* Brand Top Left */}

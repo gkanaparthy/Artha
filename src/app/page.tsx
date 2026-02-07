@@ -36,6 +36,41 @@ export default function LandingPage() {
 
     return (
         <div className={cn("min-h-screen bg-[#FAFBF6] flex flex-col", inter.className)}>
+            {/* JSON-LD for GEO/SEO */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@graph": [
+                            {
+                                "@type": "WebSite",
+                                "name": "Artha",
+                                "url": "https://arthatrades.com",
+                                "description": "The beautiful, automated trading journal for serious traders."
+                            },
+                            {
+                                "@type": "SoftwareApplication",
+                                "name": "Artha Trading Journal",
+                                "applicationCategory": "FinanceApplication",
+                                "operatingSystem": "Web",
+                                "description": "Artha is the beautiful, automated trading journal designed to help serious traders identify winning setups and master their psychology.",
+                                "author": {
+                                    "@type": "Person",
+                                    "name": "Gautham Kanaparthy"
+                                },
+                                "offers": {
+                                    "@type": "AggregateOffer",
+                                    "priceCurrency": "USD",
+                                    "lowPrice": "0",
+                                    "highPrice": "199",
+                                    "offerCount": "3"
+                                }
+                            }
+                        ]
+                    })
+                }}
+            />
             {/* Navbar */}
             <header className="sticky top-0 z-50 w-full border-b border-[#2E4A3B]/5 bg-[#FAFBF6]/80 backdrop-blur-md">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-6xl">
