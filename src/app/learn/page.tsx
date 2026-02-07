@@ -14,6 +14,25 @@ export default function LearnPage() {
         <div className="min-h-screen bg-[#FAFBF6]">
             {/* Simple Header */}
             <header className="border-b border-[#2E4A3B]/5 bg-white/80 backdrop-blur-md sticky top-0 z-50">
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@type": "CollectionPage",
+                            "name": "Artha Insights - Trading Masterclass",
+                            "description": "Educational content for serious traders focused on psychology, risk management, and performance analytics.",
+                            "author": {
+                                "@type": "Person",
+                                "name": "Gautham Kanaparthy"
+                            },
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "Artha"
+                            }
+                        })
+                    }}
+                />
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-6xl">
                     <Link href="/" className="flex items-center gap-2">
                         <Image src="/logo.png" alt="Artha Logo" width={32} height={32} />

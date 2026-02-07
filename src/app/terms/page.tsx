@@ -34,12 +34,32 @@ export default function TermsOfServicePage() {
             </header>
 
             <main className="flex-1 py-16">
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@type": "WebPage",
+                            "name": "Artha Terms of Service",
+                            "description": "The legal agreement and terms of use for the Artha trading journal platform.",
+                            "author": {
+                                "@type": "Person",
+                                "name": "Gautham Kanaparthy"
+                            },
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "Artha"
+                            },
+                            "dateModified": "2026-02-06"
+                        })
+                    }}
+                />
                 <div className="container mx-auto px-4 max-w-4xl">
                     <h1 className={cn("text-4xl md:text-5xl font-bold text-[#2E4A3B] mb-8", playfair.className)}>
                         Terms of Service
                     </h1>
                     <p className="text-[#2E4A3B]/60 mb-12">
-                        Last updated: January 2025
+                        Last updated: February 6, 2026 &middot; By Gautham Kanaparthy
                     </p>
 
                     <div className="prose prose-lg max-w-none text-[#2E4A3B]/80 space-y-8">
