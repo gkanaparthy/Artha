@@ -2,28 +2,19 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PositionsTable } from "@/components/positions-table";
-import { Button } from "@/components/ui/button";
 import {
-  RefreshCw,
   TrendingUp,
   TrendingDown,
   Target,
-  CircleDollarSign,
-  History,
-  LayoutDashboard,
-  Briefcase,
-  Activity,
-  Trophy,
-  ArrowUpRight,
-  ArrowDownRight,
-  Calculator,
-  Layers,
+  DollarSign,
   BarChart3,
+  Activity,
+  LayoutDashboard,
 } from "lucide-react";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
-import { cn, formatCompactCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "@/lib/export";
@@ -40,7 +31,6 @@ interface DashboardViewProps {
 function MetricCard({
   title,
   value,
-  compactValue,
   subtitle,
   icon: Icon,
   iconColor = "text-muted-foreground",
@@ -50,7 +40,6 @@ function MetricCard({
 }: {
   title: string;
   value: string | number;
-  compactValue?: string | number;
   subtitle: string;
   icon: React.ElementType;
   iconColor?: string;
@@ -60,38 +49,27 @@ function MetricCard({
 }) {
   return (
     <AnimatedCard delay={delay}>
-      <Card
-        className={cn(
-          "h-full card-hover overflow-hidden relative glass border-0",
-          glowClass && `hover:${glowClass}`
-        )}
-      >
+      <Card className={cn(
+        "h-full card-hover overflow-hidden relative glass border-0",
+        glowClass && `hover:${glowClass}`
+      )}>
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500" />
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            {title}
-          </CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
+          <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</CardTitle>
           <div className="metric-icon-bg">
-            <Icon className={cn("h-4 w-4", iconColor)} />
+            <Icon className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", iconColor)} />
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6 pt-0">
           <motion.div
-            className={cn("font-bold stat-number", valueColor)}
+            className={cn("text-xl sm:text-2xl font-bold stat-number", valueColor)}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: delay + 0.2 }}
           >
-            {compactValue !== undefined ? (
-              <>
-                <span className="hidden sm:inline text-2xl">{value}</span>
-                <span className="sm:hidden text-xl">{compactValue}</span>
-              </>
-            ) : (
-              <span className="text-2xl">{value}</span>
-            )}
+            {value}
           </motion.div>
-          <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">{subtitle}</p>
         </CardContent>
       </Card>
     </AnimatedCard>
@@ -147,7 +125,6 @@ export function DashboardView({
     }
   );
   const [livePositions, setLivePositions] = useState<LivePositionsData | null>(null);
-  const [liveLoading, setLiveLoading] = useState(false);
   const [allPositions, setAllPositions] = useState<DisplayPosition[]>(initialPositions || []);
   const [loading, setLoading] = useState(!isDemo);
 
@@ -214,7 +191,6 @@ export function DashboardView({
     if (isDemo) return;
 
     try {
-      setLiveLoading(true);
       const res = await fetch('/api/positions');
       if (res.ok) {
         const data: LivePositionsData = await res.json();
@@ -222,42 +198,8 @@ export function DashboardView({
       }
     } catch (e) {
       console.error('Failed to fetch live positions:', e);
-    } finally {
-      setLiveLoading(false);
     }
   }, [isDemo]);
-
-  // Filter live positions based on active UI filters
-  const filteredLiveMetrics = useMemo(() => {
-    if (!livePositions?.positions) return { totalUnrealizedPnl: 0 };
-
-    let filtered = livePositions.positions;
-
-    // Apply symbol filter (substring match like the rest of the app)
-    if (filters.symbol) {
-      const symbols = filters.symbol.split(',').map(s => s.trim().toLowerCase()).filter(s => s.length > 0);
-      if (symbols.length > 0) {
-        filtered = filtered.filter(p =>
-          symbols.some(s => p.symbol.toLowerCase().includes(s))
-        );
-      }
-    }
-
-    // Apply account filter
-    if (filters.accountId && filters.accountId.length > 0) {
-      filtered = filtered.filter(p => filters.accountId.includes(p.accountId));
-    }
-
-    // Apply asset type filter
-    if (filters.assetType && filters.assetType !== 'all') {
-      filtered = filtered.filter(p => p.type === filters.assetType);
-    }
-
-    const totalUnrealizedPnl = filtered.reduce((sum, p) => sum + (p.openPnl || 0), 0);
-
-    return { totalUnrealizedPnl };
-  }, [livePositions, filters.symbol, filters.accountId, filters.assetType]);
-
 
   // Update metrics when PositionsTable applies client-side filters
   const handleMetricsUpdate = useCallback(
@@ -383,7 +325,7 @@ export function DashboardView({
         </motion.div>
 
         {/* Global Filter Bar */}
-        <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md pb-4 -mx-4 px-4 md:-mx-8 md:px-8">
+        <div className="pb-4">
           <AnimatedCard delay={0.1}>
             <GlobalFilterBar
               onExport={() => exportToExcel(
@@ -405,14 +347,14 @@ export function DashboardView({
             />
           </AnimatedCard>
         </div>
+
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <MetricCard
             title="Net P&L"
             value={formatCurrency(metrics.netPnL, true)}
-            compactValue={formatCompactCurrency(metrics.netPnL, true)}
             subtitle="Based on filtered trades"
-            icon={CircleDollarSign}
+            icon={DollarSign}
             iconColor={getPnLColor(metrics.netPnL)}
             valueColor={getPnLColor(metrics.netPnL)}
             delay={0}
@@ -422,7 +364,7 @@ export function DashboardView({
             title="Win Rate"
             value={`${metrics.winRate}%`}
             subtitle={`${metrics.winningTrades}W / ${metrics.losingTrades}L`}
-            icon={Trophy}
+            icon={Target}
             iconColor={getWinRateColor(metrics.winRate)}
             valueColor={getWinRateColor(metrics.winRate)}
             delay={0.1}
@@ -430,9 +372,8 @@ export function DashboardView({
           <MetricCard
             title="Largest Win"
             value={formatCurrency(metrics.largestWin, true)}
-            compactValue={formatCompactCurrency(metrics.largestWin, true)}
             subtitle="Best single trade"
-            icon={ArrowUpRight}
+            icon={TrendingUp}
             iconColor="text-gradient-green"
             valueColor="text-gradient-green"
             delay={0.2}
@@ -440,29 +381,28 @@ export function DashboardView({
           <MetricCard
             title="Largest Loss"
             value={formatCurrency(metrics.largestLoss, true)}
-            compactValue={formatCompactCurrency(metrics.largestLoss, true)}
             subtitle="Worst single trade"
-            icon={ArrowDownRight}
+            icon={TrendingDown}
             iconColor="text-gradient-red"
             valueColor="text-gradient-red"
             delay={0.3}
           />
         </div>
 
+
         {/* Secondary Metrics */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <MetricCard
             title="Total Trades"
             value={metrics.totalTrades}
             subtitle="Closed positions"
-            icon={History}
+            icon={BarChart3}
             iconColor="text-primary"
             delay={0.4}
           />
           <MetricCard
             title="Avg Win"
             value={formatCurrency(metrics.avgWin, true)}
-            compactValue={formatCompactCurrency(metrics.avgWin, true)}
             subtitle={`${metrics.avgWinPct}% avg return`}
             icon={TrendingUp}
             iconColor="text-gradient-green"
@@ -472,7 +412,6 @@ export function DashboardView({
           <MetricCard
             title="Avg Loss"
             value={formatCurrency(-metrics.avgLoss, true)}
-            compactValue={formatCompactCurrency(-metrics.avgLoss, true)}
             subtitle={`-${metrics.avgLossPct}% avg return`}
             icon={TrendingDown}
             iconColor="text-gradient-red"
@@ -482,44 +421,17 @@ export function DashboardView({
           <MetricCard
             title="Avg Trade"
             value={formatCurrency(metrics.avgTrade, true)}
-            compactValue={formatCompactCurrency(metrics.avgTrade, true)}
             subtitle="Expected per trade"
-            icon={Calculator}
+            icon={Target}
             iconColor={getPnLColor(metrics.avgTrade)}
             valueColor={getPnLColor(metrics.avgTrade)}
             delay={0.7}
           />
-          <MetricCard
-            title="Unrealized P&L"
-            value={
-              isDemo
-                ? formatCurrency(2847.50, true) // Demo value
-                : liveLoading
-                  ? "..."
-                  : livePositions
-                    ? formatCurrency(filteredLiveMetrics.totalUnrealizedPnl, true)
-                    : "—"
-            }
-            compactValue={
-              isDemo
-                ? formatCompactCurrency(2847.50, true) // Demo value
-                : liveLoading
-                  ? "..."
-                  : livePositions
-                    ? formatCompactCurrency(filteredLiveMetrics.totalUnrealizedPnl, true)
-                    : "—"
-            }
-            subtitle={isDemo ? "Sample data" : livePositions ? "Live from broker" : "Connect broker"}
-            icon={Activity}
-            iconColor={isDemo ? "text-gradient-green" : livePositions ? getPnLColor(filteredLiveMetrics.totalUnrealizedPnl) : "text-muted-foreground"}
-            valueColor={isDemo ? "text-gradient-green" : livePositions ? getPnLColor(filteredLiveMetrics.totalUnrealizedPnl) : ""}
-            delay={0.8}
-            glowClass={isDemo ? "glow-green" : livePositions && filteredLiveMetrics.totalUnrealizedPnl >= 0 ? "glow-green" : "glow-red"}
-          />
         </div>
 
+
         {/* AI Insights Section */}
-        <AnimatedCard delay={0.65}>
+        <AnimatedCard delay={0.8}>
           <AIInsightsCard
             startDate={filters.startDate}
             endDate={filters.endDate}
@@ -528,16 +440,17 @@ export function DashboardView({
           />
         </AnimatedCard>
 
+
         {/* Positions Table */}
         <AnimatedCard delay={0.7}>
           <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-lg font-medium flex items-center gap-2">
-                <Briefcase className="h-5 w-5 text-primary" />
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg font-medium flex items-center gap-2">
+                <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 Positions
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0">
               <PositionsTable
                 key={isDemo ? undefined : refreshKey}
                 onMetricsUpdate={isDemo ? undefined : handleMetricsUpdate}

@@ -20,7 +20,8 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
-import { cn, formatCompactCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { TagPerformance } from "@/components/tag-performance";
 import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { CalendarView } from "@/components/calendar-view";
@@ -94,7 +95,6 @@ function CustomTooltip({
 function SummaryCard({
   title,
   value,
-  compactValue,
   icon: Icon,
   iconColor,
   valueColor,
@@ -102,7 +102,6 @@ function SummaryCard({
 }: {
   title: string;
   value: string | number;
-  compactValue?: string | number;
   icon: React.ElementType;
   iconColor: string;
   valueColor?: string;
@@ -113,28 +112,19 @@ function SummaryCard({
       <Card className="card-hover overflow-hidden relative">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500" />
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
-          <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
-            {title}
-          </CardTitle>
+          <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</CardTitle>
           <div className="metric-icon-bg">
             <Icon className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", iconColor)} />
           </div>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0">
           <motion.div
-            className={cn("font-bold", valueColor)}
+            className={cn("text-xl sm:text-2xl font-bold", valueColor)}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: delay + 0.2 }}
           >
-            {compactValue !== undefined ? (
-              <>
-                <span className="hidden sm:inline text-2xl">{value}</span>
-                <span className="sm:hidden text-lg">{compactValue}</span>
-              </>
-            ) : (
-              <span className="text-xl sm:text-2xl">{value}</span>
-            )}
+            {value}
           </motion.div>
         </CardContent>
       </Card>
@@ -392,34 +382,32 @@ export function ReportsView({
             </p>
           </div>
           {/* View Toggle */}
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 border w-full sm:w-auto">
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50 border self-end sm:self-auto">
             <Button
               variant={viewType === "charts" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewType("charts")}
-              className="gap-2 flex-1 sm:flex-initial h-9"
+              className="gap-1.5 h-8 sm:h-9 text-xs sm:text-sm"
             >
-              <LayoutGrid className="h-4 w-4" />
-              <span className="sm:inline">Charts</span>
+              <LayoutGrid className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Charts</span>
             </Button>
             <Button
               variant={viewType === "calendar" ? "default" : "ghost"}
               size="sm"
               onClick={() => setViewType("calendar")}
-              className="gap-2 flex-1 sm:flex-initial h-9"
+              className="gap-1.5 h-8 sm:h-9 text-xs sm:text-sm"
             >
-              <Calendar className="h-4 w-4" />
-              <span className="sm:inline">Calendar</span>
+              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Calendar</span>
             </Button>
           </div>
         </motion.div>
 
         {/* Global Filter Bar */}
-        <div className="pb-4">
-          <AnimatedCard delay={0.05}>
-            <GlobalFilterBar />
-          </AnimatedCard>
-        </div>
+        <AnimatedCard delay={0.05}>
+          <GlobalFilterBar />
+        </AnimatedCard>
 
         {/* Calendar View */}
         {viewType === "calendar" && (
@@ -439,14 +427,9 @@ export function ReportsView({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <SummaryCard
                 title="Net P&L"
-                value={`${metrics.netPnL >= 0 ? "+" : "-"}${formatCurrency(
-                  metrics.netPnL
-                )}`}
-                compactValue={formatCompactCurrency(metrics.netPnL, true)}
+                value={`${metrics.netPnL >= 0 ? "+" : "-"}${formatCurrency(metrics.netPnL)}`}
                 icon={metrics.netPnL >= 0 ? TrendingUp : TrendingDown}
-                iconColor={
-                  metrics.netPnL >= 0 ? "text-green-500" : "text-red-500"
-                }
+                iconColor={metrics.netPnL >= 0 ? "text-green-500" : "text-red-500"}
                 valueColor={getPnLColor(metrics.netPnL)}
                 delay={0.1}
               />
@@ -493,7 +476,7 @@ export function ReportsView({
             </div>
 
             {/* Secondary Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               <SummaryCard
                 title="Max Win Streak"
                 value={maxWinStreak}
@@ -511,7 +494,6 @@ export function ReportsView({
               <SummaryCard
                 title="Max Drawdown"
                 value={`-${formatCurrency(maxDrawdown)}`}
-                compactValue={`-${formatCompactCurrency(maxDrawdown).replace('$', '$')}`}
                 icon={TrendingDown}
                 iconColor="text-orange-500"
                 valueColor={maxDrawdown === 0 ? "text-green-500" : "text-red-500"}
@@ -520,7 +502,6 @@ export function ReportsView({
               <SummaryCard
                 title="Avg Holding"
                 value={`${avgHoldingPeriod.toFixed(1)} days`}
-                compactValue={`${avgHoldingPeriod.toFixed(1)}d`}
                 icon={Clock}
                 iconColor="text-cyan-500"
                 delay={0.45}
@@ -1154,93 +1135,56 @@ export function ReportsView({
               </Card>
             </AnimatedCard>
 
+            {/* Tag Performance Analysis */}
+            <AnimatedCard delay={0.88}>
+              <div className="space-y-4 pt-4 border-t border-dashed">
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-purple-500" />
+                  <h2 className="text-xl font-semibold">Tag Performance Analysis</h2>
+                </div>
+                <TagPerformance isDemo={isDemo} />
+              </div>
+            </AnimatedCard>
+
             {/* Stats Summary */}
             <AnimatedCard delay={0.85}>
               <Card className="card-hover bg-gradient-to-br from-primary/5 via-background to-background">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-primary" />
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                     Key Statistics
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 sm:p-6 pt-0">
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
                     <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
-                      <p className="text-xs sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">
-                        Total Trades
-                      </p>
-                      <p className="text-lg sm:text-2xl font-bold text-foreground">
-                        {metrics.totalTrades}
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-1">Total Trades</p>
+                      <p className="text-lg sm:text-2xl font-bold text-foreground">{metrics.totalTrades}</p>
+                    </div>
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-1">Avg Win</p>
+                      <p className="text-lg sm:text-2xl font-bold text-green-500">+{formatCurrency(metrics.avgWin)}</p>
+                    </div>
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-1">Avg Loss</p>
+                      <p className="text-lg sm:text-2xl font-bold text-red-500">-{formatCurrency(metrics.avgLoss)}</p>
+                    </div>
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-1">MTD P&L</p>
+                      <p className={cn("text-lg sm:text-2xl font-bold", mtdPnL >= 0 ? "text-green-500" : "text-red-500")}>
+                        {mtdPnL >= 0 ? "+" : "-"}{formatCurrency(mtdPnL)}
                       </p>
                     </div>
                     <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
-                      <p className="text-xs sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">
-                        Avg Win
-                      </p>
-                      <p className="font-bold text-green-500">
-                        <span className="hidden sm:inline text-2xl">+{formatCurrency(metrics.avgWin)}</span>
-                        <span className="sm:hidden text-lg">{formatCompactCurrency(metrics.avgWin, true)}</span>
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-1">YTD P&L</p>
+                      <p className={cn("text-lg sm:text-2xl font-bold", ytdPnL >= 0 ? "text-green-500" : "text-red-500")}>
+                        {ytdPnL >= 0 ? "+" : "-"}{formatCurrency(ytdPnL)}
                       </p>
                     </div>
                     <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
-                      <p className="text-xs sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">
-                        Avg Loss
-                      </p>
-                      <p className="font-bold text-red-500">
-                        <span className="hidden sm:inline text-2xl">-{formatCurrency(metrics.avgLoss)}</span>
-                        <span className="sm:hidden text-lg">{formatCompactCurrency(-metrics.avgLoss, true)}</span>
-                      </p>
-                    </div>
-                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
-                      <p className="text-xs sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">
-                        MTD P&L
-                      </p>
-                      <p
-                        className={cn(
-                          "font-bold",
-                          mtdPnL >= 0 ? "text-green-500" : "text-red-500"
-                        )}
-                      >
-                        <span className="hidden sm:inline text-2xl">{mtdPnL >= 0 ? "+" : "-"}{formatCurrency(mtdPnL)}</span>
-                        <span className="sm:hidden text-lg">{formatCompactCurrency(mtdPnL, true)}</span>
-                      </p>
-                    </div>
-                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
-                      <p className="text-xs sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">
-                        YTD P&L
-                      </p>
-                      <p
-                        className={cn(
-                          "font-bold",
-                          ytdPnL >= 0 ? "text-green-500" : "text-red-500"
-                        )}
-                      >
-                        <span className="hidden sm:inline text-2xl">{ytdPnL >= 0 ? "+" : "-"}{formatCurrency(ytdPnL)}</span>
-                        <span className="sm:hidden text-lg">{formatCompactCurrency(ytdPnL, true)}</span>
-                      </p>
-                    </div>
-                    <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
-                      <p className="text-xs sm:text-sm text-muted-foreground mb-0.5 sm:mb-1">
-                        Expectancy
-                      </p>
-                      <p
-                        className={cn(
-                          "font-bold",
-                          metrics.netPnL >= 0 ? "text-green-500" : "text-red-500"
-                        )}
-                      >
-                        {metrics.totalTrades > 0 ? (
-                          <>
-                            <span className="hidden sm:inline text-2xl">
-                              {metrics.netPnL >= 0 ? "+" : "-"}{formatCurrency(metrics.netPnL / metrics.totalTrades)}
-                            </span>
-                            <span className="sm:hidden text-lg">
-                              {formatCompactCurrency(metrics.netPnL / metrics.totalTrades, true)}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-lg sm:text-2xl">—</span>
-                        )}
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-1">Expectancy</p>
+                      <p className={cn("text-lg sm:text-2xl font-bold", metrics.netPnL >= 0 ? "text-green-500" : "text-red-500")}>
+                        {metrics.totalTrades > 0 ? `${metrics.netPnL >= 0 ? "+" : "-"}${formatCurrency(metrics.netPnL / metrics.totalTrades)}` : "—"}
                       </p>
                     </div>
                   </div>

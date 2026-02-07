@@ -15,14 +15,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Loader2,
   Trash2,
-  BookOpenCheck,
-  History,
+  BookOpen,
+  Sparkles,
 } from "lucide-react";
 import { format } from "date-fns";
 import { TradeDetailSheet } from "@/components/trade-detail-sheet";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
-import { cn, formatCompactCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { useSort } from "@/hooks/use-sort";
@@ -118,19 +118,13 @@ function MobileTradeCard({
         <div>
           <div className="text-muted-foreground text-xs">Price</div>
           <div className="font-mono font-semibold">
-            {trade.price >= 1000
-              ? formatCompactCurrency(trade.price).replace(/^\$/, '$')
-              : `$${trade.price.toFixed(2)}`
-            }
+            ${trade.price.toFixed(2)}
           </div>
         </div>
         <div>
           <div className="text-muted-foreground text-xs">Value</div>
           <div className="font-mono font-semibold text-muted-foreground">
-            {(trade.quantity * trade.price) >= 1000
-              ? formatCompactCurrency(trade.quantity * trade.price).replace(/^\$/, '$')
-              : `$${(trade.quantity * trade.price).toFixed(2)}`
-            }
+            ${(trade.quantity * trade.price).toFixed(2)}
           </div>
         </div>
         {!isDemo && (
@@ -310,7 +304,7 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
           <div className="space-y-0.5 sm:space-y-1">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2 sm:gap-3">
               <span className="text-gradient">Trade Journal</span>
-              <BookOpenCheck className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500 float" />
+              <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500 float" />
               {isDemo && (
                 <span className="text-xs sm:text-sm font-normal text-muted-foreground ml-2">
                   (Demo Mode)
@@ -359,7 +353,7 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
           <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
             <CardHeader className="pb-2 p-4 sm:p-6">
               <CardTitle className="text-base sm:text-lg font-medium flex items-center gap-2">
-                <History className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
                 Recent Activity
               </CardTitle>
             </CardHeader>
@@ -516,7 +510,7 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
           <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
             <CardHeader className="pb-2 p-4">
               <CardTitle className="text-base font-medium flex items-center gap-2">
-                <History className="h-4 w-4 text-primary" />
+                <Sparkles className="h-4 w-4 text-amber-500" />
                 Recent Activity
               </CardTitle>
             </CardHeader>
