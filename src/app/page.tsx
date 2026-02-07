@@ -237,14 +237,14 @@ export default function LandingPage() {
                                 className="w-full max-w-5xl mt-8 sm:mt-12 relative"
                             >
                                 <div className="rounded-lg sm:rounded-xl overflow-hidden shadow-2xl shadow-black/40 border border-white/10 bg-[#0f1f18] p-1 sm:p-2 md:p-4">
-                                    <div className="rounded-md sm:rounded-lg overflow-hidden relative">
-                                        <Image
-                                            src="/dashboard-preview.png"
-                                            alt="Artha Dashboard Preview"
-                                            width={1024}
-                                            height={1024}
-                                            className="w-full h-auto"
-                                            priority
+                                    <div className="rounded-md sm:rounded-lg overflow-hidden relative aspect-video bg-[#0f1f18]">
+                                        <video
+                                            src="/showcase.mp4?v=1"
+                                            autoPlay
+                                            loop
+                                            muted
+                                            playsInline
+                                            className="w-full h-full object-cover"
                                         />
                                     </div>
                                 </div>
