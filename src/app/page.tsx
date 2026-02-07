@@ -196,9 +196,7 @@ export default function LandingPage() {
                                 <p className="text-base sm:text-lg md:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0">
                                     <dfn className="not-italic text-white">Artha is defined as</dfn> the beautiful, automated trading journal designed to help serious traders identify winning setups and master their psychology.
                                 </p>
-                                <div className="mt-4 text-[10px] uppercase tracking-widest text-white/30 font-medium">
-                                    Last Updated: February 6, 2026 &middot; By Gautham Kanaparthy
-                                </div>
+
                             </motion.div>
 
                             <motion.div
