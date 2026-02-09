@@ -26,7 +26,9 @@ export async function POST(req: Request) {
                 email: true,
                 stripeCustomerId: true,
                 subscriptionStatus: true,
-                isGrandfathered: true
+                isGrandfathered: true,
+                trialEndsAt: true,
+                stripeSubscriptionId: true,
             }
         });
 
@@ -34,18 +36,37 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        // 1b. Block already-subscribed users (including PAST_DUE to prevent double billing)
-        if (['ACTIVE', 'TRIALING', 'LIFETIME', 'GRANDFATHERED', 'PAST_DUE'].includes(user.subscriptionStatus || '')) {
+        // 1b. Block users who already have active paid access or pending payment issues
+        // TRIALING is now ALLOWED (reverse trial — user is locking in their plan)
+        // But block TRIALING users who already committed (have a Stripe subscription)
+        if (['ACTIVE', 'LIFETIME', 'GRANDFATHERED', 'PAST_DUE'].includes(user.subscriptionStatus || '')) {
             return NextResponse.json({
                 error: 'You already have an active subscription or Pro access.'
             }, { status: 400 });
         }
 
+        if (user.subscriptionStatus === 'TRIALING' && user.stripeSubscriptionId) {
+            return NextResponse.json({
+                error: 'You have already locked in your plan. It will start when your trial ends.'
+            }, { status: 400 });
+        }
+
+        // Block CANCELLED users who still have an active subscription (should resume instead)
+        if (user.subscriptionStatus === 'CANCELLED' && user.stripeSubscriptionId) {
+            return NextResponse.json({
+                error: 'Your subscription is scheduled to cancel. Please resume it from Settings instead of creating a new one.'
+            }, { status: 400 });
+        }
+
         // 2. Determine Tier (Founder vs Regular)
+        // Only count users who have committed to pay (not app-only trialing users)
         const activeFoundersCount = await prisma.user.count({
             where: {
                 subscriptionTier: 'FOUNDER',
-                subscriptionStatus: { in: ['ACTIVE', 'LIFETIME', 'TRIALING'] }
+                OR: [
+                    { subscriptionStatus: { in: ['ACTIVE', 'LIFETIME'] } },
+                    { subscriptionStatus: 'TRIALING', stripeSubscriptionId: { not: null } },
+                ]
             }
         });
 
@@ -92,10 +113,15 @@ export async function POST(req: Request) {
             success_url: successUrl || `${process.env.APP_URL || process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://arthatrades.com'}/dashboard?subscription=success`,
             cancel_url: cancelUrl || `${process.env.APP_URL || process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://arthatrades.com'}/settings?subscription=cancelled`,
 
-            // Trial settings (only for recurring subscriptions)
+            // Subscription settings (only for recurring subscriptions)
             ...(isLifetime ? {} : {
                 subscription_data: {
-                    trial_period_days: PRICING_CONFIG.TRIAL_DAYS,
+                    // Reverse trial: if user is TRIALING, carry over remaining trial days
+                    // If user is FREE/NONE/EXPIRED/CANCELLED, charge immediately (no trial)
+                    ...(user.subscriptionStatus === 'TRIALING' && user.trialEndsAt && user.trialEndsAt.getTime() > Date.now()
+                        ? { trial_end: Math.floor(user.trialEndsAt.getTime() / 1000) }
+                        : {}
+                    ),
                     metadata: {
                         userId: userId,
                         plan: plan,

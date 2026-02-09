@@ -20,7 +20,7 @@ interface PaywallDialogProps {
 export function PaywallDialog({ open, onOpenChange, feature = "this feature" }: PaywallDialogProps) {
     const router = useRouter();
 
-    const handleStartTrial = () => {
+    const handleUpgrade = () => {
         onOpenChange(false);
         router.push("/pricing");
     };
@@ -33,10 +33,10 @@ export function PaywallDialog({ open, onOpenChange, feature = "this feature" }: 
                         <Sparkles className="h-6 w-6 text-primary" />
                     </div>
                     <DialogTitle className="text-center text-2xl">
-                        Start Your Free Trial
+                        Upgrade to Pro
                     </DialogTitle>
                     <DialogDescription className="text-center text-base pt-2">
-                        Connect your broker and unlock automated trade tracking with a 30-day free trial.
+                        Unlock automated trade tracking, AI insights, and advanced analytics to level up your trading.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -55,8 +55,8 @@ export function PaywallDialog({ open, onOpenChange, feature = "this feature" }: 
                 </div>
 
                 <div className="space-y-2 pt-4">
-                    <Button onClick={handleStartTrial} className="w-full" size="lg">
-                        Start 30-Day Free Trial
+                    <Button onClick={handleUpgrade} className="w-full" size="lg">
+                        View Plans
                     </Button>
                     <Button
                         variant="ghost"
@@ -68,7 +68,7 @@ export function PaywallDialog({ open, onOpenChange, feature = "this feature" }: 
                 </div>
 
                 <p className="text-xs text-center text-muted-foreground pt-2">
-                    No credit card required for trial. Cancel anytime.
+                    No credit card required. Cancel anytime.
                 </p>
             </DialogContent>
         </Dialog>

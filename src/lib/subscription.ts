@@ -13,6 +13,10 @@ export type SubscriptionInfo = {
     trialDaysRemaining: number | null;
     currentPeriodEnd: Date | null;
     canAccessPro: boolean;
+    hasCommitted: boolean;   // Has CC on file (stripeSubscriptionId set during trial)
+    isFreeUser: boolean;     // On free tier (trial expired or subscription ended)
+    trialEndsAt: Date | null;
+    lastSyncedAt: Date | null;
 };
 
 export async function getSubscriptionInfo(userId: string): Promise<SubscriptionInfo> {
@@ -26,6 +30,12 @@ export async function getSubscriptionInfo(userId: string): Promise<SubscriptionI
             isGrandfathered: true,
             trialEndsAt: true,
             currentPeriodEnd: true,
+            stripeSubscriptionId: true,
+            brokerAccounts: {
+                select: { lastSyncedAt: true },
+                orderBy: { lastSyncedAt: 'desc' },
+                take: 1,
+            },
         }
     });
 
@@ -42,6 +52,10 @@ export async function getSubscriptionInfo(userId: string): Promise<SubscriptionI
             trialDaysRemaining: null,
             currentPeriodEnd: null,
             canAccessPro: false,
+            hasCommitted: false,
+            isFreeUser: true,
+            trialEndsAt: null,
+            lastSyncedAt: null,
         };
     }
 
@@ -68,6 +82,17 @@ export async function getSubscriptionInfo(userId: string): Promise<SubscriptionI
         || isTrialingAndValid
         || isCancelledButStillActive;
 
+    // Has CC on file — TRIALING user who went through Checkout
+    const hasCommitted = user.subscriptionStatus === 'TRIALING'
+        && !!user.stripeSubscriptionId;
+
+    // On free tier — trial expired or subscription ended
+    const isFreeUser = (
+        user.subscriptionStatus === 'FREE'
+        || user.subscriptionStatus === 'EXPIRED'
+        || user.subscriptionStatus === 'NONE'
+    ) && !canAccessPro;
+
     return {
         status: user.subscriptionStatus,
         plan: user.subscriptionPlan,
@@ -80,6 +105,10 @@ export async function getSubscriptionInfo(userId: string): Promise<SubscriptionI
         trialDaysRemaining,
         currentPeriodEnd: user.currentPeriodEnd,
         canAccessPro,
+        hasCommitted,
+        isFreeUser,
+        trialEndsAt: user.trialEndsAt,
+        lastSyncedAt: user.brokerAccounts[0]?.lastSyncedAt ?? null,
     };
 }
 

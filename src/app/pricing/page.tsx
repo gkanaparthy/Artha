@@ -51,7 +51,7 @@ export default function PricingPage() {
                             Pricing Plans for Every Trader
                         </h1>
                         <p className="text-[#2E4A3B]/60 text-center text-lg max-w-2xl mx-auto">
-                            Choose the plan that fits your trading journey. No hidden fees, cancel anytime.
+                            Every new user gets 30 days of full Pro access free. No credit card required.
                         </p>
                     </div>
                     <PricingSection className="py-10" />

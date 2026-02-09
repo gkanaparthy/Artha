@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { SubscriptionStatus, SubscriptionPlan, SubscriptionTier, PaymentStatus } from '@prisma/client';
 import { PRICING_CONFIG, getPlanFromPriceId } from '@/config/pricing';
 import {
-    sendTrialWelcomeEmail,
+    sendSubscriptionActivatedEmail,
     sendLifetimeWelcomeEmail,
     sendPaymentFailedEmail
 } from '@/lib/email';
@@ -148,50 +148,60 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
             }
         }
     } else {
-        // Subscriptions - set status to TRIALING immediately, don't wait for subscription.created webhook
+        // Reverse trial: user is upgrading during trial or from free tier
+        // Do NOT reset trialStartedAt or trialEndsAt — these were set on signup
         const user = await prisma.user.findUnique({
             where: { id: userId },
             select: { trialStartedAt: true, email: true, name: true, subscriptionStatus: true }
         });
 
-        const isFirstSubscription = user && !user.trialStartedAt && (user.subscriptionStatus === 'NONE' || user.subscriptionStatus === 'EXPIRED');
-
         await prisma.user.update({
             where: { id: userId },
             data: {
                 stripeSubscriptionId: session.subscription as string,
-                subscriptionStatus: 'TRIALING',
+                // Keep TRIALING if user is in trial, otherwise the subscription.updated webhook will set ACTIVE
+                subscriptionStatus: user?.subscriptionStatus === 'TRIALING' ? 'TRIALING' : 'ACTIVE',
                 subscriptionPlan: plan,
                 subscriptionTier: tier,
                 isFounder: tier === 'FOUNDER',
-                trialStartedAt: isFirstSubscription ? new Date() : undefined,
-                trialEndsAt: isFirstSubscription ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : undefined,
+                // Never reset trial dates — they were set on signup
             }
         });
 
-        // Send welcome email only for first-time subscription (use trialStartedAt as the guard)
-        if (isFirstSubscription && user.email) {
-            await sendTrialWelcomeEmail(user.email, user.name?.split(' ')[0]);
+        // Send appropriate welcome email
+        if (user && user.email) {
+            const isUpgradeFromFree = ['FREE', 'EXPIRED', 'NONE'].includes(user.subscriptionStatus);
+            if (isUpgradeFromFree) {
+                await sendSubscriptionActivatedEmail(user.email, user.name?.split(' ')[0]);
+            }
+            // TRIALING users already got trial welcome on signup — no email needed
         }
     }
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-    const customerId = subscription.customer as string;
+    const customerId = typeof subscription.customer === 'string'
+        ? subscription.customer
+        : subscription.customer?.id;
+    if (!customerId) return;
+
     const user = await prisma.user.findUnique({
         where: { stripeCustomerId: customerId }
     });
 
     if (!user) return;
 
+    // Never overwrite LIFETIME or GRANDFATHERED status from subscription webhooks
+    if (['LIFETIME', 'GRANDFATHERED'].includes(user.subscriptionStatus)) return;
+
     let status: SubscriptionStatus = 'ACTIVE';
     if (subscription.status === 'trialing') status = 'TRIALING';
     if (subscription.status === 'past_due') status = 'PAST_DUE';
     if (subscription.status === 'canceled') status = 'CANCELLED';
-    if (subscription.status === 'unpaid') status = 'EXPIRED';
+    if (subscription.status === 'unpaid') status = 'FREE';
 
-    // If cancel_at_period_end is true, we mark as CANCELLED even if still active
-    if (subscription.cancel_at_period_end && status === 'ACTIVE') {
+    // If cancel_at_period_end is true, mark as CANCELLED even if still active or trialing
+    if (subscription.cancel_at_period_end && (status === 'ACTIVE' || status === 'TRIALING')) {
         status = 'CANCELLED';
     }
 
@@ -200,6 +210,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
         current_period_end: number;
         current_period_start: number;
     };
+
+    // Guard against empty subscription items
+    if (!subscription.items.data[0]) return;
 
     const priceId = subscription.items.data[0].price.id;
     const plan = getPlanFromPriceId(priceId);
@@ -212,6 +225,11 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
         if (planConfig.priceIds.REGULAR === priceId) tier = 'REGULAR';
     }
 
+    // Only overwrite trialEndsAt if Stripe has a value; preserve app-set trial dates
+    const trialEndsAt = subscription.trial_end
+        ? new Date(subscription.trial_end * 1000)
+        : user.trialEndsAt;
+
     await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -220,7 +238,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
             subscriptionTier: tier || user.subscriptionTier,
             stripeSubscriptionId: subscription.id,
             stripePriceId: priceId,
-            trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+            trialEndsAt,
             currentPeriodEnd: new Date(sub.current_period_end * 1000),
             currentPeriodStart: new Date(sub.current_period_start * 1000),
             cancelledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
@@ -229,28 +247,39 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-    const customerId = subscription.customer as string;
+    const customerId = typeof subscription.customer === 'string'
+        ? subscription.customer
+        : subscription.customer?.id;
+    if (!customerId) return;
+
     const user = await prisma.user.findUnique({
         where: { stripeCustomerId: customerId }
     });
 
     if (!user) return;
 
+    // Never downgrade LIFETIME or GRANDFATHERED users
+    if (['LIFETIME', 'GRANDFATHERED'].includes(user.subscriptionStatus)) return;
+
+    // Reverse trial: downgrade to FREE tier (not EXPIRED)
+    // User keeps free tier access — can view data, just can't use Pro features
     await prisma.user.update({
         where: { id: user.id },
         data: {
-            subscriptionStatus: 'EXPIRED',
+            subscriptionStatus: 'FREE',
             stripeSubscriptionId: null,
-            currentPeriodEnd: new Date(subscription.ended_at! * 1000),
+            currentPeriodEnd: subscription.ended_at ? new Date(subscription.ended_at * 1000) : new Date(),
         }
     });
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
     if (!invoice.customer) return;
+    const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
+    if (!customerId) return;
 
     const user = await prisma.user.findUnique({
-        where: { stripeCustomerId: invoice.customer as string }
+        where: { stripeCustomerId: customerId }
     });
 
     if (!user) return;
@@ -278,9 +307,11 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     if (!invoice.customer) return;
+    const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
+    if (!customerId) return;
 
     const user = await prisma.user.findUnique({
-        where: { stripeCustomerId: invoice.customer as string }
+        where: { stripeCustomerId: customerId }
     });
 
     if (!user) return;

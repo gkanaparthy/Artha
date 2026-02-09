@@ -317,12 +317,13 @@ model SubscriptionEvent {
 }
 
 enum SubscriptionStatus {
-  NONE           // Never subscribed
-  TRIALING       // In free trial
+  NONE           // Legacy: pre-reverse-trial users
+  TRIALING       // In free trial (auto on signup, 30 days)
   ACTIVE         // Paying subscriber
   PAST_DUE       // Payment failed, grace period
   CANCELLED      // Cancelled, access until period end
-  EXPIRED        // Subscription ended
+  FREE           // Trial expired or subscription ended (free tier)
+  EXPIRED        // Legacy: treated same as FREE
   LIFETIME       // Lifetime deal purchased
   GRANDFATHERED  // Free forever (early supporters)
 }

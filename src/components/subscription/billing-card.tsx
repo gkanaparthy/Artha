@@ -78,8 +78,8 @@ export function BillingCard({ subscription }: BillingCardProps) {
     const getPlanName = () => {
         if (isGrandfathered) return "Early Adopter (Free Forever)";
         if (isLifetime) return "Lifetime Pro";
-        if (status === 'TRIALING') return "Free Trial";
-        if (status === 'NONE') return "Free Tier";
+        if (status === 'TRIALING') return subscription.hasCommitted ? "Pro Trial (CC on file)" : "Pro Trial";
+        if (status === 'FREE' || status === 'NONE' || status === 'EXPIRED') return "Free Plan";
         return `Artha Pro (${plan === 'ANNUAL' ? 'Annual' : 'Monthly'})`;
     };
 
@@ -88,6 +88,7 @@ export function BillingCard({ subscription }: BillingCardProps) {
         if (status === 'TRIALING') return "bg-blue-500/10 text-blue-500 border-blue-500/30";
         if (status === 'PAST_DUE') return "bg-red-500/10 text-red-500 border-red-500/30";
         if (status === 'CANCELLED') return "bg-orange-500/10 text-orange-500 border-orange-500/30";
+        if (status === 'FREE') return "bg-muted text-muted-foreground border-muted";
         return "bg-muted text-muted-foreground";
     };
 
@@ -104,7 +105,7 @@ export function BillingCard({ subscription }: BillingCardProps) {
                             <CardDescription className="text-xs sm:text-sm">Manage your plan and payment methods</CardDescription>
                         </div>
                     </div>
-                    {!isGrandfathered && status !== 'NONE' && (
+                    {!isGrandfathered && status !== 'NONE' && status !== 'FREE' && status !== 'EXPIRED' && (
                         <Button
                             variant="outline"
                             size="sm"
@@ -139,11 +140,15 @@ export function BillingCard({ subscription }: BillingCardProps) {
                                 : status === 'ACTIVE'
                                     ? `Next billing date: ${currentPeriodEnd ? format(new Date(currentPeriodEnd), 'PPP') : 'N/A'}`
                                     : status === 'TRIALING'
-                                        ? `Trial ends in ${subscription.trialDaysRemaining ?? 0} days`
-                                        : "Unlock pro features to grow your trading account."}
+                                        ? subscription.hasCommitted
+                                            ? `Billing starts after trial ends (${subscription.trialDaysRemaining ?? 0} days)`
+                                            : `${subscription.trialDaysRemaining ?? 0} days left — upgrade to keep Pro access`
+                                        : (status === 'FREE' || status === 'NONE' || status === 'EXPIRED')
+                                            ? "Your trial has ended. Upgrade to keep syncing trades and unlock Pro features."
+                                            : "Unlock pro features to grow your trading account."}
                         </p>
                     </div>
-                    {(status === 'NONE' || status === 'EXPIRED') && (
+                    {(status === 'FREE' || status === 'NONE' || status === 'EXPIRED') && (
                         <Button className="font-bold bg-primary hover:bg-primary/90 rounded-xl" asChild>
                             <a href="/pricing">Upgrade Now</a>
                         </Button>
@@ -159,7 +164,7 @@ export function BillingCard({ subscription }: BillingCardProps) {
                             Resume Subscription
                         </Button>
                     )}
-                    {(status === 'ACTIVE' || status === 'TRIALING') && plan !== 'LIFETIME' && !isGrandfathered && (
+                    {(status === 'ACTIVE' || (status === 'TRIALING' && subscription.hasCommitted)) && plan !== 'LIFETIME' && !isGrandfathered && (
                         <Button
                             variant="ghost"
                             className="text-xs text-muted-foreground hover:text-destructive"

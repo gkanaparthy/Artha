@@ -7,6 +7,7 @@ import { Sparkles, RefreshCcw, AlertTriangle, Clock, BrainCircuit } from "lucide
 import { InsightRenderer } from "./insight-renderer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { PaywallDialog } from "@/components/paywall-dialog";
 
 interface AIInsightsCardProps {
     startDate?: string;
@@ -47,6 +48,7 @@ export function AIInsightsCard({ startDate, endDate, accountId, isDemo = false }
     const [insights, setInsights] = useState<{ content: string; provider: string; timestamp: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [persona, setPersona] = useState<'PROFESSIONAL' | 'CANDOR'>('PROFESSIONAL');
+    const [showPaywall, setShowPaywall] = useState(false);
 
     // Fetch user persona once
     useState(() => {
@@ -86,6 +88,11 @@ export function AIInsightsCard({ startDate, endDate, accountId, isDemo = false }
             }
 
             const response = await fetch(`/api/insights?${params.toString()}`);
+
+            if (response.status === 402) {
+                setShowPaywall(true);
+                return;
+            }
 
             if (response.status === 429) {
                 const data = await response.json();
@@ -214,6 +221,11 @@ export function AIInsightsCard({ startDate, endDate, accountId, isDemo = false }
                     </div>
                 )}
             </CardContent>
+            <PaywallDialog
+                open={showPaywall}
+                onOpenChange={setShowPaywall}
+                feature="AI insights"
+            />
         </Card>
     );
 }

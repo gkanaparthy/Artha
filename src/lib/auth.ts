@@ -134,6 +134,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     async createUser(message) {
       console.log('[Auth] 🆕 New user created:', message.user.email);
+
+      // Auto-start 30-day reverse trial for new users
+      const trialDays = 30;
+      const now = new Date();
+      const trialEndsAt = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
+
+      try {
+        await prisma.user.update({
+          where: { id: message.user.id },
+          data: {
+            subscriptionStatus: 'TRIALING',
+            trialStartedAt: now,
+            trialEndsAt: trialEndsAt,
+          },
+        });
+        console.log('[Auth] ✅ Auto-trial started for:', message.user.email, 'ends:', trialEndsAt.toISOString());
+
+        // Send trial welcome email
+        if (message.user.email) {
+          const { sendTrialWelcomeEmail } = await import("./email");
+          await sendTrialWelcomeEmail(message.user.email, message.user.name?.split(' ')[0]);
+        }
+      } catch (e) {
+        console.error('[Auth] Failed to start auto-trial for:', message.user.email, e);
+      }
     },
     async session(message) {
       // Log session checks (can be noisy, only in dev)

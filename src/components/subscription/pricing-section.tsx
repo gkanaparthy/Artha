@@ -26,6 +26,8 @@ export function PricingSection({
     const [loading, setLoading] = useState<string | null>(null);
     const [dynamicFounderSpots, setDynamicFounderSpots] = useState<number | null>(null);
     const [dynamicGrandfatheredCount, setDynamicGrandfatheredCount] = useState<number | null>(null);
+    const [userStatus, setUserStatus] = useState<string | null>(null);
+    const [hasCommitted, setHasCommitted] = useState(false);
     const router = useRouter();
     const { data: session } = useSession();
 
@@ -47,13 +49,61 @@ export function PricingSection({
         fetchStats();
     }, []);
 
+    useEffect(() => {
+        if (!session) return;
+        const fetchSub = async () => {
+            try {
+                const res = await fetch('/api/subscription');
+                if (res.ok) {
+                    const data = await res.json();
+                    setUserStatus(data.status);
+                    setHasCommitted(data.hasCommitted);
+                }
+            } catch (err) {
+                // Ignore — will show default CTA
+            }
+        };
+        fetchSub();
+    }, [session]);
+
     const spotsRemaining = dynamicFounderSpots ?? founderSpotsRemaining;
     const isFounderActive = spotsRemaining > 0;
     const grandfatheredDisplayCount = dynamicGrandfatheredCount ?? 23;
 
+    // Already has full access — no need to upgrade
+    const isAlreadyPro = ['ACTIVE', 'LIFETIME', 'GRANDFATHERED'].includes(userStatus || '');
+    // In trial with CC on file
+    const isCommittedTrialing = userStatus === 'TRIALING' && hasCommitted;
+
+    const getProButtonText = () => {
+        if (!session) return "Start 30-Day Free Trial";
+        if (isAlreadyPro) return "You're on Pro";
+        if (isCommittedTrialing) return "Plan Locked In";
+        if (userStatus === 'TRIALING') return "Lock In Your Plan";
+        if (userStatus === 'FREE' || userStatus === 'EXPIRED' || userStatus === 'NONE') return "Upgrade to Pro";
+        if (userStatus === 'CANCELLED') return "Resubscribe";
+        return "Get Started";
+    };
+
+    const getLifetimeButtonText = () => {
+        if (!session) return "Get Lifetime Access";
+        if (userStatus === 'LIFETIME') return "You Have Lifetime Access";
+        return "Get Lifetime Access";
+    };
+
     const handleSelectPlan = async (plan: "MONTHLY" | "ANNUAL" | "LIFETIME") => {
         if (!session) {
             router.push("/login?callbackUrl=/pricing");
+            return;
+        }
+
+        if (isAlreadyPro || isCommittedTrialing) {
+            toast.info("You already have Pro access!");
+            return;
+        }
+
+        if (plan === 'LIFETIME' && userStatus === 'LIFETIME') {
+            toast.info("You already have Lifetime access!");
             return;
         }
 
@@ -95,8 +145,8 @@ export function PricingSection({
                             <span className="italic text-[#E59889]">Trading Edge</span>
                         </h2>
                         <p className="text-lg text-[#2E4A3B]/70 max-w-2xl mx-auto mb-10">
-                            Stop guessing. Start knowing. Artha Pro gives you the behavioral insights
-                            you need to finally trade with consistency.
+                            Stop guessing. Start knowing. Lock in your plan during your free trial
+                            and you won&apos;t be charged until it ends.
                         </p>
 
                         {/* Billing Switcher */}
@@ -142,9 +192,10 @@ export function PricingSection({
                             "Email support",
                             "Custom psychology tags"
                         ]}
-                        buttonText={`Start 1 Month Free Trial`}
+                        buttonText={getProButtonText()}
                         onSelect={() => handleSelectPlan(billingCycle)}
                         loading={loading === billingCycle}
+                        disabled={isAlreadyPro || isCommittedTrialing}
                         tag={isFounderActive ? "FOUNDER PRICING" : undefined}
                         highlighted={true}
                     />
@@ -164,9 +215,10 @@ export function PricingSection({
                             "Priority feature requests",
                             "1-on-1 onboarding session"
                         ]}
-                        buttonText="Get Lifetime Access"
+                        buttonText={getLifetimeButtonText()}
                         onSelect={() => handleSelectPlan("LIFETIME")}
                         loading={loading === "LIFETIME"}
+                        disabled={userStatus === 'LIFETIME'}
                         tag="BEST VALUE"
                     />
 

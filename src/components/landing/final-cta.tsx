@@ -32,7 +32,7 @@ export function FinalCTA() {
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Link href="/login">
                             <Button className="h-14 px-10 rounded-full bg-[#4ADE80] hover:bg-[#4ADE80]/90 text-[#1A2F25] font-bold text-lg shadow-lg shadow-[#4ADE80]/20 hover:shadow-xl hover:shadow-[#4ADE80]/30 transition-all group">
-                                Start Your Free Trial
+                                Start Free for 30 Days
                                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                             </Button>
                         </Link>
@@ -44,7 +44,7 @@ export function FinalCTA() {
                     </div>
 
                     <p className="text-sm text-white/40 mt-6">
-                        30-day free trial &middot; Cancel anytime &middot; Secure payment
+                        30-day free trial &middot; No credit card required
                     </p>
                 </motion.div>
             </div>

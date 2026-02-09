@@ -23,10 +23,21 @@ export async function GET(request: Request) {
 
         console.log("[Daily Cron] Starting...");
         const results = {
+            trialExpiry: {} as any,
             healthCheck: {} as any,
             sync: {} as any,
             timestamp: new Date().toISOString()
         };
+
+        // ============================================
+        // STEP 0: Expire Trials (run first, before sync)
+        // ============================================
+        try {
+            results.trialExpiry = await expireTrials();
+        } catch (error) {
+            console.error("[Daily Cron] Trial expiry failed:", error);
+            results.trialExpiry = { error: error instanceof Error ? error.message : "Failed" };
+        }
 
         // ============================================
         // STEP 1: Check Connection Health
@@ -39,7 +50,7 @@ export async function GET(request: Request) {
         }
 
         // ============================================
-        // STEP 2: Sync All Users
+        // STEP 2: Sync All Users (Pro users only)
         // ============================================
         try {
             results.sync = await syncAllUsers();
@@ -55,6 +66,52 @@ export async function GET(request: Request) {
         console.error("[Daily Cron] Fatal error:", error);
         return NextResponse.json({ error: "Failed" }, { status: 500 });
     }
+}
+
+// ============================================
+// HELPER: Expire app-only trials → FREE
+// ============================================
+async function expireTrials() {
+    // Find TRIALING users whose trial expired AND who have no Stripe subscription
+    // (Users with stripeSubscriptionId are handled by Stripe webhooks)
+    const expiredTrials = await prisma.user.findMany({
+        where: {
+            subscriptionStatus: 'TRIALING',
+            trialEndsAt: { lt: new Date() },
+            stripeSubscriptionId: null,
+        },
+        select: { id: true, email: true, trialEndsAt: true },
+    });
+
+    let transitioned = 0;
+
+    for (const user of expiredTrials) {
+        try {
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { subscriptionStatus: 'FREE' },
+            });
+
+            await prisma.subscriptionEvent.create({
+                data: {
+                    userId: user.id,
+                    eventType: 'trial_expired',
+                    eventData: {
+                        trialEndsAt: user.trialEndsAt?.toISOString(),
+                        transitionedAt: new Date().toISOString(),
+                    },
+                },
+            });
+
+            transitioned++;
+            console.log(`[Expire Trials] ${user.email} → FREE`);
+        } catch (error) {
+            console.error(`[Expire Trials] Failed for ${user.email}:`, error);
+        }
+    }
+
+    console.log(`[Expire Trials] ${transitioned}/${expiredTrials.length} transitioned`);
+    return { found: expiredTrials.length, transitioned };
 }
 
 // ============================================
@@ -155,12 +212,14 @@ async function checkConnectionHealth() {
 // HELPER: Sync all user trades
 // ============================================
 async function syncAllUsers() {
+    // Only sync users with Pro access (skip FREE/EXPIRED/NONE users to save API calls)
     const users = await prisma.user.findMany({
         where: {
-            AND: [
-                { snapTradeUserId: { not: null } },
-                { snapTradeUserSecret: { not: null } }
-            ]
+            snapTradeUserId: { not: null },
+            snapTradeUserSecret: { not: null },
+            subscriptionStatus: {
+                in: ['ACTIVE', 'TRIALING', 'LIFETIME', 'GRANDFATHERED', 'PAST_DUE', 'CANCELLED']
+            },
         },
         select: { id: true, email: true }
     });

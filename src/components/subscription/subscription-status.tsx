@@ -112,16 +112,16 @@ export function SubscriptionStatus({ subscription }: SubscriptionStatusProps) {
         );
     }
 
-    if (status === 'NONE' || status === 'EXPIRED') {
+    if (status === 'FREE' || status === 'NONE' || status === 'EXPIRED') {
         return (
             <div className="flex flex-col gap-2 p-3 rounded-lg bg-secondary/30 border border-secondary/50">
-                <div className="text-sm font-semibold">Artha Pro</div>
+                <div className="text-sm font-semibold">Free Plan</div>
                 <div className="text-xs text-muted-foreground">
-                    Unlock AI insights, unlimited brokers, and deep analytics.
+                    Upgrade to Pro for automatic trade sync, AI insights, and advanced analytics.
                 </div>
                 <Link href="/pricing" className="mt-1">
                     <Button size="sm" className="w-full text-xs h-8">
-                        View Pricing
+                        Upgrade to Pro
                     </Button>
                 </Link>
             </div>

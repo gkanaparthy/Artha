@@ -215,7 +215,7 @@ export async function sendTrialWelcomeEmail(email: string, firstName?: string) {
                     <li>AI Behavioral Insights</li>
                     <li>Performance analytics and tag tracking</li>
                 </ul>
-                <p>Your first payment will be processed in 30 days. You can cancel anytime before then from your settings.</p>
+                <p>No credit card needed right now. When your trial ends, you can choose a plan to keep your Pro features active.</p>
             `,
             buttonText: 'Go to Dashboard',
             buttonUrl: `${process.env.APP_URL || process.env.NEXTAUTH_URL || 'https://arthatrades.com'}/dashboard`
@@ -229,6 +229,40 @@ export async function sendTrialWelcomeEmail(email: string, firstName?: string) {
         });
     } catch (error) {
         console.error('[Email] Trial welcome error:', error);
+    }
+}
+
+/**
+ * Send welcome email when a user subscribes (upgrading from FREE/expired)
+ */
+export async function sendSubscriptionActivatedEmail(email: string, firstName?: string) {
+    const from = process.env.RESEND_FROM_EMAIL || "Artha <hello@arthatrades.com>";
+
+    try {
+        const html = createBrandedEmail({
+            title: `Welcome back${firstName ? `, ${firstName}` : ''}!`,
+            content: `
+                <p>Your Artha Pro subscription is now active.</p>
+                <p>You once again have full access to:</p>
+                <ul>
+                    <li>Automated trade synchronization</li>
+                    <li>AI Behavioral Insights</li>
+                    <li>Performance analytics and tag tracking</li>
+                </ul>
+                <p>Your trades will start syncing again automatically. Happy trading!</p>
+            `,
+            buttonText: 'Go to Dashboard',
+            buttonUrl: `${process.env.APP_URL || process.env.NEXTAUTH_URL || 'https://arthatrades.com'}/dashboard`
+        });
+
+        await getResend().emails.send({
+            from,
+            to: email,
+            subject: 'Your Artha Pro subscription is active!',
+            html,
+        });
+    } catch (error) {
+        console.error('[Email] Subscription activated email error:', error);
     }
 }
 
