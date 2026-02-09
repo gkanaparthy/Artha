@@ -441,7 +441,7 @@ export default function DashboardPage() {
                 {/* Sync Status Banner */}
                 <SyncStatusBanner
                     isSyncing={isInitialSyncing}
-                    hasTrades={metrics.totalTrades > 0}
+                    tradeCount={metrics.totalTrades}
                     onRefresh={fetchMetrics}
                 />
 

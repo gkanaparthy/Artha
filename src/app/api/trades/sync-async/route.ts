@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { snapTradeService } from '@/lib/services/snaptrade.service';
 import { auth } from '@/lib/auth';
 import { applyRateLimit } from '@/lib/ratelimit';
+import { sendSyncCompleteEmail } from '@/lib/email';
 
 /**
  * Fast broker connection sync - waits up to 20 seconds for sync to complete.
@@ -68,6 +69,13 @@ export async function POST(request: NextRequest) {
         // Success!
         console.log('[Fast Sync] Completed for user', session.user.id, '- synced:', result.synced, 'accounts:', result.accounts);
 
+        // Send email notification if trades were synced
+        if (result.synced > 0 && session.user.email) {
+            // Fire and forget - don't block response for email
+            sendSyncCompleteEmail(session.user.email, result.synced, result.accounts)
+                .catch(err => console.error('[Fast Sync] Email notification failed:', err));
+        }
+
         if (result.error) {
             return NextResponse.json({
                 status: 'error',
@@ -89,3 +97,4 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: message }, { status: 500 });
     }
 }
+

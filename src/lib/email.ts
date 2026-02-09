@@ -319,3 +319,44 @@ export async function sendGrandfatherAnnouncementEmail(email: string, firstName?
         console.error('[Email] Grandfather announcement error:', error);
     }
 }
+
+/**
+ * Send notification when initial trade sync completes
+ */
+export async function sendSyncCompleteEmail(email: string, tradeCount: number, accountCount: number) {
+    const from = process.env.RESEND_FROM_EMAIL || "Artha <hello@arthatrades.com>";
+
+    // Don't send if no trades were imported
+    if (tradeCount === 0) {
+        console.log('[Email] Skipping sync complete email - no trades imported');
+        return;
+    }
+
+    try {
+        const html = createBrandedEmail({
+            title: 'Your trades are ready! 🎉',
+            content: `
+                <p>Great news! We've finished importing your trading history.</p>
+                <p style="font-size: 24px; font-weight: bold; color: #2E4A3B; margin: 24px 0;">
+                    ${tradeCount.toLocaleString()} trade${tradeCount !== 1 ? 's' : ''} imported
+                </p>
+                <p>from ${accountCount} brokerage account${accountCount !== 1 ? 's' : ''}.</p>
+                <p>Your dashboard is now populated with your complete trading history. You can start analyzing your performance, tracking patterns, and gaining insights into your trading behavior.</p>
+            `,
+            buttonText: 'View My Dashboard',
+            buttonUrl: `${process.env.APP_URL || process.env.NEXTAUTH_URL || 'https://arthatrades.com'}/dashboard`
+        });
+
+        await getResend().emails.send({
+            from,
+            to: email,
+            subject: `Your trades are ready - ${tradeCount.toLocaleString()} trades imported`,
+            html,
+        });
+
+        console.log(`[Email] Sync complete notification sent to ${email.replace(/(.{2})(.*)(@.*)/, '$1***$3')}`);
+    } catch (error) {
+        console.error('[Email] Sync complete email error:', error);
+    }
+}
+

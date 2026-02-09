@@ -7,17 +7,13 @@ import { Button } from "@/components/ui/button";
 
 interface SyncStatusBannerProps {
     isSyncing: boolean;
-    hasTrades: boolean;
+    tradeCount: number;
     onRefresh: () => void;
 }
 
-export function SyncStatusBanner({ isSyncing, hasTrades, onRefresh }: SyncStatusBannerProps) {
-    // If not syncing and we have trades, don't show anything (unless we want to show success briefly)
-    if (!isSyncing && hasTrades) return null;
-
-    // If not syncing and NO trades, we might want to show nothing (handled by empty state in parent)
-    // or show this specific banner if we know we are waiting for a sync to start
-    if (!isSyncing && !hasTrades) return null;
+export function SyncStatusBanner({ isSyncing, tradeCount, onRefresh }: SyncStatusBannerProps) {
+    // Simple: Only show when syncing
+    if (!isSyncing) return null;
 
     return (
         <AnimatePresence>
@@ -37,8 +33,11 @@ export function SyncStatusBanner({ isSyncing, hasTrades, onRefresh }: SyncStatus
                                     Importing your trade history...
                                 </h3>
                                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                                    This may take a few minutes depending on your trade volume.
-                                    You can leave this page.
+                                    {tradeCount > 0 ? (
+                                        <>Found <strong>{tradeCount.toLocaleString()}</strong> trade{tradeCount !== 1 ? 's' : ''} so far. You can leave this page.</>
+                                    ) : (
+                                        <>Connecting to your broker. This may take a few minutes.</>
+                                    )}
                                 </p>
                             </div>
                         </div>
@@ -49,7 +48,7 @@ export function SyncStatusBanner({ isSyncing, hasTrades, onRefresh }: SyncStatus
                             className="bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40 border-blue-200 dark:border-blue-800"
                         >
                             <RefreshCw className="h-3.5 w-3.5 mr-2" />
-                            Check Status
+                            Refresh
                         </Button>
                     </div>
                     {/* Progress Bar Animation */}
