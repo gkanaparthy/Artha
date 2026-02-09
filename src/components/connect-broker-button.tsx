@@ -15,8 +15,18 @@ export function ConnectBrokerButton({ onSuccess }: ConnectBrokerButtonProps = {}
 
     useEffect(() => {
         // Listen for messages from popup window
-        const handleMessage = (event: MessageEvent) => {
+        const handleMessage = async (event: MessageEvent) => {
             if (event.data?.type === "SNAPTRADE_CONNECTION_SUCCESS") {
+                // connection successful - trigger sync from main window to ensure it runs
+                // even if popup closes
+                try {
+                    // Fire and forget - don't await full result, just kick it off
+                    // The dashboard will poll for results
+                    fetch("/api/trades/sync-async", { method: "POST" });
+                } catch (e) {
+                    console.error("Failed to trigger sync", e);
+                }
+
                 if (onSuccess) {
                     onSuccess();
                 } else {
@@ -99,8 +109,8 @@ export function ConnectBrokerButton({ onSuccess }: ConnectBrokerButtonProps = {}
                         if (popup.closed) {
                             clearInterval(checkClosed);
                             setLoading(false);
-                            // Refresh data in case connection was successful
-                            window.location.reload();
+                            // Don't reload here - the postMessage handler already handles
+                            // sync and redirect when connection succeeds
                         }
                     } catch {
                         // Cross-origin error - popup is on different domain

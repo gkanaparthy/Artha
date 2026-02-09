@@ -27,13 +27,21 @@ export function CallbackClient() {
           return;
         }
 
-        // Start sync in background (non-blocking) - returns immediately
+        // If Popup: Signal success immediately and close fast (Main window does the sync)
+        if (window.opener) {
+          setStatus("success");
+          setMessage("Broker connected! Finishing up...");
+          window.opener.postMessage({ type: "SNAPTRADE_CONNECTION_SUCCESS" }, "*");
+          setTimeout(() => window.close(), 1500); // Fast close
+          return;
+        }
+
+        // If NOT Popup: We must run the sync here because there is no opener to do it
         setMessage("Starting trade sync...");
         const syncRes = await fetch("/api/trades/sync-async", {
           method: "POST",
         });
 
-        // Check if session expired (user got logged out during redirect chain)
         if (syncRes.status === 401) {
           setStatus("error");
           setMessage("Your session expired. Please log in again to complete the connection.");
@@ -47,28 +55,21 @@ export function CallbackClient() {
           setStatus("success");
           setMessage("Broker connected! Your trades are syncing in the background and will appear shortly.");
         } else {
-          // Even if async sync fails to start, the broker is still connected
           setStatus("success");
           setMessage("Broker connected! Please use 'Sync Trades' button to load your trading history.");
         }
 
-        // Notify parent window and close after delay
-        if (window.opener) {
-          window.opener.postMessage({ type: "SNAPTRADE_CONNECTION_SUCCESS" }, "*");
-          setTimeout(() => window.close(), 3000); // Extended to 3s to let user read message
-        } else {
-          // If not opened as popup, check if we're in onboarding flow
-          const isOnboarding = sessionStorage.getItem("onboarding_in_progress") === "true";
-          setTimeout(() => {
-            if (isOnboarding) {
-              // Redirect back to onboarding with success flag
-              window.location.href = "/onboarding?connected=true";
-            } else {
-              // Normal flow - redirect to dashboard
-              window.location.href = "/dashboard";
-            }
-          }, 3000);
-        }
+        // For non-popup, redirect after delay
+        const isOnboarding = sessionStorage.getItem("onboarding_in_progress") === "true";
+        setTimeout(() => {
+          if (isOnboarding) {
+            // Redirect back to onboarding with success flag
+            window.location.href = "/onboarding?connected=true";
+          } else {
+            // Normal flow - redirect to dashboard
+            window.location.href = "/dashboard";
+          }
+        }, 3000);
       } catch (error) {
         console.error("Callback error:", error);
         setStatus("error");

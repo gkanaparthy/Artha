@@ -26,6 +26,7 @@ import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "@/l
 import { TagPerformance } from "@/components/tag-performance";
 import { AIInsightsCard } from "@/components/ai-insights-card";
 import { ConnectBrokerButton } from "@/components/connect-broker-button";
+import { SyncStatusBanner } from "@/components/dashboard/sync-status-banner";
 
 interface Metrics {
     netPnL: number;
@@ -142,6 +143,11 @@ export default function DashboardPage() {
     const [allPositions, setAllPositions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [hasAccounts, setHasAccounts] = useState<boolean | null>(null);
+
+    // Derived state: User has connected broker but 0 trades -> Initial Sync likely in progress
+    const isInitialSyncing = useMemo(() => {
+        return hasAccounts === true && metrics.totalTrades === 0 && !loading;
+    }, [hasAccounts, metrics.totalTrades, loading]);
 
     // Fetch metrics whenever ANY filter changes
     const fetchMetrics = useCallback(async () => {
@@ -309,6 +315,32 @@ export default function DashboardPage() {
         };
     }, [syncRecent]);
 
+    // Initial Sync Polling: If we detect 0 trades but have accounts, poll aggressively (every 5s)
+    // to update UI as soon as first batch of trades arrives
+    // Timeout after 3 minutes to prevent infinite polling for genuinely empty accounts
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        let timeout: NodeJS.Timeout;
+
+        if (isInitialSyncing) {
+            console.log("Initial sync detected - starting aggressive polling");
+            interval = setInterval(() => {
+                fetchMetrics(); // Refresh metrics to check if trades arrived
+            }, 5000);
+
+            // Stop polling after 3 minutes (sync should be done by then)
+            timeout = setTimeout(() => {
+                console.log("Initial sync polling timeout - stopping");
+                clearInterval(interval);
+            }, 3 * 60 * 1000);
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+            if (timeout) clearTimeout(timeout);
+        };
+    }, [isInitialSyncing, fetchMetrics]);
+
     const formatCurrency = (value: number, showSign = false) => {
         const formatted = Math.abs(value).toLocaleString("en-US", {
             minimumFractionDigits: 2,
@@ -405,6 +437,13 @@ export default function DashboardPage() {
                         </motion.div>
                     )
                 }
+
+                {/* Sync Status Banner */}
+                <SyncStatusBanner
+                    isSyncing={isInitialSyncing}
+                    hasTrades={metrics.totalTrades > 0}
+                    onRefresh={fetchMetrics}
+                />
 
                 {/* Empty State / Connect Broker Nudge */}
                 {!loading && hasAccounts === false && (
