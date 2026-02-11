@@ -21,8 +21,12 @@ export const maxDuration = 60;
 export async function POST(request: NextRequest) {
     const rawBody = await request.text();
 
-    // Verify HMAC signature if secret is configured
-    const secret = process.env.SNAPTRADE_WEBHOOK_SECRET;
+    // Verify HMAC signature using SnapTrade's algorithm:
+    // 1. Parse the JSON payload
+    // 2. Re-serialize with sorted keys and compact separators (no spaces)
+    // 3. HMAC-SHA256 with client secret → base64 encoded
+    // See: https://docs.snaptrade.com/docs/webhooks
+    const secret = process.env.SNAPTRADE_WEBHOOK_SECRET || process.env.SNAPTRADE_CLIENT_SECRET;
     if (secret) {
         const signature =
             request.headers.get('Signature') ||
@@ -36,24 +40,23 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
         }
 
-        const expectedSig = crypto
-            .createHmac('sha256', secret)
-            .update(rawBody)
-            .digest('hex');
-
-        const providedSig = signature.replace('sha256=', '');
-
-        console.log(`[SnapTrade Webhook] Signature verification attempt:
-          Secret ends with: ...${secret.slice(-4)}
-          Expected: ${expectedSig}
-          Provided: ${providedSig}`);
-
         try {
-            const expectedSigBuffer = Buffer.from(expectedSig);
-            const providedSigBuffer = Buffer.from(providedSig);
+            // SnapTrade signs over sorted, compact JSON (matching Python's json.dumps(separators=(",",":"), sort_keys=True))
+            const parsed = JSON.parse(rawBody);
+            const sortedBody = JSON.stringify(parsed, Object.keys(parsed).sort());
 
-            if (expectedSigBuffer.length !== providedSigBuffer.length ||
-                !crypto.timingSafeEqual(expectedSigBuffer, providedSigBuffer)) {
+            const expectedSig = crypto
+                .createHmac('sha256', secret)
+                .update(sortedBody)
+                .digest('base64');
+
+            console.log(`[SnapTrade Webhook] Sig check — expected: ${expectedSig}, provided: ${signature}`);
+
+            const expectedBuf = Buffer.from(expectedSig);
+            const providedBuf = Buffer.from(signature);
+
+            if (expectedBuf.length !== providedBuf.length ||
+                !crypto.timingSafeEqual(expectedBuf, providedBuf)) {
                 console.warn('[SnapTrade Webhook] Signature mismatch');
                 return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
             }

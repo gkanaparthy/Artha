@@ -16,21 +16,22 @@ async function simulate() {
         process.exit(1);
     }
 
-    const payload = {
+    const payload: Record<string, string> = {
+        accountId: snapTradeAccountId,
+        eventTimestamp: new Date().toISOString(),
         type: 'ACCOUNT_TRANSACTIONS_INITIAL_UPDATE',
         userId: snapTradeUserId,
-        accountId: snapTradeAccountId,
-        timestamp: new Date().toISOString()
     };
 
-    const body = JSON.stringify(payload);
+    // SnapTrade signs over sorted, compact JSON → base64
+    const sortedBody = JSON.stringify(payload, Object.keys(payload).sort());
     const signature = crypto
         .createHmac('sha256', WEBHOOK_SECRET)
-        .update(body)
-        .digest('hex');
+        .update(sortedBody)
+        .digest('base64');
 
     console.log(`Sending webhook for user ${snapTradeUserId}...`);
-    console.log(`Payload: ${body}`);
+    console.log(`Payload: ${sortedBody}`);
     console.log(`Signature: ${signature}`);
 
     try {
@@ -38,9 +39,9 @@ async function simulate() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'x-signature': signature
+                'Signature': signature
             },
-            body
+            body: sortedBody
         });
 
         const data = await response.json();
