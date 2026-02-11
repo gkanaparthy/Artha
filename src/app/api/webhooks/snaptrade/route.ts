@@ -24,7 +24,6 @@ export async function POST(request: NextRequest) {
     // Verify HMAC signature if secret is configured
     const secret = process.env.SNAPTRADE_WEBHOOK_SECRET;
     if (secret) {
-        // SnapTrade docs say they use 'Signature' header, some platforms use 'x-signature'
         const signature =
             request.headers.get('Signature') ||
             request.headers.get('signature') ||
@@ -32,8 +31,8 @@ export async function POST(request: NextRequest) {
             request.headers.get('x-hub-signature-256');
 
         if (!signature) {
-            console.warn('[SnapTrade Webhook] Missing signature header. Headers received:',
-                Array.from(request.headers.keys()).join(', '));
+            console.warn('[SnapTrade Webhook] Missing signature header. Headers:',
+                JSON.stringify(Object.fromEntries(request.headers.entries())));
             return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
         }
 
@@ -42,8 +41,12 @@ export async function POST(request: NextRequest) {
             .update(rawBody)
             .digest('hex');
 
-        // SnapTrade may prefix with 'sha256='
         const providedSig = signature.replace('sha256=', '');
+
+        console.log(`[SnapTrade Webhook] Signature verification attempt:
+          Secret ends with: ...${secret.slice(-4)}
+          Expected: ${expectedSig}
+          Provided: ${providedSig}`);
 
         try {
             const expectedSigBuffer = Buffer.from(expectedSig);
