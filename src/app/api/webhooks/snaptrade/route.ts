@@ -24,9 +24,16 @@ export async function POST(request: NextRequest) {
     // Verify HMAC signature if secret is configured
     const secret = process.env.SNAPTRADE_WEBHOOK_SECRET;
     if (secret) {
-        const signature = request.headers.get('x-signature') || request.headers.get('x-hub-signature-256');
+        // SnapTrade docs say they use 'Signature' header, some platforms use 'x-signature'
+        const signature =
+            request.headers.get('Signature') ||
+            request.headers.get('signature') ||
+            request.headers.get('x-signature') ||
+            request.headers.get('x-hub-signature-256');
+
         if (!signature) {
-            console.warn('[SnapTrade Webhook] Missing signature header');
+            console.warn('[SnapTrade Webhook] Missing signature header. Headers received:',
+                Array.from(request.headers.keys()).join(', '));
             return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
         }
 
@@ -35,18 +42,21 @@ export async function POST(request: NextRequest) {
             .update(rawBody)
             .digest('hex');
 
+        // SnapTrade may prefix with 'sha256='
         const providedSig = signature.replace('sha256=', '');
-        const expectedSigBuffer = Buffer.from(expectedSig);
-        const providedSigBuffer = Buffer.from(providedSig);
 
-        if (expectedSigBuffer.length !== providedSigBuffer.length) {
-            console.warn('[SnapTrade Webhook] Invalid signature length');
-            return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
-        }
+        try {
+            const expectedSigBuffer = Buffer.from(expectedSig);
+            const providedSigBuffer = Buffer.from(providedSig);
 
-        if (!crypto.timingSafeEqual(expectedSigBuffer, providedSigBuffer)) {
-            console.warn('[SnapTrade Webhook] Invalid signature');
-            return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+            if (expectedSigBuffer.length !== providedSigBuffer.length ||
+                !crypto.timingSafeEqual(expectedSigBuffer, providedSigBuffer)) {
+                console.warn('[SnapTrade Webhook] Signature mismatch');
+                return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+            }
+        } catch (err) {
+            console.error('[SnapTrade Webhook] Signature verification error:', err);
+            return NextResponse.json({ error: 'Verification failed' }, { status: 400 });
         }
     }
 
