@@ -17,21 +17,18 @@ export function ConnectBrokerButton({ onSuccess }: ConnectBrokerButtonProps = {}
         // Listen for messages from popup window
         const handleMessage = async (event: MessageEvent) => {
             if (event.data?.type === "SNAPTRADE_CONNECTION_SUCCESS") {
-                // connection successful - trigger sync from main window to ensure it runs
-                // even if popup closes
                 try {
-                    // Fire and forget - don't await full result, just kick it off
-                    // The dashboard will poll for results
-                    fetch("/api/trades/sync-async", { method: "POST" });
+                    // Await sync-initial to discover accounts before navigating
+                    await fetch("/api/trades/sync-initial", { method: "POST" });
                 } catch (e) {
-                    console.error("Failed to trigger sync", e);
+                    console.error("Failed to trigger initial sync", e);
                 }
 
                 if (onSuccess) {
                     onSuccess();
                 } else {
-                    // Refresh the page to show new data
-                    window.location.reload();
+                    // Navigate to dashboard with sync flag
+                    window.location.href = "/dashboard?sync=started";
                 }
             }
         };

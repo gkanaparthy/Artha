@@ -230,9 +230,27 @@ async function syncAllUsers() {
 
     for (const user of users) {
         try {
+            // Skip users with an active initial sync in progress
+            const inProgressCount = await prisma.brokerAccount.count({
+                where: { userId: user.id, syncStatus: { in: ['PENDING', 'IN_PROGRESS'] } },
+            });
+            if (inProgressCount > 0) {
+                console.log(`[Sync] Skipping user ${user.email} - has PENDING/IN_PROGRESS accounts`);
+                continue;
+            }
+
             const result = await snapTradeService.syncTrades(user.id);
             successful++;
             totalTrades += result.synced;
+
+            // Update sync status on all active accounts
+            await prisma.brokerAccount.updateMany({
+                where: { userId: user.id, disabled: false },
+                data: {
+                    syncCompletedAt: new Date(),
+                    syncStatus: 'COMPLETED',
+                },
+            });
         } catch (error) {
             failed++;
             console.error(`[Sync] User ${user.email} failed:`, error);

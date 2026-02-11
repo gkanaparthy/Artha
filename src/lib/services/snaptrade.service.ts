@@ -246,35 +246,32 @@ export class SnapTradeService {
             return { synced: 0, accounts: 0, failedAccounts: [], skippedTrades: 0, error: accountDiscovery.error };
         }
 
-        // 2. Fetch Activities (Trades)
-        // Optimize the sync window: if we have trades, only fetch since the last one (+14 days safety)
-        const latestTrade = await prisma.trade.findFirst({
-            where: { account: { userId: localUserId } },
-            orderBy: { timestamp: 'desc' },
-        });
-
-        const startDate = new Date();
-        if (latestTrade) {
-            // Start 14 days before the latest trade to catch any delayed settlements or corrections
-            startDate.setTime(latestTrade.timestamp.getTime() - (14 * 24 * 60 * 60 * 1000));
-        } else {
-            // First time sync: fetch 3 years of history
-            startDate.setFullYear(startDate.getFullYear() - 3);
-        }
-
-        const startDateStr = startDate.toISOString().split('T')[0];
-        const endDateStr = new Date().toISOString().split('T')[0];
-
-        console.log('[SnapTrade Sync] Fetching activities from', startDateStr, 'to', endDateStr);
-
         const allActivities: any[] = [];
         // Re-fetch user accounts from DB to get the latest snapshot (including the ones we just added)
-        const activeAccounts = await prisma.brokerAccount.findMany({
-            where: { userId: localUserId, disabled: false }
-        });
+        const activeAccounts = user.brokerAccounts.filter(a => !a.disabled);
 
+        // 2. Fetch Activities (Trades)
         const activityPromises = activeAccounts.map(async (acc) => {
             const accountName = acc.brokerName || acc.snapTradeAccountId;
+
+            // Calculate sync window for this specific account
+            const latestTradeForAccount = await prisma.trade.findFirst({
+                where: { accountId: acc.id },
+                orderBy: { timestamp: 'desc' },
+            });
+
+            const accountStartDate = new Date();
+            if (latestTradeForAccount) {
+                // Start 14 days before the latest trade to catch any delayed settlements or corrections
+                accountStartDate.setTime(latestTradeForAccount.timestamp.getTime() - (14 * 24 * 60 * 60 * 1000));
+            } else {
+                // First time sync for this account: fetch 3 years of history
+                accountStartDate.setFullYear(accountStartDate.getFullYear() - 3);
+            }
+
+            const startDateStr = accountStartDate.toISOString().split('T')[0];
+            const endDateStr = new Date().toISOString().split('T')[0];
+
             try {
                 const activities = await snapTrade.accountInformation.getAccountActivities({
                     accountId: acc.snapTradeAccountId,
@@ -284,7 +281,7 @@ export class SnapTradeService {
                     endDate: endDateStr,
                 });
                 const activityList = activities.data?.data || [];
-                console.log('[SnapTrade Sync] Account', acc.id, 'returned', activityList.length, 'activities');
+                console.log(`[SnapTrade Sync] Account ${acc.id} (${accountName}) returned ${activityList.length} activities since ${startDateStr}`);
 
                 // Attach account ID to each activity since it's not included in response
                 for (const activity of activityList) {
@@ -563,6 +560,14 @@ export class SnapTradeService {
             }
         } catch (e) {
             console.error('[SnapTrade Sync] Cleanup failed:', e);
+        }
+
+        // Update lastSyncedAt for all active accounts
+        for (const acc of activeAccounts) {
+            await prisma.brokerAccount.update({
+                where: { id: acc.id },
+                data: { lastSyncedAt: new Date() }
+            });
         }
 
         const accountCount = activeAccounts.length;

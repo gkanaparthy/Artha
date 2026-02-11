@@ -14,7 +14,7 @@ import {
     LayoutDashboard,
     AlertCircle,
 } from "lucide-react";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -26,7 +26,7 @@ import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "@/l
 import { TagPerformance } from "@/components/tag-performance";
 import { AIInsightsCard } from "@/components/ai-insights-card";
 import { ConnectBrokerButton } from "@/components/connect-broker-button";
-import { SyncStatusBanner } from "@/components/dashboard/sync-status-banner";
+import { SyncStatusBanner, SyncState } from "@/components/dashboard/sync-status-banner";
 
 interface Metrics {
     netPnL: number;
@@ -143,11 +143,9 @@ export default function DashboardPage() {
     const [allPositions, setAllPositions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [hasAccounts, setHasAccounts] = useState<boolean | null>(null);
-
-    // Derived state: User has connected broker but 0 trades -> Initial Sync likely in progress
-    const isInitialSyncing = useMemo(() => {
-        return hasAccounts === true && metrics.totalTrades === 0 && !loading;
-    }, [hasAccounts, metrics.totalTrades, loading]);
+    const [syncState, setSyncState] = useState<SyncState | null>(null);
+    const [syncPollingActive, setSyncPollingActive] = useState(false);
+    const retryTriggeredRef = useRef(false);
 
     // Fetch metrics whenever ANY filter changes
     const fetchMetrics = useCallback(async () => {
@@ -315,31 +313,74 @@ export default function DashboardPage() {
         };
     }, [syncRecent]);
 
-    // Initial Sync Polling: If we detect 0 trades but have accounts, poll aggressively (every 5s)
-    // to update UI as soon as first batch of trades arrives
-    // Timeout after 3 minutes to prevent infinite polling for genuinely empty accounts
+    // Determine if sync polling should be active
     useEffect(() => {
-        let interval: NodeJS.Timeout;
-        let timeout: NodeJS.Timeout;
-
-        if (isInitialSyncing) {
-            console.log("Initial sync detected - starting aggressive polling");
-            interval = setInterval(() => {
-                fetchMetrics(); // Refresh metrics to check if trades arrived
-            }, 5000);
-
-            // Stop polling after 3 minutes (sync should be done by then)
-            timeout = setTimeout(() => {
-                console.log("Initial sync polling timeout - stopping");
-                clearInterval(interval);
-            }, 3 * 60 * 1000);
+        const syncStarted = searchParams.get('sync') === 'started';
+        const inferredSyncing = hasAccounts === true && metrics.totalTrades === 0 && !loading;
+        if (syncStarted || inferredSyncing) {
+            setSyncPollingActive(true);
         }
+    }, [searchParams, hasAccounts, metrics.totalTrades, loading]);
+
+    // Poll /api/sync-status every 10 seconds when active
+    useEffect(() => {
+        if (!syncPollingActive) return;
+
+        const poll = async () => {
+            try {
+                const res = await fetch('/api/sync-status');
+                if (!res.ok) return;
+                const data: SyncState = await res.json();
+                setSyncState(data);
+
+                // COMPLETED → refresh metrics, stop polling
+                if (data.overall === 'completed' || data.overall === 'failed' || data.overall === 'timeout') {
+                    if (data.overall === 'completed') fetchMetrics();
+                    setSyncPollingActive(false);
+                    retryTriggeredRef.current = false; // Reset for future syncs
+
+                    // Clean URL param
+                    const newParams = new URLSearchParams(searchParams.toString());
+                    if (newParams.has('sync')) {
+                        newParams.delete('sync');
+                        const newUrl = window.location.pathname + (newParams.toString() ? `?${newParams.toString()}` : '');
+                        window.history.replaceState({}, '', newUrl);
+                    }
+                }
+
+                // FALLBACK: If any account PENDING > 2 min without webhook, auto-retry
+                if (!retryTriggeredRef.current && data.overall === 'syncing') {
+                    const staleAccount = data.accounts.find(a =>
+                        a.syncStatus === 'PENDING' &&
+                        a.syncStartedAt &&
+                        Date.now() - new Date(a.syncStartedAt).getTime() > 2 * 60 * 1000
+                    );
+                    if (staleAccount) {
+                        retryTriggeredRef.current = true;
+                        console.log('[Dashboard] Auto-triggering sync retry for stale PENDING account');
+                        fetch('/api/trades/sync-retry', { method: 'POST' });
+                    }
+                }
+            } catch (e) {
+                console.error('Sync status poll failed:', e);
+            }
+        };
+
+        poll(); // Immediate first check
+        const interval = setInterval(poll, 10_000);
+
+        // Max 10 minutes
+        const maxTimeout = setTimeout(() => {
+            clearInterval(interval);
+            setSyncState(prev => prev ? { ...prev, overall: 'timeout' as const } : null);
+            setSyncPollingActive(false);
+        }, 10 * 60 * 1000);
 
         return () => {
-            if (interval) clearInterval(interval);
-            if (timeout) clearTimeout(timeout);
+            clearInterval(interval);
+            clearTimeout(maxTimeout);
         };
-    }, [isInitialSyncing, fetchMetrics]);
+    }, [syncPollingActive, fetchMetrics, searchParams]);
 
     const formatCurrency = (value: number, showSign = false) => {
         const formatted = Math.abs(value).toLocaleString("en-US", {
@@ -440,9 +481,13 @@ export default function DashboardPage() {
 
                 {/* Sync Status Banner */}
                 <SyncStatusBanner
-                    isSyncing={isInitialSyncing}
-                    tradeCount={metrics.totalTrades}
-                    onRefresh={fetchMetrics}
+                    syncState={syncState}
+                    onRetry={() => {
+                        retryTriggeredRef.current = false;
+                        fetch('/api/trades/sync-retry', { method: 'POST' });
+                        setSyncPollingActive(true);
+                        setSyncState(prev => prev ? { ...prev, overall: 'syncing' } : null);
+                    }}
                 />
 
                 {/* Empty State / Connect Broker Nudge */}

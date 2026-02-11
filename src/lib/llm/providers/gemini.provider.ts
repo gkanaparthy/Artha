@@ -23,43 +23,44 @@ export class GeminiProvider implements LLMProvider {
     async generateInsights(data: InsightDataSummary, persona: AiPersona = "PROFESSIONAL"): Promise<string> {
         this.init();
         if (!this.genAI) {
+            console.warn("[GeminiProvider] API key missing, skipping.");
             throw new Error("Gemini API key not configured");
         }
 
         const systemPrompt = getSystemPrompt(persona);
         const userPrompt = getUserPrompt(data);
 
-        // Using Gemini 2.0 Flash for best performance/cost balance
-        const model = this.genAI.getGenerativeModel({
-            model: "gemini-2.0-flash",
-            systemInstruction: {
-                role: "system",
-                parts: [{ text: systemPrompt }]
-            }
-        });
+        // Models to try in order of preference
+        // gemini-3-flash-preview is the latest available as per user request.
+        const modelsToTry = ["gemini-3-flash-preview", "gemini-2.0-flash", "gemini-1.5-pro"];
 
-        try {
-            console.log(`[GeminiProvider] Using model: gemini-2.0-flash`);
-            const result = await model.generateContent(userPrompt);
-            const response = await result.response;
-            const text = response.text();
+        for (const modelName of modelsToTry) {
+            try {
+                console.log(`[GeminiProvider] Attempting generation with model: ${modelName}`);
+                const model = this.genAI.getGenerativeModel({
+                    model: modelName,
+                    systemInstruction: {
+                        role: "system",
+                        parts: [{ text: systemPrompt }]
+                    }
+                });
 
-            if (!text) {
-                console.error("[GeminiProvider] Empty response text");
-                throw new Error("Empty response from Gemini API");
-            }
+                const result = await model.generateContent(userPrompt);
+                const response = await result.response;
+                const text = response.text();
 
-            return text;
-        } catch (error: any) {
-            console.error("[GeminiProvider] Generation failed:", error);
-            // Check for specific safety or rate limit errors
-            if (error.message?.includes("429") || error.message?.includes("quota")) {
-                throw new Error(`Gemini rate limit exceeded: ${error.message}`);
+                if (!text) {
+                    throw new Error("Empty response text");
+                }
+
+                console.log(`[GeminiProvider] Success with ${modelName}`);
+                return text;
+
+            } catch (error: any) {
+                console.warn(`[GeminiProvider] Failed with ${modelName}: ${error.message}`);
             }
-            if (error.message?.includes("safety")) {
-                throw new Error(`Gemini blocked content for safety: ${error.message}`);
-            }
-            throw new Error(`Gemini API error: ${error.message || "Unknown error"}`);
         }
+
+        throw new Error("All Gemini models failed to generate insights.");
     }
 }

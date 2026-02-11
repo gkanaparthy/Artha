@@ -20,10 +20,11 @@ export default auth((req) => {
   const isDemoPage = req.nextUrl.pathname.startsWith("/demo");
   const isPublicStatsApi = req.nextUrl.pathname.startsWith("/api/stats");
   const isStripeWebhook = req.nextUrl.pathname === "/api/stripe/webhook";
+  const isWebhook = req.nextUrl.pathname.startsWith("/api/webhooks/");
   const isApiRoute = req.nextUrl.pathname.startsWith("/api/");
 
   // Allow auth callbacks, SnapTrade callback, cron jobs, demo pages, debug APIs, and public APIs
-  if (isAuthCallback || isSnapTradeCallback || isPublicApi || isCronApi || isPublicPage || isDemoPage || isDebugApi || isPublicStatsApi || isStripeWebhook) {
+  if (isAuthCallback || isSnapTradeCallback || isPublicApi || isCronApi || isPublicPage || isDemoPage || isDebugApi || isPublicStatsApi || isStripeWebhook || isWebhook) {
     return NextResponse.next();
   }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { snapTradeService } from '@/lib/services/snaptrade.service';
 import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 import { applyRateLimit } from '@/lib/ratelimit';
 import { sendSyncCompleteEmail } from '@/lib/email';
 
@@ -42,7 +43,13 @@ export async function POST(request: NextRequest) {
 
         console.log('[Fast Sync] Starting sync for user:', session.user.id);
 
-        // Run sync with 20-second timeout  
+        // Set accounts to IN_PROGRESS
+        await prisma.brokerAccount.updateMany({
+            where: { userId: session.user.id, disabled: false },
+            data: { syncStatus: 'IN_PROGRESS' },
+        });
+
+        // Run sync with 20-second timeout
         // This actually waits (so it works in serverless) but keeps UX reasonably fast
         const result = await timeout(
             snapTradeService.syncTrades(session.user.id),
@@ -59,6 +66,11 @@ export async function POST(request: NextRequest) {
         // Check if we timed out
         if (result.error === '__TIMEOUT__') {
             console.log('[Fast Sync] Timeout for user', session.user.id);
+            // Keep as PENDING for webhook/retry
+            await prisma.brokerAccount.updateMany({
+                where: { userId: session.user.id, syncStatus: 'IN_PROGRESS' },
+                data: { syncStatus: 'PENDING' },
+            });
             return NextResponse.json({
                 status: 'timeout',
                 message: 'Broker connected! Trade sync is taking longer than expected. Please use "Sync Trades" button to complete your full history.',
@@ -68,6 +80,17 @@ export async function POST(request: NextRequest) {
 
         // Success!
         console.log('[Fast Sync] Completed for user', session.user.id, '- synced:', result.synced, 'accounts:', result.accounts);
+
+        // Update sync status
+        await prisma.brokerAccount.updateMany({
+            where: { userId: session.user.id, disabled: false },
+            data: {
+                syncStatus: result.error ? 'FAILED' : 'COMPLETED',
+                syncCompletedAt: new Date(),
+                syncTradeCount: result.synced,
+                syncError: result.error || null,
+            },
+        });
 
         // Send email notification if trades were synced
         if (result.synced > 0 && session.user.email) {
@@ -93,6 +116,17 @@ export async function POST(request: NextRequest) {
         });
     } catch (error: unknown) {
         console.error('[Fast Sync] Error:', error);
+        // Fallback safety
+        try {
+            const session = await auth();
+            if (session?.user?.id) {
+                await prisma.brokerAccount.updateMany({
+                    where: { userId: session.user.id, syncStatus: 'IN_PROGRESS' },
+                    data: { syncStatus: 'FAILED', syncError: 'System error during fast sync' },
+                });
+            }
+        } catch (e) { /* ignore */ }
+
         const message = error instanceof Error ? error.message : 'Unknown error';
         return NextResponse.json({ error: message }, { status: 500 });
     }

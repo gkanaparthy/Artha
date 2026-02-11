@@ -38,7 +38,7 @@ export function CallbackClient() {
 
         // If NOT Popup: We must run the sync here because there is no opener to do it
         setMessage("Starting trade sync...");
-        const syncRes = await fetch("/api/trades/sync-async", {
+        const syncRes = await fetch("/api/trades/sync-initial", {
           method: "POST",
         });
 
@@ -51,23 +51,23 @@ export function CallbackClient() {
           return;
         }
 
+        setStatus("success");
         if (syncRes.ok) {
-          setStatus("success");
-          setMessage("Broker connected! Your trades are syncing in the background and will appear shortly.");
+          const data = await syncRes.json();
+          setMessage(data.synced > 0
+            ? `Broker connected! ${data.synced} trades imported.`
+            : "Broker connected! Your trades are being prepared...");
         } else {
-          setStatus("success");
-          setMessage("Broker connected! Please use 'Sync Trades' button to load your trading history.");
+          setMessage("Broker connected! Your trades will sync shortly.");
         }
 
         // For non-popup, redirect after delay
         const isOnboarding = sessionStorage.getItem("onboarding_in_progress") === "true";
         setTimeout(() => {
           if (isOnboarding) {
-            // Redirect back to onboarding with success flag
             window.location.href = "/onboarding?connected=true";
           } else {
-            // Normal flow - redirect to dashboard
-            window.location.href = "/dashboard";
+            window.location.href = "/dashboard?sync=started";
           }
         }, 3000);
       } catch (error) {

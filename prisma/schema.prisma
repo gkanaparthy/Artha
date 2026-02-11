@@ -126,11 +126,18 @@ model BrokerAccount {
   disabledReason     String?
   lastCheckedAt      DateTime?
   lastSyncedAt       DateTime?
+  syncStatus         SyncStatus   @default(COMPLETED)
+  syncStartedAt      DateTime?
+  syncCompletedAt    DateTime?
+  syncError          String?
+  syncRetryCount     Int          @default(0)
+  syncTradeCount     Int          @default(0)
   user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   tradeGroups        TradeGroup[]
   trades             Trade[]
 
   @@index([userId, disabled])
+  @@index([userId, syncStatus])
   @@map("broker_accounts")
 }
 
@@ -344,4 +351,11 @@ enum PaymentStatus {
   FAILED
   REFUNDED
   PENDING
+}
+
+enum SyncStatus {
+  PENDING          // Account created, waiting for SnapTrade to process
+  IN_PROGRESS      // Sync actively running
+  COMPLETED        // Sync finished (trades may or may not exist)
+  FAILED           // Sync failed
 }
