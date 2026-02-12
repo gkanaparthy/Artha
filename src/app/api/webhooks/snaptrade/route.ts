@@ -27,6 +27,11 @@ export async function POST(request: NextRequest) {
     // 3. HMAC-SHA256 with client secret → base64 encoded
     // See: https://docs.snaptrade.com/docs/webhooks
     const secret = process.env.SNAPTRADE_WEBHOOK_SECRET || process.env.SNAPTRADE_CLIENT_SECRET;
+    if (!secret) {
+        console.error('[SnapTrade Webhook] Missing webhook secret. Security bypass prevented.');
+        return NextResponse.json({ error: 'Webhook configuration error' }, { status: 500 });
+    }
+
     if (secret) {
         const signature =
             request.headers.get('Signature') ||

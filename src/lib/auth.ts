@@ -81,11 +81,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return true;
     },
     redirect: async ({ url, baseUrl }) => {
-      // Force arthatrades.com to ensure session stickiness
-      const base = 'https://arthatrades.com';
-      if (url.startsWith(base)) return url;
-      if (url.startsWith("/")) return `${base}${url}`;
-      return base;
+      // Use baseUrl to handle domain dynamically (handles local, staging, prod)
+      if (url.startsWith(baseUrl)) return url;
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      return baseUrl;
     },
   },
   events: {

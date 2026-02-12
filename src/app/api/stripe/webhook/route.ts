@@ -44,22 +44,9 @@ export async function POST(req: Request) {
 
     const session = event.data.object as any;
 
-    // Log the event for audit trail
-    try {
-        const userId = session.metadata?.userId || session.subscription_data?.metadata?.userId || 'unknown';
-        const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
-
-        await prisma.subscriptionEvent.create({
-            data: {
-                userId: userId !== 'unknown' ? userId : (await findUserIdByStripeCustomer(customerId)),
-                eventType: event.type,
-                eventData: session as any,
-                stripeEventId: event.id
-            }
-        });
-    } catch (logError) {
-        console.error('Failed to log subscription event:', logError);
-    }
+    // Capture userId and customerId for logging later
+    const userId = session.metadata?.userId || session.subscription_data?.metadata?.userId || 'unknown';
+    const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
 
     try {
         switch (event.type) {
@@ -87,6 +74,22 @@ export async function POST(req: Request) {
     } catch (handlerError) {
         console.error(`Error handling event ${event.type}:`, handlerError);
         return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 });
+    }
+
+    // Log the event for audit trail only AFTER successful processing (idempotency commit)
+    try {
+        await prisma.subscriptionEvent.create({
+            data: {
+                userId: userId !== 'unknown' ? userId : (await findUserIdByStripeCustomer(customerId)),
+                eventType: event.type,
+                eventData: session as any,
+                stripeEventId: event.id
+            }
+        });
+    } catch (logError) {
+        // If logging fails but handler succeeded, we still return 200 to prevent infinite Stripe retries
+        // since the actual business logic finished.
+        console.error('Failed to log subscription event completion:', logError);
     }
 
     return NextResponse.json({ received: true });
