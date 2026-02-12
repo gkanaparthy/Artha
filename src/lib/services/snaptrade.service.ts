@@ -247,8 +247,13 @@ export class SnapTradeService {
         }
 
         const allActivities: any[] = [];
-        // Re-fetch user accounts from DB to get the latest snapshot (including the ones we just added)
-        const activeAccounts = user.brokerAccounts.filter(a => !a.disabled);
+        // Re-fetch accounts from DB after discovery so first-time linked accounts are included
+        const activeAccounts = await prisma.brokerAccount.findMany({
+            where: {
+                userId: localUserId,
+                disabled: false,
+            },
+        });
 
         // 2. Fetch Activities (Trades)
         const activityPromises = activeAccounts.map(async (acc) => {

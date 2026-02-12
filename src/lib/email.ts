@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { EMAIL_TEMPLATES } from './email-templates';
 
 // Initialize Resend lazily to prevent crash if key is missing
 let resendInstance: Resend | null = null;
@@ -394,3 +395,33 @@ export async function sendSyncCompleteEmail(email: string, tradeCount: number, a
     }
 }
 
+/**
+ * Send nudge to users who haven't connected a broker
+ */
+export async function sendBrokerConnectionNudgeEmail(email: string, name: string) {
+    const from = process.env.RESEND_FROM_EMAIL || "Artha <hello@arthatrades.com>";
+    const firstName = name.split(' ')[0];
+    const template = EMAIL_TEMPLATES.BROKER_CONNECTION_NUDGE;
+
+    try {
+        const html = createBrandedEmail({
+            title: template.title,
+            content: template.content
+                .replace('{name}', name)
+                .replace('{firstName}', firstName),
+            buttonText: template.buttonText,
+            buttonUrl: template.buttonUrl
+        });
+
+        await getResend().emails.send({
+            from,
+            to: email,
+            subject: template.subject.replace('{name}', firstName),
+            html,
+        });
+
+        console.log(`[Email] Broker connection nudge sent to ${email}`);
+    } catch (error) {
+        console.error('[Email] Broker nudge email error:', error);
+    }
+}
