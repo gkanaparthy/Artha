@@ -734,7 +734,8 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     tags: [
       { id: "dt-1", name: "Breakout", color: "#10B981", category: "SETUP", icon: "🎯" },
       { id: "dt-7", name: "Focused", color: "#10B981", category: "EMOTION", icon: "🧘" }
-    ]
+    ],
+    side: "long"
   },
   {
     symbol: "MSFT",
@@ -751,7 +752,8 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     type: "STOCK",
     tags: [
       { id: "dt-2", name: "ABCD Pattern", color: "#3B82F6", category: "SETUP", icon: "📈" }
-    ]
+    ],
+    side: "long"
   },
   {
     symbol: "SPY 240419C520",
@@ -768,7 +770,8 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     type: "OPTION",
     tags: [
       { id: "dt-1", name: "Breakout", color: "#10B981", category: "SETUP", icon: "🎯" }
-    ]
+    ],
+    side: "long"
   },
   // Closed Positions (Stocks)
   {
@@ -786,7 +789,8 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     tags: [
       { id: "dt-1", name: "Breakout", color: "#10B981", category: "SETUP", icon: "🎯" },
       { id: "dt-9", name: "Focused", color: "#10B981", category: "EMOTION", icon: "🧘" }
-    ]
+    ],
+    side: "long"
   },
   {
     symbol: "AAPL",
@@ -803,7 +807,8 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     tags: [
       { id: "dt-4", name: "FOMO", color: "#EF4444", category: "MISTAKE", icon: "🚫" },
       { id: "dt-8", name: "Fear", color: "#64748B", category: "EMOTION", icon: "😨" }
-    ]
+    ],
+    side: "long"
   },
   {
     symbol: "AMD",
@@ -819,7 +824,8 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     type: "STOCK",
     tags: [
       { id: "dt-3", name: "Support Bounce", color: "#6366F1", category: "SETUP", icon: "🛡️" }
-    ]
+    ],
+    side: "long"
   },
   // Closed Positions (Options)
   {
@@ -836,7 +842,8 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     type: "OPTION",
     tags: [
       { id: "dt-1", name: "Breakout", color: "#10B981", category: "SETUP", icon: "🎯" }
-    ]
+    ],
+    side: "long"
   },
   {
     symbol: "AAPL 240322P170",
@@ -853,7 +860,8 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     tags: [
       { id: "dt-5", name: "Early Exit", color: "#F59E0B", category: "MISTAKE", icon: "⏱️" },
       { id: "dt-8", name: "Fear", color: "#64748B", category: "EMOTION", icon: "😨" }
-    ]
+    ],
+    side: "long"
   },
   {
     symbol: "SPY 240329C510",
@@ -869,7 +877,8 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     type: "OPTION",
     tags: [
       { id: "dt-3", name: "Support Bounce", color: "#6366F1", category: "SETUP", icon: "🛡️" }
-    ]
+    ],
+    side: "long"
   },
   {
     symbol: "COIN",
@@ -886,7 +895,8 @@ export const DEMO_POSITIONS: DisplayPosition[] = [
     tags: [
       { id: "dt-2", name: "ABCD Pattern", color: "#3B82F6", category: "SETUP", icon: "📈" },
       { id: "dt-7", name: "Focused", color: "#10B981", category: "EMOTION", icon: "🧘" }
-    ]
+    ],
+    side: "long"
   },
 ];
 
@@ -934,35 +944,35 @@ export const DEMO_METRICS: Metrics = {
   avgTrade: 892.78, // Net P&L / total trades
   openPositionsCount: 2,
   closedTrades: [
-    { symbol: "NVDA", pnl: 1610.50, entryPrice: 480.25, exitPrice: 512.50, quantity: 50, closedAt: "2026-01-12T14:45:00Z", openedAt: "2026-01-05T10:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "AAPL", pnl: -332.00, entryPrice: 185.50, exitPrice: 182.20, quantity: 100, closedAt: "2026-01-15T11:20:00Z", openedAt: "2026-01-08T09:35:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "MSFT", pnl: 710.50, entryPrice: 375.00, exitPrice: 398.75, quantity: 30, closedAt: "2026-01-22T15:30:00Z", openedAt: "2026-01-10T10:00:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "TSLA", pnl: -502.00, entryPrice: 245.00, exitPrice: 232.50, quantity: 40, closedAt: "2026-01-24T10:45:00Z", openedAt: "2026-01-16T13:15:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "AMD", pnl: 2116.75, entryPrice: 140.25, exitPrice: 168.50, quantity: 75, closedAt: "2026-01-29T14:00:00Z", openedAt: "2026-01-18T09:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "META", pnl: 704.25, entryPrice: 470.00, exitPrice: 498.25, quantity: 25, closedAt: "2026-02-09T15:45:00Z", openedAt: "2026-02-02T10:15:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "GOOGL", pnl: -212.00, entryPrice: 141.50, exitPrice: 138.00, quantity: 60, closedAt: "2026-02-12T09:45:00Z", openedAt: "2026-02-05T11:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "AMZN", pnl: 485.50, entryPrice: 168.75, exitPrice: 178.50, quantity: 50, closedAt: "2026-02-15T10:30:00Z", openedAt: "2026-02-07T14:20:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "NVDA", pnl: -973.25, entryPrice: 680.00, exitPrice: 652.25, quantity: 35, closedAt: "2026-02-21T11:15:00Z", openedAt: "2026-02-14T13:00:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "SPY", pnl: 648.00, entryPrice: 495.50, exitPrice: 502.00, quantity: 100, closedAt: "2026-02-27T14:50:00Z", openedAt: "2026-02-20T09:35:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "NVDA", pnl: 2630.50, entryPrice: 820.00, exitPrice: 878.50, quantity: 45, closedAt: "2026-03-11T15:30:00Z", openedAt: "2026-03-04T10:00:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "AAPL", pnl: 682.00, entryPrice: 170.25, exitPrice: 178.80, quantity: 80, closedAt: "2026-03-14T09:20:00Z", openedAt: "2026-03-06T11:45:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "TSLA", pnl: -177.00, entryPrice: 175.50, exitPrice: 172.00, quantity: 50, closedAt: "2026-03-15T10:15:00Z", openedAt: "2026-03-08T13:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "AMD", pnl: 823.00, entryPrice: 195.00, exitPrice: 208.75, quantity: 60, closedAt: "2026-03-18T14:30:00Z", openedAt: "2026-03-11T09:45:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "META", pnl: 523.00, entryPrice: 495.00, exitPrice: 512.50, quantity: 30, closedAt: "2026-03-20T15:45:00Z", openedAt: "2026-03-13T10:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "MSFT", pnl: 528.00, entryPrice: 415.00, exitPrice: 428.25, quantity: 40, closedAt: "2026-03-22T09:30:00Z", openedAt: "2026-03-15T11:00:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "QQQ", pnl: 425.50, entryPrice: 438.50, exitPrice: 448.00, quantity: 45, closedAt: "2026-03-25T14:00:00Z", openedAt: "2026-03-18T10:15:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "GOOGL", pnl: 424.25, entryPrice: 150.25, exitPrice: 158.00, quantity: 55, closedAt: "2026-03-27T11:30:00Z", openedAt: "2026-03-20T13:45:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "NVDA 240315C900", pnl: 8118.50, entryPrice: 12.50, exitPrice: 28.75, quantity: 5, closedAt: "2026-03-08T14:15:00Z", openedAt: "2026-03-01T10:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "OPTION" },
-    { symbol: "AAPL 240322P170", pnl: -2113.00, entryPrice: 3.25, exitPrice: 1.15, quantity: 10, closedAt: "2026-03-19T15:30:00Z", openedAt: "2026-03-12T09:45:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "OPTION" },
-    { symbol: "SPY 240329C510", pnl: 2109.60, entryPrice: 5.80, exitPrice: 8.45, quantity: 8, closedAt: "2026-03-28T13:45:00Z", openedAt: "2026-03-22T11:00:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "OPTION" },
-    { symbol: "COIN", pnl: 1728.00, entryPrice: 225.50, exitPrice: 268.75, quantity: 40, closedAt: "2026-03-12T14:00:00Z", openedAt: "2026-03-04T09:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "PLTR", pnl: 658.00, entryPrice: 24.50, exitPrice: 27.80, quantity: 200, closedAt: "2026-03-05T15:15:00Z", openedAt: "2026-02-26T10:45:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "SOFI", pnl: 178.00, entryPrice: 7.85, exitPrice: 8.45, quantity: 300, closedAt: "2026-02-01T09:45:00Z", openedAt: "2026-01-22T11:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
-    { symbol: "INTC", pnl: -247.00, entryPrice: 45.25, exitPrice: 42.80, quantity: 100, closedAt: "2026-02-22T10:30:00Z", openedAt: "2026-02-12T13:00:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK" },
+    { symbol: "NVDA", pnl: 1610.50, entryPrice: 480.25, exitPrice: 512.50, quantity: 50, closedAt: "2026-01-12T14:45:00Z", openedAt: "2026-01-05T10:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "AAPL", pnl: -332.00, entryPrice: 185.50, exitPrice: 182.20, quantity: 100, closedAt: "2026-01-15T11:20:00Z", openedAt: "2026-01-08T09:35:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "MSFT", pnl: 710.50, entryPrice: 375.00, exitPrice: 398.75, quantity: 30, closedAt: "2026-01-22T15:30:00Z", openedAt: "2026-01-10T10:00:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "TSLA", pnl: -502.00, entryPrice: 245.00, exitPrice: 232.50, quantity: 40, closedAt: "2026-01-24T10:45:00Z", openedAt: "2026-01-16T13:15:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "AMD", pnl: 2116.75, entryPrice: 140.25, exitPrice: 168.50, quantity: 75, closedAt: "2026-01-29T14:00:00Z", openedAt: "2026-01-18T09:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "META", pnl: 704.25, entryPrice: 470.00, exitPrice: 498.25, quantity: 25, closedAt: "2026-02-09T15:45:00Z", openedAt: "2026-02-02T10:15:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "GOOGL", pnl: -212.00, entryPrice: 141.50, exitPrice: 138.00, quantity: 60, closedAt: "2026-02-12T09:45:00Z", openedAt: "2026-02-05T11:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "AMZN", pnl: 485.50, entryPrice: 168.75, exitPrice: 178.50, quantity: 50, closedAt: "2026-02-15T10:30:00Z", openedAt: "2026-02-07T14:20:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "NVDA", pnl: -973.25, entryPrice: 680.00, exitPrice: 652.25, quantity: 35, closedAt: "2026-02-21T11:15:00Z", openedAt: "2026-02-14T13:00:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "SPY", pnl: 648.00, entryPrice: 495.50, exitPrice: 502.00, quantity: 100, closedAt: "2026-02-27T14:50:00Z", openedAt: "2026-02-20T09:35:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "NVDA", pnl: 2630.50, entryPrice: 820.00, exitPrice: 878.50, quantity: 45, closedAt: "2026-03-11T15:30:00Z", openedAt: "2026-03-04T10:00:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "AAPL", pnl: 682.00, entryPrice: 170.25, exitPrice: 178.80, quantity: 80, closedAt: "2026-03-14T09:20:00Z", openedAt: "2026-03-06T11:45:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "TSLA", pnl: -177.00, entryPrice: 175.50, exitPrice: 172.00, quantity: 50, closedAt: "2026-03-15T10:15:00Z", openedAt: "2026-03-08T13:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "AMD", pnl: 823.00, entryPrice: 195.00, exitPrice: 208.75, quantity: 60, closedAt: "2026-03-18T14:30:00Z", openedAt: "2026-03-11T09:45:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "META", pnl: 523.00, entryPrice: 495.00, exitPrice: 512.50, quantity: 30, closedAt: "2026-03-20T15:45:00Z", openedAt: "2026-03-13T10:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "MSFT", pnl: 528.00, entryPrice: 415.00, exitPrice: 428.25, quantity: 40, closedAt: "2026-03-22T09:30:00Z", openedAt: "2026-03-15T11:00:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "QQQ", pnl: 425.50, entryPrice: 438.50, exitPrice: 448.00, quantity: 45, closedAt: "2026-03-25T14:00:00Z", openedAt: "2026-03-18T10:15:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "GOOGL", pnl: 424.25, entryPrice: 150.25, exitPrice: 158.00, quantity: 55, closedAt: "2026-03-27T11:30:00Z", openedAt: "2026-03-20T13:45:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "NVDA 240315C900", pnl: 8118.50, entryPrice: 12.50, exitPrice: 28.75, quantity: 5, closedAt: "2026-03-08T14:15:00Z", openedAt: "2026-03-01T10:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "OPTION", side: "long" },
+    { symbol: "AAPL 240322P170", pnl: -2113.00, entryPrice: 3.25, exitPrice: 1.15, quantity: 10, closedAt: "2026-03-19T15:30:00Z", openedAt: "2026-03-12T09:45:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "OPTION", side: "long" },
+    { symbol: "SPY 240329C510", pnl: 2109.60, entryPrice: 5.80, exitPrice: 8.45, quantity: 8, closedAt: "2026-03-28T13:45:00Z", openedAt: "2026-03-22T11:00:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "OPTION", side: "long" },
+    { symbol: "COIN", pnl: 1728.00, entryPrice: 225.50, exitPrice: 268.75, quantity: 40, closedAt: "2026-03-12T14:00:00Z", openedAt: "2026-03-04T09:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "PLTR", pnl: 658.00, entryPrice: 24.50, exitPrice: 27.80, quantity: 200, closedAt: "2026-03-05T15:15:00Z", openedAt: "2026-02-26T10:45:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "SOFI", pnl: 178.00, entryPrice: 7.85, exitPrice: 8.45, quantity: 300, closedAt: "2026-02-01T09:45:00Z", openedAt: "2026-01-22T11:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
+    { symbol: "INTC", pnl: -247.00, entryPrice: 45.25, exitPrice: 42.80, quantity: 100, closedAt: "2026-02-22T10:30:00Z", openedAt: "2026-02-12T13:00:00Z", broker: "Demo Broker", accountId: "demo-acc-1", type: "STOCK", side: "long" },
   ],
   openPositions: [
-    { symbol: "NVDA", quantity: 25, entryPrice: 875.50, openedAt: "2026-03-28T10:00:00Z", broker: "Demo Broker", accountId: "demo-acc-1", currentValue: 22500, tradeId: "demo-open-1", type: "STOCK" },
-    { symbol: "MSFT", quantity: 20, entryPrice: 422.00, openedAt: "2026-03-26T11:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", currentValue: 8600, tradeId: "demo-open-2", type: "STOCK" },
+    { symbol: "NVDA", quantity: 25, entryPrice: 875.50, openedAt: "2026-03-28T10:00:00Z", broker: "Demo Broker", accountId: "demo-acc-1", currentValue: 22500, tradeId: "demo-open-1", type: "STOCK", side: "long" },
+    { symbol: "MSFT", quantity: 20, entryPrice: 422.00, openedAt: "2026-03-26T11:30:00Z", broker: "Demo Broker", accountId: "demo-acc-1", currentValue: 8600, tradeId: "demo-open-2", type: "STOCK", side: "long" },
   ],
   cumulativePnL: [
     { date: "2026-01-12", pnl: 1610.50, cumulative: 1610.50, symbol: "NVDA" },
