@@ -314,6 +314,10 @@ model SubscriptionEvent {
   eventType       String    // e.g., "trial_started", "subscription_created"
   eventData       Json?
   stripeEventId   String?   @unique
+  processingStartedAt DateTime?
+  processedAt     DateTime?
+  processingError String?
+  processingAttempts Int    @default(0)
   createdAt       DateTime  @default(now())
 
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)

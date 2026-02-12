@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
-import { SubscriptionStatus, SubscriptionPlan, SubscriptionTier, PaymentStatus } from '@prisma/client';
+import { SubscriptionStatus, SubscriptionPlan, SubscriptionTier } from '@prisma/client';
 import { PRICING_CONFIG, getPlanFromPriceId } from '@/config/pricing';
 import {
     sendSubscriptionActivatedEmail,
@@ -12,6 +12,14 @@ import {
 } from '@/lib/email';
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const PROCESSING_STALE_MS = 10 * 60 * 1000;
+
+type ClaimResult = 'claimed' | 'processed' | 'in_progress';
+type WebhookEventObject = {
+    metadata?: Record<string, string>;
+    subscription_data?: { metadata?: Record<string, string> };
+    customer?: string | { id?: string };
+};
 
 export async function POST(req: Request) {
     const body = await req.text();
@@ -24,75 +32,189 @@ export async function POST(req: Request) {
             throw new Error('STRIPE_WEBHOOK_SECRET is not set');
         }
         event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    } catch (err: any) {
-        console.error(`Webhook signature verification failed: ${err.message}`);
-        return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`Webhook signature verification failed: ${message}`);
+        return NextResponse.json({ error: `Webhook Error: ${message}` }, { status: 400 });
     }
 
-    // Check for idempotency
-    try {
-        const existingEvent = await prisma.subscriptionEvent.findUnique({
-            where: { stripeEventId: event.id }
-        });
-        if (existingEvent) {
-            console.log(`[Webhook] Event ${event.id} already processed. Skipping.`);
-            return NextResponse.json({ received: true });
+    const eventObject = event.data.object as unknown as WebhookEventObject;
+
+    // Resolve user for lock ownership and audit
+    const metadataUserId = eventObject.metadata?.userId || eventObject.subscription_data?.metadata?.userId;
+    const customerId = typeof eventObject.customer === 'string' ? eventObject.customer : eventObject.customer?.id;
+    const userId = metadataUserId || (customerId ? await findUserIdByStripeCustomer(customerId) : 'unknown');
+
+    // Acquire processing lock when user is known
+    if (userId !== 'unknown') {
+        try {
+            const claim = await claimWebhookEvent(
+                event.id,
+                userId,
+                event.type,
+                event.data.object as unknown as Record<string, unknown>
+            );
+            if (claim === 'processed') {
+                console.log(`[Webhook] Event ${event.id} already processed. Skipping.`);
+                return NextResponse.json({ received: true });
+            }
+            if (claim === 'in_progress') {
+                console.log(`[Webhook] Event ${event.id} already in progress. Skipping duplicate delivery.`);
+                return NextResponse.json({ received: true });
+            }
+        } catch (claimError) {
+            console.error(`[Webhook] Failed to claim event ${event.id}:`, claimError);
+            return NextResponse.json({ error: 'Webhook lock failed' }, { status: 500 });
         }
-    } catch (dbError) {
-        console.warn('[Webhook] Failed to check for existing event:', dbError);
+    } else {
+        console.warn(`[Webhook] Could not resolve user for event ${event.id}; proceeding without lock.`);
     }
-
-    const session = event.data.object as any;
-
-    // Capture userId and customerId for logging later
-    const userId = session.metadata?.userId || session.subscription_data?.metadata?.userId || 'unknown';
-    const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
 
     try {
         switch (event.type) {
             case 'checkout.session.completed':
-                await handleCheckoutSessionCompleted(session);
+                await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
                 break;
 
             case 'customer.subscription.created':
             case 'customer.subscription.updated':
-                await handleSubscriptionUpdated(session as Stripe.Subscription);
+                await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
                 break;
 
             case 'customer.subscription.deleted':
-                await handleSubscriptionDeleted(session as Stripe.Subscription);
+                await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
                 break;
 
             case 'invoice.paid':
-                await handleInvoicePaid(session as Stripe.Invoice);
+                await handleInvoicePaid(event.data.object as Stripe.Invoice);
                 break;
 
             case 'invoice.payment_failed':
-                await handleInvoicePaymentFailed(session as Stripe.Invoice);
+                await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
                 break;
         }
     } catch (handlerError) {
         console.error(`Error handling event ${event.type}:`, handlerError);
+        if (userId !== 'unknown') {
+            await markWebhookEventFailed(event.id, handlerError);
+        }
         return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 });
     }
 
-    // Log the event for audit trail only AFTER successful processing (idempotency commit)
-    try {
-        await prisma.subscriptionEvent.create({
-            data: {
-                userId: userId !== 'unknown' ? userId : (await findUserIdByStripeCustomer(customerId)),
-                eventType: event.type,
-                eventData: session as any,
-                stripeEventId: event.id
-            }
-        });
-    } catch (logError) {
-        // If logging fails but handler succeeded, we still return 200 to prevent infinite Stripe retries
-        // since the actual business logic finished.
-        console.error('Failed to log subscription event completion:', logError);
+    if (userId !== 'unknown') {
+        try {
+            await markWebhookEventProcessed(
+                event.id,
+                userId,
+                event.type,
+                event.data.object as unknown as Record<string, unknown>
+            );
+        } catch (finalizeError) {
+            console.error(`[Webhook] Failed to finalize event ${event.id}:`, finalizeError);
+            // Return 500 so Stripe retries. Duplicate deliveries are guarded by the processing lock window.
+            return NextResponse.json({ error: 'Webhook finalize failed' }, { status: 500 });
+        }
     }
 
     return NextResponse.json({ received: true });
+}
+
+async function claimWebhookEvent(
+    stripeEventId: string,
+    userId: string,
+    eventType: string,
+    eventData: Record<string, unknown>
+): Promise<ClaimResult> {
+    const now = new Date();
+    const staleBefore = new Date(now.getTime() - PROCESSING_STALE_MS);
+    const existing = await prisma.subscriptionEvent.findUnique({ where: { stripeEventId } });
+
+    if (existing?.processedAt) return 'processed';
+    if (existing?.processingStartedAt && existing.processingStartedAt > staleBefore) return 'in_progress';
+
+    if (existing) {
+        await prisma.subscriptionEvent.update({
+            where: { id: existing.id },
+            data: {
+                userId,
+                eventType,
+                eventData: eventData as any,
+                processingStartedAt: now,
+                processedAt: null,
+                processingError: null,
+                processingAttempts: { increment: 1 }
+            }
+        });
+        return 'claimed';
+    }
+
+    try {
+        await prisma.subscriptionEvent.create({
+            data: {
+                userId,
+                eventType,
+                eventData: eventData as any,
+                stripeEventId,
+                processingStartedAt: now,
+                processingAttempts: 1
+            }
+        });
+        return 'claimed';
+    } catch (createError: unknown) {
+        const code = typeof createError === 'object' && createError !== null && 'code' in createError
+            ? String((createError as { code: unknown }).code)
+            : '';
+        if (code !== 'P2002') throw createError;
+
+        const raced = await prisma.subscriptionEvent.findUnique({ where: { stripeEventId } });
+        if (!raced) throw createError;
+        if (raced.processedAt) return 'processed';
+        if (raced.processingStartedAt && raced.processingStartedAt > staleBefore) return 'in_progress';
+
+        await prisma.subscriptionEvent.update({
+            where: { id: raced.id },
+            data: {
+                userId,
+                eventType,
+                eventData: eventData as any,
+                processingStartedAt: now,
+                processedAt: null,
+                processingError: null,
+                processingAttempts: { increment: 1 }
+            }
+        });
+        return 'claimed';
+    }
+}
+
+async function markWebhookEventProcessed(
+    stripeEventId: string,
+    userId: string,
+    eventType: string,
+    eventData: Record<string, unknown>
+) {
+    await prisma.subscriptionEvent.update({
+        where: { stripeEventId },
+        data: {
+            userId,
+            eventType,
+            eventData: eventData as any,
+            processedAt: new Date(),
+            processingStartedAt: null,
+            processingError: null
+        }
+    });
+}
+
+async function markWebhookEventFailed(stripeEventId: string, error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    await prisma.subscriptionEvent.updateMany({
+        where: { stripeEventId },
+        data: {
+            processingStartedAt: null,
+            processingError: message,
+        }
+    });
 }
 
 async function findUserIdByStripeCustomer(customerId: string): Promise<string> {
@@ -223,7 +345,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     // Determine tier from price ID by checking if it contains 'FOUNDER' in our config
     let tier: SubscriptionTier | undefined;
     if (plan) {
-        const planConfig = (PRICING_CONFIG.PLANS as any)[plan];
+        const planConfig = PRICING_CONFIG.PLANS[plan as keyof typeof PRICING_CONFIG.PLANS];
         if (planConfig.priceIds.FOUNDER === priceId) tier = 'FOUNDER';
         if (planConfig.priceIds.REGULAR === priceId) tier = 'REGULAR';
     }
