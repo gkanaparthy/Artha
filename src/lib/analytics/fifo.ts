@@ -203,7 +203,8 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                             accountId: matchLot.accountId,
                             openedAt: matchLot.date,
                             positionKey: matchLot.positionKey
-                        })
+                        }),
+                        side: "short"
                     });
 
                     matchLot.quantity -= matchQty;
@@ -251,7 +252,8 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                             accountId: matchLot.accountId,
                             openedAt: matchLot.date,
                             positionKey: matchLot.positionKey
-                        })
+                        }),
+                        side: "long"
                     });
 
                     matchLot.quantity -= matchQty;
@@ -261,18 +263,46 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                 }
 
                 if (remainingQty > 0.000001) {
-                    shortLots.push({
-                        tradeId: trade.id,
-                        date: date,
-                        price: price,
-                        quantity: remainingQty,
-                        originalQuantity: remainingQty,
-                        broker: broker,
-                        accountId: accountId,
-                        multiplier: multiplier,
-                        type: tradeType,
-                        positionKey: trade.positionKey || null
-                    });
+                    // Orphan Sell: No long position to close.
+                    // For stocks, we assume this is a pre-existing long being closed (missing history)
+                    // unless it's explicitly a short opening action.
+                    const isExplicitShort = action === 'SELL_TO_OPEN';
+                    if (!isExplicitShort && (tradeType === 'STOCK' || tradeType === 'ETF')) {
+                        closedTrades.push({
+                            symbol: keyDetails.get(key)?.symbol || trade.symbol,
+                            pnl: 0,
+                            entryPrice: price,
+                            exitPrice: price,
+                            quantity: remainingQty,
+                            closedAt: date,
+                            openedAt: date,
+                            broker: broker,
+                            accountId: accountId,
+                            type: tradeType,
+                            multiplier: multiplier,
+                            positionKey: trade.positionKey,
+                            tags: getTagsForItem({
+                                symbol: keyDetails.get(key)?.symbol || trade.symbol,
+                                accountId: accountId,
+                                openedAt: date,
+                                positionKey: trade.positionKey
+                            }),
+                            side: "long"
+                        });
+                    } else {
+                        shortLots.push({
+                            tradeId: trade.id,
+                            date: date,
+                            price: price,
+                            quantity: remainingQty,
+                            originalQuantity: remainingQty,
+                            broker: broker,
+                            accountId: accountId,
+                            multiplier: multiplier,
+                            type: tradeType,
+                            positionKey: trade.positionKey || null
+                        });
+                    }
                 }
             }
         }
@@ -303,7 +333,8 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                             accountId: lot.accountId,
                             openedAt: lot.date,
                             positionKey: lot.positionKey
-                        })
+                        }),
+                        side: "long"
                     });
                 }
             }
@@ -328,7 +359,8 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                             accountId: lot.accountId,
                             openedAt: lot.date,
                             positionKey: lot.positionKey
-                        })
+                        }),
+                        side: "short"
                     });
                 }
             }
@@ -352,7 +384,8 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                     accountId: lot.accountId,
                     openedAt: lot.date,
                     positionKey: lot.positionKey
-                })
+                }),
+                side: "long"
             });
         }
 
@@ -387,7 +420,8 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                         accountId: lot.accountId,
                         openedAt: lot.date,
                         positionKey: lot.positionKey
-                    })
+                    }),
+                    side: "short"
                 });
             }
         }

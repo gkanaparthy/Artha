@@ -156,8 +156,11 @@ export function PositionsTable({
         const isOpen = position.status === "open";
         const displayPnl = isOpen ? null : position.pnl;
         const displayPrice = isOpen ? null : position.exitPrice;
+        const isShort = position.side === "short";
         const returnPct = !isOpen && displayPrice && position.entryPrice
-            ? ((displayPrice - position.entryPrice) / position.entryPrice) * 100
+            ? (isShort
+                ? ((position.entryPrice - displayPrice) / position.entryPrice) * 100
+                : ((displayPrice - position.entryPrice) / position.entryPrice) * 100)
             : null;
         const isProfit = (displayPnl ?? 0) >= 0;
         const shouldAnimate = idx < 10;
@@ -385,8 +388,11 @@ export function PositionsTable({
                                 const isOpen = position.status === "open";
                                 const displayPnl = isOpen ? null : position.pnl;
                                 const displayPrice = isOpen ? null : position.exitPrice;
+                                const isShort = position.side === "short";
                                 const returnPct = !isOpen && displayPrice && position.entryPrice
-                                    ? ((displayPrice - position.entryPrice) / position.entryPrice) * 100
+                                    ? (isShort
+                                        ? ((position.entryPrice - displayPrice) / position.entryPrice) * 100
+                                        : ((displayPrice - position.entryPrice) / position.entryPrice) * 100)
                                     : null;
                                 const isProfit = (displayPnl ?? 0) >= 0;
 

@@ -12,6 +12,7 @@ export interface ClosedPosition {
   accountId: string;
   type: string;
   tags?: { id: string; name: string; color: string; category: string; icon: string | null }[];
+  side: "long" | "short";
 }
 
 export interface OpenPosition {
@@ -25,6 +26,7 @@ export interface OpenPosition {
   tradeId: string;
   type: string;
   tags?: { id: string; name: string; color: string; category: string; icon: string | null }[];
+  side: "long" | "short";
 }
 
 export interface DisplayPosition {
@@ -45,6 +47,7 @@ export interface DisplayPosition {
   unrealizedPnl?: number | null;
   marketValue?: number | null;
   tags?: { id: string; name: string; color: string; category: string; icon: string | null }[];
+  side: "long" | "short";
 }
 
 export interface Trade {
@@ -148,6 +151,7 @@ export interface ClosedTrade {
   multiplier: number;
   positionKey?: string | null;
   tags?: { id: string; name: string; color: string; category: string; icon: string | null }[];
+  side: "long" | "short";
 }
 
 // Rename the frontend one to ClosedPositionJSON or similar? 
@@ -166,4 +170,5 @@ export interface OpenPositionInternal {
   type: string;
   positionKey?: string | null;
   tags?: { id: string; name: string; color: string; category: string; icon: string | null }[];
+  side: "long" | "short";
 }
