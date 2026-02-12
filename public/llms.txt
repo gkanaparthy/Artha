@@ -1,0 +1,194 @@
+# Artha Trading Journal
+
+> The beautiful, automated trading journal for serious traders
+
+## What is Artha?
+
+Artha is an automated trading journal web application that helps traders identify winning setups and master their psychology. It replaces messy spreadsheets with automatic broker syncing, FIFO-calculated P&L, and AI-powered performance coaching.
+
+## Core Features
+
+### Automatic Broker Syncing
+- Zero manual entry - connect your broker once and every trade syncs automatically
+- Supports 100+ brokerages including Interactive Brokers, Schwab, Zerodha, Robinhood, and more
+- Powered by SnapTrade API with bank-level security
+- AES-256 encrypted data storage
+- Real-time trade synchronization
+
+### Psychology Tracking
+- Tag every trade with setups, mistakes, and emotions
+- Position-level tagging system (tags apply to entire positions, not individual trades)
+- See exactly which patterns cost you money and which make it
+- Track trading psychology patterns over time
+- Filter analytics by tags to identify behavioral patterns
+
+### Accurate P&L Calculation
+- FIFO (First-In-First-Out) lot matching engine
+- Supports stocks, options (standard 100x and mini 10x contracts), long/short positions
+- Real-time profit/loss, win rates, and risk-reward ratios
+- Filter by date range, account, symbol, or psychology tags
+- Cross-account position tracking with accurate cost basis
+
+### AI Performance Coaching (Pro)
+- Personalized trading insights powered by Google Gemini 2.0 Flash
+- Analyzes your trade history and psychology tags
+- Identifies patterns in winning vs losing trades
+- Actionable recommendations to improve performance
+- Cached responses for fast performance
+
+### Analytics & Reports
+- Win rate, profit factor, average win/loss
+- Risk-reward ratio analysis
+- Performance by symbol, account, or tag
+- Date range filtering for period analysis
+- Visual charts and performance metrics
+
+## Technology Stack
+
+- **Frontend**: Next.js 16 (App Router), React 19, TypeScript 5, Tailwind CSS 4
+- **Backend**: PostgreSQL (Supabase), Prisma ORM, NextAuth authentication
+- **APIs**: SnapTrade (broker connections), Stripe (billing), Google Gemini / Groq (AI)
+- **Security**: AES-256-GCM encryption, Row-Level Security (RLS), OAuth 2.0
+- **Caching**: Upstash Redis for rate limiting and AI response caching
+
+## Pricing Plans
+
+### Free Trial
+- 30-day free trial
+- No credit card required
+- Full access to all Pro features during trial
+
+### Founder Plan (Limited Time)
+- $12/month or $120/year (first 100 users only)
+- Lifetime price lock guarantee
+- All Pro features included
+- Priority support
+
+### Regular Plan
+- $20/month or $200/year
+- All Pro features:
+  - Unlimited broker connections
+  - AI performance coaching
+  - Advanced analytics
+  - Psychology tracking
+  - Automatic trade sync
+
+### Free Tier (After Trial)
+- View-only access to trade history
+- Basic metrics
+- No new trade syncing
+- No AI coaching
+
+## Supported Brokerages
+
+Via SnapTrade integration, Artha supports 100+ brokerages including:
+- Interactive Brokers
+- Charles Schwab
+- TD Ameritrade
+- Robinhood
+- Zerodha (India)
+- E*TRADE
+- Fidelity
+- Webull
+- Alpaca
+- And many more
+
+## Security & Privacy
+
+- **Encryption**: AES-256-GCM encryption for all sensitive data (broker credentials, account numbers)
+- **Authentication**: OAuth 2.0 via Google, Apple, or Email Magic Links
+- **Data Access**: Row-Level Security (RLS) ensures users can only access their own data
+- **Compliance**: Broker connections via SnapTrade (SOC 2 Type II certified)
+- **Privacy**: No data sharing with third parties; trade data remains private
+
+## Use Cases
+
+Artha is perfect for:
+- **Day Traders** - Track intraday patterns and psychology
+- **Swing Traders** - Analyze multi-day position performance
+- **Options Traders** - Accurate P&L for complex option strategies
+- **Multi-Account Traders** - Consolidate trades across multiple brokers
+- **Serious Traders** - Identify and eliminate costly behavioral patterns
+
+## Target Audience
+
+- Active retail traders (stocks, options, futures)
+- Trading psychology enthusiasts
+- Traders frustrated with manual spreadsheet journaling
+- Multi-broker traders needing consolidated analytics
+- Traders seeking AI-powered performance improvement
+
+## Competitive Advantages
+
+1. **Zero Manual Entry** - Unlike Trademetria or Edgewonk, Artha syncs trades automatically from 100+ brokers
+2. **Psychology-First** - Purpose-built tagging system for trading psychology patterns
+3. **AI Coaching** - Personalized insights based on your actual trade history
+4. **Accurate FIFO** - Proper lot matching for multi-leg positions across accounts
+5. **Beautiful Design** - Modern, responsive interface built with latest web technologies
+6. **Security** - Bank-level encryption and OAuth-only authentication
+
+## Common Questions
+
+**Q: How does automatic syncing work?**
+A: Artha uses SnapTrade's secure API to connect directly to your broker. Once connected, trades sync automatically - no manual CSV uploads or spreadsheet entry.
+
+**Q: Is my brokerage supported?**
+A: Artha supports 100+ brokerages via SnapTrade, including all major US brokers (Interactive Brokers, Schwab, Robinhood, etc.) and international brokers like Zerodha (India).
+
+**Q: How is P&L calculated?**
+A: Artha uses FIFO (First-In-First-Out) lot matching within each account. This ensures accurate cost basis and P&L for partial closes, averaging, and complex strategies.
+
+**Q: Can I tag trades after they happen?**
+A: Yes! Tags are applied at the position level (identified by account + symbol). You can tag positions anytime and filter all analytics by those tags.
+
+**Q: What AI model powers the coaching?**
+A: Artha uses Google Gemini 2.0 Flash as the primary model with Groq Llama 3.3 as fallback. Insights are cached for 1 hour for performance.
+
+**Q: Can I try it before paying?**
+A: Yes! Artha offers a 30-day free trial with no credit card required. You can also try the demo mode without creating an account.
+
+**Q: What happens if I cancel my subscription?**
+A: You retain access until the end of your billing period, then your account switches to view-only mode. Your data is never deleted - you can reactivate anytime.
+
+## Website & Links
+
+- **Website**: https://arthatrades.com
+- **Login**: https://arthatrades.com/login
+- **Demo**: https://arthatrades.com/demo
+- **Pricing**: https://arthatrades.com/pricing
+- **Privacy Policy**: https://arthatrades.com/privacy
+- **Terms of Service**: https://arthatrades.com/terms
+- **Contact**: https://arthatrades.com/contact
+
+## Company Information
+
+- **Name**: Artha
+- **Product**: Trading Journal Web Application
+- **Category**: Finance, Trading Tools, SaaS
+- **Founded**: 2024
+- **Status**: Live (v1.0)
+- **Business Model**: Subscription SaaS with free trial
+
+## SEO Keywords
+
+trading journal, automated trading journal, trading psychology, trade tracking, FIFO P&L, broker sync, SnapTrade, trading analytics, AI trading coach, options trading journal, stock trading journal, day trading journal, swing trading journal, trade performance, trading metrics, win rate tracker, trading setup tracker, emotional trading, trading mistakes, Interactive Brokers journal, Robinhood journal, Schwab journal
+
+## Technical Details for Developers
+
+- **Platform**: Web application (Next.js 16 App Router)
+- **Authentication**: NextAuth with Google OAuth, Apple OAuth, Email Magic Links
+- **Database**: PostgreSQL (Supabase) with Prisma ORM
+- **Broker Integration**: SnapTrade SDK (REST API)
+- **Payment Processing**: Stripe Checkout + Billing Portal
+- **AI Integration**: Google Gemini API, Groq API
+- **Caching**: Upstash Redis
+- **Hosting**: Vercel
+- **Rate Limiting**: Redis-based with graceful degradation
+
+## Support & Documentation
+
+For questions or support, visit https://arthatrades.com/contact or email support via the contact form.
+
+---
+
+Last updated: 2026-02-12
