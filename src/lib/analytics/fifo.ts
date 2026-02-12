@@ -127,7 +127,18 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
         const shortLots: Lot[] = [];
 
         // Sort by timestamp just in case
-        instrumentTrades.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        // Sort by timestamp, then by action (BUYS before SELLS for same-day/same-second trades)
+        instrumentTrades.sort((a, b) => {
+            const timeDiff = a.timestamp.getTime() - b.timestamp.getTime();
+            if (timeDiff !== 0) return timeDiff;
+
+            // If same timestamp, prioritize openings/buys
+            const isABuy = /BUY|ASSIGNMENT|SPLIT/.test(a.action.toUpperCase());
+            const isBBuy = /BUY|ASSIGNMENT|SPLIT/.test(b.action.toUpperCase());
+            if (isABuy && !isBBuy) return -1;
+            if (!isABuy && isBBuy) return 1;
+            return 0;
+        });
 
         for (const trade of instrumentTrades) {
             const action = trade.action.toUpperCase();
