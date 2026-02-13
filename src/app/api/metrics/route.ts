@@ -169,6 +169,8 @@ export async function GET(req: NextRequest) {
         const symbol = searchParams.get('symbol');
         const accountId = searchParams.get('accountId');
         const assetType = searchParams.get('assetType');
+        const status = searchParams.get('status');
+        const action = searchParams.get('action');
         const tagIds = searchParams.get('tagIds')?.split(',').filter(Boolean);
         const tagFilterMode = searchParams.get('tagFilterMode') as 'any' | 'all' || 'any';
 
@@ -219,6 +221,8 @@ export async function GET(req: NextRequest) {
         if (symbol) filters.symbol = symbol;
         if (accountId) filters.accountId = accountId;
         if (assetType) filters.assetType = assetType;
+        if (status) filters.status = status as any;
+        if (action) filters.action = action;
         if (tagIds && tagIds.length > 0) {
             filters.tagIds = tagIds;
             filters.tagFilterMode = tagFilterMode;

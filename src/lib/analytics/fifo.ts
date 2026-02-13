@@ -6,7 +6,7 @@ const getCanonicalKey = (trade: {
     universalSymbolId?: string | null;
     type?: string;
     accountId: string;
-}): string => { // ... No changes here
+}): string => {
     const accountPrefix = trade.accountId;
     if (trade.universalSymbolId) return `${accountPrefix}:${trade.universalSymbolId}`;
     if (trade.type === 'OPTION') {
@@ -32,29 +32,6 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
     // Helper to get tags for an item
     const getTagsForItem = (item: { symbol: string, accountId: string, openedAt: Date, positionKey?: string | null }) => {
         if (!filters || !('positionTags' in filters) || !('tagDefs' in filters)) return [];
-        // For lookup, we try to reconstruct the key. 
-        // Note: The positionKey logic in DB might be `v1|...` but here we are using a Map keyed by something?
-        // Wait, the caller (route.tsx) constructs the map using `pt.positionKey`.
-        // BUT, the positionKey is generated via `accountId:symbol:openedAt` in the DB backfill?
-        // Actually, the new backfill uses `v1|...`.
-        // The Map in route.tsx uses `pt.positionKey`. 
-        // So we need to construct the key in the SAME format as the DB.
-
-        // HOWEVER, the `calculateMetrics` logic is purely FIFO based and doesn't know the DB `positionKey`.
-        // It calculates `openedAt` dynamically.
-        // If the DB `positionKey` relies on the *first trade timestamp*, and our FIFO logic matches that, we are good.
-        // The backfill script uses the FIRST trade timestamp of the group logic.
-        // Our FIFO logic here determines `matchLot.date` as the openedAt.
-
-        // So we should try to match the format: `v1|accountId|symbol|timestamp`
-        // But we must handle legacy keys too if any exist? The backfill should have fixed them.
-
-        // Let's assume v1 format:
-        // const v1Key = `v1|${item.accountId}|${item.symbol}|${item.openedAt.getTime()}`;
-
-        // We also need to support the legacy format just in case the Map has legacy keys?
-        // Or if the backfill isn't finished.
-        // The key in the Map comes from `prisma.positionTag.findMany`.
 
         const ptMap = 'positionTags' in (filters as object) ? (filters as unknown as Record<string, unknown>).positionTags as Map<string, string[]> : new Map();
         const defMap = 'tagDefs' in (filters as object) ? (filters as unknown as Record<string, unknown>).tagDefs as Map<string, { id: string; name: string; color: string; category: string; icon: string | null }> : new Map();
@@ -119,7 +96,6 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
 
     const closedTrades: ClosedTrade[] = [];
     const allOpenPositions: OpenPositionInternal[] = [];
-    let unrealizedCost = 0;
 
     // 2. Process each Instrument Key
     for (const [key, instrumentTrades] of tradesByKey) {
@@ -158,8 +134,6 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
             if (quantity === 0) continue;
 
             if (action === 'SPLIT') {
-                // ... split logic ...
-                // Simplified split logic from original
                 const rawQty = trade.quantity;
                 const currentLongQty = longLots.reduce((sum, l) => sum + l.quantity, 0);
                 const currentShortQty = shortLots.reduce((sum, l) => sum + l.quantity, 0);
@@ -274,9 +248,6 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                 }
 
                 if (remainingQty > 0.000001) {
-                    // Orphan Sell: No long position to close.
-                    // For stocks, we assume this is a pre-existing long being closed (missing history)
-                    // unless it's explicitly a short opening action.
                     const isExplicitShort = action === 'SELL_TO_OPEN';
                     if (!isExplicitShort && (tradeType === 'STOCK' || tradeType === 'ETF')) {
                         closedTrades.push({
@@ -400,16 +371,14 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
             });
         }
 
-        // Phantom short logic omitted for brevity in this shared file, but important. 
-        // We will include basic short logic.
         const symbolTrades = instrumentTrades;
         const hasBuys = symbolTrades.some(t => {
-            const action = t.action.toUpperCase();
-            return action.includes('BUY') || action === 'ASSIGNMENT';
+            const act = t.action.toUpperCase();
+            return act.includes('BUY') || act === 'ASSIGNMENT';
         });
         const hasSells = symbolTrades.some(t => {
-            const action = t.action.toUpperCase();
-            return action.includes('SELL') || action === 'EXERCISES' || action === 'OPTIONEXPIRATION';
+            const act = t.action.toUpperCase();
+            return act.includes('SELL') || act === 'EXERCISES' || act === 'OPTIONEXPIRATION';
         });
 
         const isLikelyPhantom = shortLots.length > 0 && !hasBuys && hasSells;
@@ -436,10 +405,6 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                 });
             }
         }
-    }
-
-    for (const pos of allOpenPositions) {
-        unrealizedCost += Math.abs(pos.currentValue);
     }
 
     // Filtering Logic
@@ -476,35 +441,49 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
             filteredTrades = filteredTrades.filter(t => t.type === filters.assetType);
             filteredOpenPositions = filteredOpenPositions.filter(p => p.type === filters.assetType);
         }
+        if (filters.action && filters.action !== 'ALL') {
+            const side = filters.action === 'BUY' ? 'long' : 'short';
+            filteredTrades = filteredTrades.filter(t => t.side === side);
+            filteredOpenPositions = filteredOpenPositions.filter(p => p.side === side);
+        }
+        if (filters.status && filters.status !== 'all') {
+            if (filters.status === "open") {
+                filteredTrades = [];
+            } else if (filters.status === "winners") {
+                filteredTrades = filteredTrades.filter(t => t.pnl > 0);
+                filteredOpenPositions = [];
+            } else if (filters.status === "losers") {
+                filteredTrades = filteredTrades.filter(t => t.pnl < 0);
+                filteredOpenPositions = [];
+            }
+        }
         if (filters.tagIds && filters.tagIds.length > 0 && 'positionTags' in (filters as object)) {
             const ptMap = (filters as unknown as Record<string, unknown>).positionTags as Map<string, string[]>;
             const filterByTags = (item: { symbol: string, accountId: string, openedAt: Date, positionKey?: string | null }) => {
                 let itemTagIds: string[] | undefined;
-
-                if (item.positionKey) {
-                    itemTagIds = ptMap.get(item.positionKey);
-                }
-
+                if (item.positionKey) itemTagIds = ptMap.get(item.positionKey);
                 if (!itemTagIds) {
                     const v1Key = `v1|${item.accountId}|${item.symbol}|${item.openedAt.getTime()}`;
                     itemTagIds = ptMap.get(v1Key);
                 }
-
                 if (!itemTagIds) {
                     const legacyKey = `${item.accountId}:${item.symbol}:${item.openedAt.toISOString()}`;
                     itemTagIds = ptMap.get(legacyKey) || [];
                 }
-
                 if (filters.tagFilterMode === 'all') {
                     return filters.tagIds!.every(id => itemTagIds!.includes(id));
                 } else {
                     return filters.tagIds!.some(id => itemTagIds!.includes(id));
                 }
             };
-
             filteredTrades = filteredTrades.filter(filterByTags);
             filteredOpenPositions = filteredOpenPositions.filter(filterByTags);
         }
+    }
+
+    let unrealizedCost = 0;
+    for (const pos of filteredOpenPositions) {
+        unrealizedCost += Math.abs(pos.currentValue);
     }
 
     return { filteredTrades, filteredOpenPositions, unrealizedCost };

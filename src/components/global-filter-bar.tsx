@@ -95,6 +95,14 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
             });
         }
 
+        if (filters.action && filters.action !== 'ALL') {
+            labels.push({
+                key: 'action',
+                label: `Side: ${filters.action === 'BUY' ? 'Long' : 'Short'}`,
+                onRemove: () => setFilters(prev => ({ ...prev, action: 'ALL' }))
+            });
+        }
+
         if (filters.status && filters.status !== 'all') {
             const statusLabel = filters.status.charAt(0).toUpperCase() + filters.status.slice(1);
             labels.push({
@@ -171,6 +179,23 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                                 <SelectItem value="all">All Types</SelectItem>
                                 <SelectItem value="STOCK">Stocks</SelectItem>
                                 <SelectItem value="OPTION">Options</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        {/* Side Filter */}
+                        <Select
+                            value={filters.action}
+                            onValueChange={(value: "ALL" | "BUY" | "SELL") =>
+                                setFilters(prev => ({ ...prev, action: value }))
+                            }
+                        >
+                            <SelectTrigger className="w-full h-9">
+                                <SelectValue placeholder="Side" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ALL">All Sides</SelectItem>
+                                <SelectItem value="BUY">Long Only</SelectItem>
+                                <SelectItem value="SELL">Short Only</SelectItem>
                             </SelectContent>
                         </Select>
 
@@ -263,6 +288,23 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                         <SelectItem value="all" className="text-xs">All Types</SelectItem>
                         <SelectItem value="STOCK" className="text-xs">Stocks</SelectItem>
                         <SelectItem value="OPTION" className="text-xs">Options</SelectItem>
+                    </SelectContent>
+                </Select>
+
+                {/* Side Filter */}
+                <Select
+                    value={filters.action}
+                    onValueChange={(value: "ALL" | "BUY" | "SELL") =>
+                        setFilters(prev => ({ ...prev, action: value }))
+                    }
+                >
+                    <SelectTrigger className="w-[100px] h-8 text-xs bg-background/50 border-border/50">
+                        <SelectValue placeholder="Side" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="ALL" className="text-xs">All Sides</SelectItem>
+                        <SelectItem value="BUY" className="text-xs">Long Only</SelectItem>
+                        <SelectItem value="SELL" className="text-xs">Short Only</SelectItem>
                     </SelectContent>
                 </Select>
 

@@ -128,6 +128,8 @@ export interface FilterOptions {
   symbol?: string;
   accountId?: string | string[];
   assetType?: string;
+  status?: string;
+  action?: string;
   tagIds?: string[];
   tagFilterMode?: 'any' | 'all';
 }

@@ -160,6 +160,14 @@ export function ReportsView({
         params.append("accountId", filters.accountId.join(","));
       if (filters.assetType && filters.assetType !== "all")
         params.append("assetType", filters.assetType);
+      if (filters.status && filters.status !== "all")
+        params.append("status", filters.status);
+      if (filters.action && filters.action !== "ALL")
+        params.append("action", filters.action);
+      if (filters.tagIds && filters.tagIds.length > 0)
+        params.append("tagIds", filters.tagIds.join(","));
+      if (filters.tagFilterMode)
+        params.append("tagFilterMode", filters.tagFilterMode);
 
       const res = await fetch(`/api/metrics?${params.toString()}`);
       const data: ExtendedMetrics = await res.json();
@@ -169,7 +177,7 @@ export function ReportsView({
     } finally {
       setLoading(false);
     }
-  }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType, isDemo]);
+  }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType, filters.status, filters.tagIds, filters.tagFilterMode, filters.action, isDemo]);
 
   useEffect(() => {
     if (!isDemo) {
