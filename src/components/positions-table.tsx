@@ -74,16 +74,9 @@ export function PositionsTable({
     const allPositions = externalPositions || initialPositions;
     const loading = externalLoading ?? false;
 
-    // Apply client-side filters (especially status)
-    const filteredPositions = useMemo(() => {
-        return allPositions.filter((p: DisplayPosition) => {
-            // Filter by status (open/winners/losers)
-            if (filters.status === "open") return p.status === "open";
-            if (filters.status === "winners") return p.status === "closed" && (p.pnl ?? 0) > 0;
-            if (filters.status === "losers") return p.status === "closed" && (p.pnl ?? 0) < 0;
-            return true;
-        });
-    }, [allPositions, filters.status]);
+    // The API now handles all filtering (status, tags, etc.)
+    // We no longer need client-side filtering here
+    const filteredPositions = allPositions;
 
     const { sortedData: sortedPositions, handleSort, getSortIcon } = useSort<DisplayPosition, SortField>({
         data: filteredPositions,
@@ -123,10 +116,7 @@ export function PositionsTable({
         }
     }, [filteredPositions, onMetricsUpdate, isDemo, allPositions]);
 
-    // Check if filters are hiding positions (for indicator)
-    const hasFiltersApplied = filters.status !== "all";
-    const isFilteringPositions = hasFiltersApplied && sortedPositions.length < allPositions.length;
-
+    // Filtering is done on the backend now
     const positionsWithLiveData = sortedPositions;
 
     // Handle Delete (disabled in demo mode)
@@ -146,7 +136,7 @@ export function PositionsTable({
     };
 
     const hasActiveFilters = filters.symbol || filters.startDate || filters.endDate ||
-        filters.status !== "all" || (filters.accountId && filters.accountId.length > 0) || filters.assetType !== "all";
+        filters.status !== "all" || filters.action !== "ALL" || (filters.accountId && filters.accountId.length > 0) || filters.assetType !== "all";
 
     const openCount = allPositions.filter(p => p.status === "open").length;
     const closedCount = allPositions.filter(p => p.status === "closed").length;
@@ -288,21 +278,7 @@ export function PositionsTable({
 
     return (
         <div className="space-y-4">
-            {/* Filter indicator moved to Dashboard level or kept here as a subtle info box */}
-            {!loading && isFilteringPositions && (
-                <div className="glass rounded-xl p-3 border border-amber-500/20 bg-amber-500/5">
-                    <div className="flex items-center gap-2 text-xs">
-                        <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                        <span className="text-muted-foreground">
-                            Showing <span className="font-semibold text-foreground">{sortedPositions.length}</span> of{" "}
-                            <span className="font-semibold text-foreground">{allPositions.length}</span> positions
-                            <span className="text-amber-600 dark:text-amber-400 ml-1">
-                                ({allPositions.length - sortedPositions.length} hidden by filters)
-                            </span>
-                        </span>
-                    </div>
-                </div>
-            )}
+            {/* Filter indicator removed - all filtering is server-side now */}
 
             {/* Mobile Card View */}
             <div className="md:hidden space-y-3">

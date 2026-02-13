@@ -159,6 +159,8 @@ export default function DashboardPage() {
                 params.append("accountId", filters.accountId.join(","));
             }
             if (filters.assetType && filters.assetType !== 'all') params.append("assetType", filters.assetType);
+            if (filters.status && filters.status !== 'all') params.append("status", filters.status);
+            if (filters.action && filters.action !== 'ALL') params.append("action", filters.action);
             if (filters.tagIds && filters.tagIds.length > 0) params.append("tagIds", filters.tagIds.join(","));
             if (filters.tagFilterMode) params.append("tagFilterMode", filters.tagFilterMode);
 
@@ -202,7 +204,7 @@ export default function DashboardPage() {
         } finally {
             setLoading(false);
         }
-    }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType, filters.tagIds, filters.tagFilterMode]);
+    }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType, filters.status, filters.action, filters.tagIds, filters.tagFilterMode]);
 
     // Fetch live positions with current market prices
     const fetchLivePositions = useCallback(async () => {
