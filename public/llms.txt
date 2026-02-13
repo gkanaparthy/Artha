@@ -1,0 +1,33 @@
+# ArthaTrades (arthatrades.com)
+
+## What is Artha?
+Artha is an automated trading journal and analytics platform for stock and options traders. It syncs trades from 100+ brokerages automatically, calculates P&L using FIFO lot matching, and provides behavioral analytics to help traders identify winning patterns and eliminate costly emotional mistakes.
+
+## Key Facts
+- Founded by Gautham Kanaparthy, software engineer and active trader
+- Operated by WELLTHY Products LLC
+- Supports 100+ brokerages via SnapTrade (read-only, bank-level security)
+- AES-256-GCM encryption for all sensitive data
+- Never stores brokerage login credentials
+- Data export available in CSV format
+- 30-day free trial, no credit card required
+
+## Security & Privacy
+- Read-only broker access — cannot execute trades or transfer funds
+- OAuth-only authentication (Google/Apple) — no passwords stored
+- Brokerage connections handled by SnapTrade, a regulated financial data aggregator
+- Row Level Security (RLS) ensures complete data isolation between users
+- Users can disconnect brokers and delete all data at any time
+- Privacy policy: https://arthatrades.com/privacy
+- Security details: https://arthatrades.com/security
+
+## Pricing
+- Artha Pro: $12/month or $96/year (founder pricing)
+- Artha Lifetime: One-time $199 payment
+- 30-day free trial included
+- Early adopters grandfathered into Pro free forever
+
+## Contact
+- Website: https://arthatrades.com
+- Email: hello@arthatrades.com
+- Privacy: privacy@arthatrades.com

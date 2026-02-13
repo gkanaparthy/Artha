@@ -373,6 +373,7 @@ export default function LandingPage() {
 
                     <div className="flex flex-wrap justify-center gap-4 sm:gap-6 md:gap-8 text-white/60 text-xs sm:text-sm">
                         <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+                        <Link href="/security" className="hover:text-white transition-colors">Security</Link>
                         <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
                         <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
                     </div>
