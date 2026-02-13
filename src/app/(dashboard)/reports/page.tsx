@@ -128,7 +128,7 @@ function SummaryCard({
 type ViewType = "charts" | "calendar";
 
 export default function ReportsPage() {
-  const { filters } = useFilters();
+  const { filters, refreshKey } = useFilters();
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewType, setViewType] = useState<ViewType>("charts");
@@ -144,6 +144,8 @@ export default function ReportsPage() {
         params.append("accountId", filters.accountId.join(","));
       }
       if (filters.assetType && filters.assetType !== 'all') params.append("assetType", filters.assetType);
+      if (filters.status && filters.status !== 'all') params.append("status", filters.status);
+      if (filters.action && filters.action !== 'ALL') params.append("action", filters.action);
       if (filters.tagIds && filters.tagIds.length > 0) params.append("tagIds", filters.tagIds.join(","));
       if (filters.tagFilterMode) params.append("tagFilterMode", filters.tagFilterMode);
 
@@ -155,11 +157,11 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType, filters.tagIds, filters.tagFilterMode]);
+  }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType, filters.status, filters.action, filters.tagIds, filters.tagFilterMode]);
 
   useEffect(() => {
     fetchMetrics();
-  }, [fetchMetrics]);
+  }, [fetchMetrics, refreshKey]);
 
   const formatCurrency = (value: number) =>
     `$${Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
