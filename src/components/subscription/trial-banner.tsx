@@ -66,7 +66,7 @@ export function TrialBanner({ daysLeft, hasCommitted, trialEndsAt, isFreeUser, l
     // Trial user who already committed (has CC on file)
     if (hasCommitted && trialEndsAt) {
         const formattedDate = new Date(trialEndsAt).toLocaleDateString('en-US', {
-            month: 'short', day: 'numeric'
+            month: 'short', day: 'numeric', timeZone: 'UTC'
         });
 
         return (
@@ -113,24 +113,22 @@ export function TrialBanner({ daysLeft, hasCommitted, trialEndsAt, isFreeUser, l
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className={`border-b ${
-                    isCritical
+                className={`border-b ${isCritical
                         ? 'bg-red-500/10 dark:bg-red-500/15 border-red-500/20'
                         : isUrgent
                             ? 'bg-orange-500/10 dark:bg-orange-500/15 border-orange-500/20'
                             : 'bg-primary/5 dark:bg-primary/10 border-primary/20'
-                }`}
+                    }`}
             >
                 <div className="max-w-7xl mx-auto py-2 px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                         <div className="flex-1 flex items-center min-w-0">
-                            <span className={`p-1.5 rounded-lg ${
-                                isCritical
+                            <span className={`p-1.5 rounded-lg ${isCritical
                                     ? 'bg-red-500/20 text-red-600 dark:text-red-400'
                                     : isUrgent
                                         ? 'bg-orange-500/20 text-orange-600'
                                         : 'bg-primary/20 text-primary'
-                            }`}>
+                                }`}>
                                 {isUrgent ? <AlertCircle className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
                             </span>
                             <p className="ml-3 font-medium text-sm truncate">

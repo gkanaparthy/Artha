@@ -560,6 +560,7 @@ export function ReportsView({
                             new Date(date).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
+                              timeZone: "UTC",
                             })
                           }
                           className="text-muted-foreground"
@@ -596,6 +597,7 @@ export function ReportsView({
                                   month: "long",
                                   day: "numeric",
                                   year: "numeric",
+                                  timeZone: "UTC",
                                 })
                               }
                             />
@@ -936,6 +938,7 @@ export function ReportsView({
                             new Date(date).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
+                              timeZone: "UTC",
                             })
                           }
                           stroke="currentColor"
@@ -965,6 +968,7 @@ export function ReportsView({
                                   month: "long",
                                   day: "numeric",
                                   year: "numeric",
+                                  timeZone: "UTC",
                                 })
                               }
                             />

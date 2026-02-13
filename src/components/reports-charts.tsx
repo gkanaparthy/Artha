@@ -144,7 +144,7 @@ export function ReportsCharts({
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 10, fill: "currentColor" }}
-                  tickFormatter={(date) => new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  tickFormatter={(date) => new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
                   className="text-muted-foreground"
                   stroke="currentColor"
                   angle={-45}
@@ -165,7 +165,7 @@ export function ReportsCharts({
                       payload={payload?.map(p => ({ value: p.value as number, name: p.name as string, color: netPnL >= 0 ? "oklch(0.7 0.2 145)" : "oklch(0.65 0.2 25)" }))}
                       label={String(label ?? "")}
                       formatter={(value) => [formatCurrency(value), "Cumulative P&L"]}
-                      labelFormatter={(l) => new Date(l).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                      labelFormatter={(l) => new Date(l).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}
                     />
                   )}
                 />
@@ -442,7 +442,7 @@ export function ReportsCharts({
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 10, fill: "currentColor" }}
-                  tickFormatter={(date) => new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  tickFormatter={(date) => new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
                   stroke="currentColor"
                   angle={-45}
                   textAnchor="end"
@@ -466,7 +466,7 @@ export function ReportsCharts({
                       }))}
                       label={String(label ?? "")}
                       formatter={(value) => [formatCurrency(value), "Drawdown"]}
-                      labelFormatter={(l) => new Date(l).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                      labelFormatter={(l) => new Date(l).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}
                     />
                   )}
                 />

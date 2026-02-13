@@ -31,11 +31,14 @@ export function formatCompactCurrency(value: number, showSign = false): string {
 }
 
 // Format date as "Jan 1, 2024"
+// Uses UTC timezone to display dates exactly as stored in the database,
+// preventing timezone-related date shifts
 export function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 

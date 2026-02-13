@@ -92,7 +92,7 @@ export function TradeTable() {
                     <div>
                         <p className="text-xs text-muted-foreground mb-1">Date</p>
                         <p className="text-sm font-medium">
-                            {trade.timestamp ? new Date(trade.timestamp).toLocaleDateString() : '-'}
+                            {trade.timestamp ? new Date(trade.timestamp).toLocaleDateString('en-US', { timeZone: 'UTC' }) : '-'}
                         </p>
                     </div>
                     <div>
@@ -145,55 +145,55 @@ export function TradeTable() {
             {/* Desktop Table View */}
             <div className="hidden md:block rounded-md border bg-card">
                 <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Symbol</TableHead>
-                        <TableHead>Action</TableHead>
-                        <TableHead>Qty</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead>Value</TableHead>
-                        <TableHead>Broker</TableHead>
-                        <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {trades.length === 0 ? (
+                    <TableHeader>
                         <TableRow>
-                            <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
-                                No trades found. Connect your broker to sync data.
-                            </TableCell>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Symbol</TableHead>
+                            <TableHead>Action</TableHead>
+                            <TableHead>Qty</TableHead>
+                            <TableHead>Price</TableHead>
+                            <TableHead>Value</TableHead>
+                            <TableHead>Broker</TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
-                    ) : (
-                        trades.map((trade) => (
-                            <TableRow key={trade.id}>
-                                <TableCell>{trade.timestamp ? new Date(trade.timestamp).toLocaleDateString() : '-'}</TableCell>
-                                <TableCell className="font-medium">{trade.symbol}</TableCell>
-                                <TableCell>
-                                    <Badge variant={trade.action === "BUY" ? "default" : "secondary"}>
-                                        {trade.action}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>{trade.quantity}</TableCell>
-                                <TableCell>${trade.price.toFixed(2)}</TableCell>
-                                <TableCell>${(trade.price * trade.quantity).toFixed(2)}</TableCell>
-                                <TableCell className="text-muted-foreground text-sm">{trade.account?.brokerName}</TableCell>
-                                <TableCell>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                        onClick={() => handleDelete(trade.id)}
-                                        aria-label={`Delete ${trade.symbol} trade from ${trade.timestamp ? new Date(trade.timestamp).toLocaleDateString() : 'unknown date'}`}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
+                    </TableHeader>
+                    <TableBody>
+                        {trades.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
+                                    No trades found. Connect your broker to sync data.
                                 </TableCell>
                             </TableRow>
-                        ))
-                    )}
-                </TableBody>
-            </Table>
+                        ) : (
+                            trades.map((trade) => (
+                                <TableRow key={trade.id}>
+                                    <TableCell>{trade.timestamp ? new Date(trade.timestamp).toLocaleDateString('en-US', { timeZone: 'UTC' }) : '-'}</TableCell>
+                                    <TableCell className="font-medium">{trade.symbol}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={trade.action === "BUY" ? "default" : "secondary"}>
+                                            {trade.action}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>{trade.quantity}</TableCell>
+                                    <TableCell>${trade.price.toFixed(2)}</TableCell>
+                                    <TableCell>${(trade.price * trade.quantity).toFixed(2)}</TableCell>
+                                    <TableCell className="text-muted-foreground text-sm">{trade.account?.brokerName}</TableCell>
+                                    <TableCell>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                            onClick={() => handleDelete(trade.id)}
+                                            aria-label={`Delete ${trade.symbol} trade from ${trade.timestamp ? new Date(trade.timestamp).toLocaleDateString() : 'unknown date'}`}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
             </div>
         </div>
     );
