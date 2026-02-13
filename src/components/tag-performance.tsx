@@ -77,7 +77,7 @@ export function TagPerformance({ isDemo = false }: TagPerformanceProps) {
         };
 
         fetchAnalytics();
-    }, [filters.startDate, filters.endDate, filters.accountId]);
+    }, [filters.startDate, filters.endDate, filters.accountId, isDemo]);
 
     if (loading) {
         return (
@@ -135,7 +135,7 @@ export function TagPerformance({ isDemo = false }: TagPerformanceProps) {
                             </div>
                             <div className="h-8 w-px bg-border hidden md:block" />
                             <div>
-                                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">"What If" Performance</p>
+                                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">&quot;What If&quot; Performance</p>
                                 <p className="text-2xl font-bold text-green-500 flex items-center gap-2">
                                     {formatCurrency(currentTaggedPnL - totalMistakeCost)}
                                     <Badge variant="outline" className="text-[10px] border-green-500/30 text-green-600 bg-green-500/5">
@@ -144,7 +144,7 @@ export function TagPerformance({ isDemo = false }: TagPerformanceProps) {
                                 </p>
                             </div>
                             <div className="flex-1 text-sm text-muted-foreground md:text-right italic">
-                                "If you had avoided these mistakes, you'd be {formatCurrency(Math.abs(totalMistakeCost))} more profitable."
+                                &quot;If you had avoided these mistakes, you&apos;d be {formatCurrency(Math.abs(totalMistakeCost))} more profitable.&quot;
                             </div>
                         </div>
                     </CardContent>

@@ -1,0 +1,39 @@
+# Artha
+
+Artha (Sanskrit: अर्थ, meaning "wealth" or "purpose") is a powerful trading journal and analytics platform designed for retail traders. It automatically syncs trades from connected brokerage accounts via the SnapTrade API, calculates P&L using a sophisticated FIFO lot matching engine, and provides AI-powered performance coaching.
+
+## Core Features
+
+- **Automatic Trade Sync**: Connect 100+ brokerages (India, US, Global) via SnapTrade OAuth.
+- **FIFO P&L Engine**: Accurate cost basis calculation for stocks and options (assignments, exercises, 100x/10x multipliers).
+- **Position-Level Tagging**: Track setups, mistakes, and emotions at the position level.
+- **Behavioral Alpha**: Quantify the cost of emotional mistakes vs. following your edge.
+- **AI Performance Coaching**: Personalized insights using Google Gemini 1.5 Flash and Groq Llama 3.3.
+- **Subscription Management**: Full Stripe integration with trial management and reverse-trial flow.
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router, Turbopack)
+- **Language**: TypeScript 5
+- **UI**: React 19, Tailwind CSS 4, Radix UI, Framer Motion, Recharts
+- **Database**: PostgreSQL (Supabase) with Prisma ORM
+- **Authentication**: NextAuth.js v5
+- **Caching**: Upstash Redis
+- **Email**: Resend
+- **Broker API**: SnapTrade SDK
+
+## Project Structure
+
+- `src/app`: Next.js App Router routes and layouts.
+- `src/components`: UI components (shadcn/ui + custom).
+- `src/lib/services`: Core logic for SnapTrade, AI coaching, and Stripe.
+- `src/app/api/metrics`: FIFO P&L engine.
+- `prisma/schema.prisma`: Database models.
+
+## Documentation
+
+- [CLAUDE.md](CLAUDE.md): Detailed development guide and architecture overview.
+- [README.md](README.md): Product overview and feature list.
+- [docs/DATA-QUALITY-MONITORING.md](docs/DATA-QUALITY-MONITORING.md): Data health checks.
+- [docs/BROKER-CONNECTION-DEBUG.md](docs/BROKER-CONNECTION-DEBUG.md): Troubleshooting SnapTrade.
+- [docs/security-assessment.md](docs/security-assessment.md): Security architecture and RLS.

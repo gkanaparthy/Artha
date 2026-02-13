@@ -138,6 +138,7 @@ async function claimWebhookEvent(
             data: {
                 userId,
                 eventType,
+                /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
                 eventData: eventData as any,
                 processingStartedAt: now,
                 processedAt: null,
@@ -153,6 +154,7 @@ async function claimWebhookEvent(
             data: {
                 userId,
                 eventType,
+                /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
                 eventData: eventData as any,
                 stripeEventId,
                 processingStartedAt: now,
@@ -176,6 +178,7 @@ async function claimWebhookEvent(
             data: {
                 userId,
                 eventType,
+                /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
                 eventData: eventData as any,
                 processingStartedAt: now,
                 processedAt: null,
@@ -319,15 +322,15 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     // Never overwrite LIFETIME or GRANDFATHERED status from subscription webhooks
     if (['LIFETIME', 'GRANDFATHERED'].includes(user.subscriptionStatus)) return;
 
-    let status: SubscriptionStatus = 'ACTIVE';
-    if (subscription.status === 'trialing') status = 'TRIALING';
-    if (subscription.status === 'past_due') status = 'PAST_DUE';
-    if (subscription.status === 'canceled') status = 'CANCELLED';
-    if (subscription.status === 'unpaid') status = 'FREE';
+    let status: SubscriptionStatus = SubscriptionStatus.ACTIVE;
+    if (subscription.status === 'trialing') status = SubscriptionStatus.TRIALING;
+    if (subscription.status === 'past_due') status = SubscriptionStatus.PAST_DUE;
+    if (subscription.status === 'canceled') status = SubscriptionStatus.CANCELLED;
+    if (subscription.status === 'unpaid') status = SubscriptionStatus.FREE;
 
     // If cancel_at_period_end is true, mark as CANCELLED even if still active or trialing
-    if (subscription.cancel_at_period_end && (status === 'ACTIVE' || status === 'TRIALING')) {
-        status = 'CANCELLED';
+    if (subscription.cancel_at_period_end && (status === SubscriptionStatus.ACTIVE || status === SubscriptionStatus.TRIALING)) {
+        status = SubscriptionStatus.CANCELLED;
     }
 
     // Cast to access period fields (exist at runtime but may not be in older type definitions)
@@ -391,7 +394,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     await prisma.user.update({
         where: { id: user.id },
         data: {
-            subscriptionStatus: 'FREE',
+            subscriptionStatus: SubscriptionStatus.FREE,
             stripeSubscriptionId: null,
             currentPeriodEnd: subscription.ended_at ? new Date(subscription.ended_at * 1000) : new Date(),
         }
