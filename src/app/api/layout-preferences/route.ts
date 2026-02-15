@@ -61,9 +61,15 @@ export async function PATCH(req: Request) {
       ? sanitizeLayoutPreferences(onboardingData.layoutPreferences)
       : DEFAULT_LAYOUT_PREFERENCES;
     const preferences = mergeLayoutPreferences(existingPreferences, body?.preferences);
+    const layoutPreferencesJson: Prisma.InputJsonObject = {
+      dashboardPrimaryOrder: preferences.dashboardPrimaryOrder,
+      dashboardSecondaryOrder: preferences.dashboardSecondaryOrder,
+      reportsSummaryOrder: preferences.reportsSummaryOrder,
+      reportsSecondaryOrder: preferences.reportsSecondaryOrder,
+    };
     const nextOnboardingData: Prisma.InputJsonValue = {
       ...onboardingData,
-      layoutPreferences: preferences,
+      layoutPreferences: layoutPreferencesJson,
     };
 
     await prisma.user.update({
