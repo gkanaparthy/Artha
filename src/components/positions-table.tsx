@@ -102,6 +102,38 @@ const addNullable = (a: number | null, b: number | null): number | null => {
     return (a ?? 0) + (b ?? 0);
 };
 
+const mergeLivePosition = (
+    map: Map<string, EnrichedLivePosition>,
+    key: string,
+    position: LivePosition
+) => {
+    const existing = map.get(key);
+
+    if (!existing) {
+        map.set(key, {
+            livePrice: position.price,
+            unrealizedPnl: position.openPnl,
+            marketValue: position.marketValue,
+            units: position.units,
+        });
+        return;
+    }
+
+    const existingWeight = Math.abs(existing.units);
+    const nextWeight = Math.abs(position.units);
+    const totalWeight = existingWeight + nextWeight;
+    const weightedPrice = existing.livePrice !== null && position.price !== null && totalWeight > 0
+        ? ((existing.livePrice * existingWeight) + (position.price * nextWeight)) / totalWeight
+        : null;
+
+    map.set(key, {
+        livePrice: weightedPrice ?? position.price ?? existing.livePrice,
+        unrealizedPnl: addNullable(existing.unrealizedPnl, position.openPnl),
+        marketValue: addNullable(existing.marketValue, position.marketValue),
+        units: existing.units + position.units,
+    });
+};
+
 // Get sort value for a position based on field
 const getSortValue = (p: DisplayPosition, field: SortField): string | number => {
     const comparePrice = p.status === 'open' ? p.livePrice : p.exitPrice;
@@ -145,40 +177,31 @@ export function PositionsTable({
         const map = new Map<string, EnrichedLivePosition>();
 
         for (const position of livePositions || []) {
-            const key = getLivePositionKey({
-                accountId: position.accountId,
-                symbol: position.symbol,
-                universalSymbolId: position.universalSymbolId,
-                type: position.type,
-                optionType: position.optionType,
-                strikePrice: position.strikePrice,
-                expiryDate: position.expirationDate,
-            });
-            const existing = map.get(key);
+            const keys = new Set<string>([
+                // Most specific key (UID if available)
+                getLivePositionKey({
+                    accountId: position.accountId,
+                    symbol: position.symbol,
+                    universalSymbolId: position.universalSymbolId,
+                    type: position.type,
+                    optionType: position.optionType,
+                    strikePrice: position.strikePrice,
+                    expiryDate: position.expirationDate,
+                }),
+                // Symbol-based fallback key for rows without universalSymbolId
+                getLivePositionKey({
+                    accountId: position.accountId,
+                    symbol: position.symbol,
+                    type: position.type,
+                    optionType: position.optionType,
+                    strikePrice: position.strikePrice,
+                    expiryDate: position.expirationDate,
+                }),
+            ]);
 
-            if (!existing) {
-                map.set(key, {
-                    livePrice: position.price,
-                    unrealizedPnl: position.openPnl,
-                    marketValue: position.marketValue,
-                    units: position.units,
-                });
-                continue;
+            for (const key of keys) {
+                mergeLivePosition(map, key, position);
             }
-
-            const existingWeight = Math.abs(existing.units);
-            const nextWeight = Math.abs(position.units);
-            const totalWeight = existingWeight + nextWeight;
-            const weightedPrice = existing.livePrice !== null && position.price !== null && totalWeight > 0
-                ? ((existing.livePrice * existingWeight) + (position.price * nextWeight)) / totalWeight
-                : null;
-
-            map.set(key, {
-                livePrice: weightedPrice ?? position.price ?? existing.livePrice,
-                unrealizedPnl: addNullable(existing.unrealizedPnl, position.openPnl),
-                marketValue: addNullable(existing.marketValue, position.marketValue),
-                units: existing.units + position.units,
-            });
         }
 
         return map;
