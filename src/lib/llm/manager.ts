@@ -1,5 +1,6 @@
 import { LLMProvider } from "./provider";
 import { GeminiProvider } from "./providers/gemini.provider";
+import { KimiProvider } from "./providers/kimi.provider";
 import { GroqProvider } from "./providers/groq.provider";
 import { InsightDataSummary, AiPersona } from "@/types/insights";
 
@@ -9,6 +10,7 @@ export class LLMManager {
     constructor() {
         this.providers = [
             new GeminiProvider(),
+            new KimiProvider(),
             new GroqProvider(),
         ];
     }
@@ -29,9 +31,10 @@ export class LLMManager {
                 } else {
                     errors.push(`${provider.name}: Not available (missing API key)`);
                 }
-            } catch (error: any) {
-                console.error(`[LLMManager] FATAL error with provider ${provider.name}:`, error.message);
-                errors.push(`${provider.name}: ${error.message}`);
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : "Unknown error";
+                console.error(`[LLMManager] FATAL error with provider ${provider.name}:`, message);
+                errors.push(`${provider.name}: ${message}`);
                 continue; // Try next provider
             }
         }

@@ -425,3 +425,35 @@ export async function sendBrokerConnectionNudgeEmail(email: string, name: string
         console.error('[Email] Broker nudge email error:', error);
     }
 }
+
+/**
+ * Send onboarding check-in email to users who haven't finished setup
+ */
+export async function sendOnboardingCheckInEmail(email: string, name: string) {
+    const from = "Gautham from Artha <kgauthamprasad@gmail.com>";
+    const firstName = name.split(' ')[0];
+    const template = EMAIL_TEMPLATES.ONBOARDING_CHECK_IN;
+
+    try {
+        const html = createBrandedEmail({
+            title: template.title,
+            content: template.content
+                .replace('{name}', name)
+                .replace('{firstName}', firstName),
+            buttonText: template.buttonText,
+            buttonUrl: template.buttonUrl
+        });
+
+        await getResend().emails.send({
+            from,
+            to: email,
+            subject: template.subject,
+            html,
+            replyTo: "kgauthamprasad@gmail.com"
+        });
+
+        console.log(`[Email] Onboarding check-in sent to ${email}`);
+    } catch (error) {
+        console.error('[Email] Onboarding check-in email error:', error);
+    }
+}
