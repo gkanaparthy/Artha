@@ -27,6 +27,12 @@ import { TagPerformance } from "@/components/tag-performance";
 import { AIInsightsCard } from "@/components/ai-insights-card";
 import { ConnectBrokerButton } from "@/components/connect-broker-button";
 import { SyncStatusBanner, SyncState } from "@/components/dashboard/sync-status-banner";
+import { DraggableTileGrid } from "@/components/draggable-tile-grid";
+import {
+    DASHBOARD_PRIMARY_TILE_IDS,
+    DASHBOARD_SECONDARY_TILE_IDS,
+    type LayoutPreferences,
+} from "@/lib/layout-preferences";
 
 interface Metrics {
     netPnL: number;
@@ -146,6 +152,8 @@ export default function DashboardPage() {
     const [syncState, setSyncState] = useState<SyncState | null>(null);
     const [syncPollingActive, setSyncPollingActive] = useState(false);
     const [tableUnrealizedPnL, setTableUnrealizedPnL] = useState<number | null | undefined>(undefined);
+    const [dashboardPrimaryOrder, setDashboardPrimaryOrder] = useState<string[]>([...DASHBOARD_PRIMARY_TILE_IDS]);
+    const [dashboardSecondaryOrder, setDashboardSecondaryOrder] = useState<string[]>([...DASHBOARD_SECONDARY_TILE_IDS]);
     const retryTriggeredRef = useRef(false);
 
     // Fetch metrics whenever ANY filter changes
@@ -276,6 +284,44 @@ export default function DashboardPage() {
         setTableUnrealizedPnL(value);
     }, []);
 
+    const fetchLayoutPreferences = useCallback(async () => {
+        try {
+            const res = await fetch('/api/layout-preferences');
+            if (!res.ok) return;
+
+            const data = await res.json();
+            const preferences = data?.preferences as LayoutPreferences | undefined;
+            if (!preferences) return;
+
+            setDashboardPrimaryOrder(preferences.dashboardPrimaryOrder);
+            setDashboardSecondaryOrder(preferences.dashboardSecondaryOrder);
+        } catch (error) {
+            console.error('Failed to load layout preferences:', error);
+        }
+    }, []);
+
+    const saveLayoutPreferences = useCallback(async (preferences: Partial<LayoutPreferences>) => {
+        try {
+            await fetch('/api/layout-preferences', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ preferences }),
+            });
+        } catch (error) {
+            console.error('Failed to save layout preferences:', error);
+        }
+    }, []);
+
+    const handleDashboardPrimaryReorder = useCallback((nextOrder: string[]) => {
+        setDashboardPrimaryOrder(nextOrder);
+        void saveLayoutPreferences({ dashboardPrimaryOrder: nextOrder });
+    }, [saveLayoutPreferences]);
+
+    const handleDashboardSecondaryReorder = useCallback((nextOrder: string[]) => {
+        setDashboardSecondaryOrder(nextOrder);
+        void saveLayoutPreferences({ dashboardSecondaryOrder: nextOrder });
+    }, [saveLayoutPreferences]);
+
     // Realtime Sync (Fix #2): Poll for recent trades every 2 minutes
     // This uses the FREE realtime SnapTrade endpoint
     const syncRecent = useCallback(async () => {
@@ -312,6 +358,10 @@ export default function DashboardPage() {
             window.history.replaceState({}, '', newUrl);
         }
     }, [searchParams]);
+
+    useEffect(() => {
+        void fetchLayoutPreferences();
+    }, [fetchLayoutPreferences]);
 
     // Refetch when filters or global refreshKey change
     useEffect(() => {
@@ -431,6 +481,110 @@ export default function DashboardPage() {
     const hasLiveUnrealized = hasTableUnrealized
         ? tableUnrealizedPnL !== null
         : livePositions !== null;
+    const primaryMetricTiles = {
+        netPnl: (
+            <MetricCard
+                title="Net P&L"
+                value={formatCurrency(metrics.netPnL, true)}
+                subtitle="Realized (closed positions)"
+                icon={DollarSign}
+                iconColor={getPnLColor(metrics.netPnL)}
+                valueColor={getPnLColor(metrics.netPnL)}
+                delay={0}
+                glowClass={metrics.netPnL >= 0 ? "glow-green" : "glow-red"}
+            />
+        ),
+        winRate: (
+            <MetricCard
+                title="Win Rate"
+                value={`${metrics.winRate}%`}
+                subtitle={`${metrics.winningTrades}W / ${metrics.losingTrades}L`}
+                icon={Target}
+                iconColor={getWinRateColor(metrics.winRate)}
+                valueColor={getWinRateColor(metrics.winRate)}
+                delay={0.1}
+            />
+        ),
+        largestWin: (
+            <MetricCard
+                title="Largest Win"
+                value={formatCurrency(metrics.largestWin, true)}
+                subtitle="Best single trade"
+                icon={TrendingUp}
+                iconColor="text-gradient-green"
+                valueColor="text-gradient-green"
+                delay={0.2}
+            />
+        ),
+        largestLoss: (
+            <MetricCard
+                title="Largest Loss"
+                value={formatCurrency(metrics.largestLoss, true)}
+                subtitle="Worst single trade"
+                icon={TrendingDown}
+                iconColor="text-gradient-red"
+                valueColor="text-gradient-red"
+                delay={0.3}
+            />
+        ),
+    };
+    const secondaryMetricTiles = {
+        unrealizedPnl: (
+            <MetricCard
+                title="Unrealized P&L"
+                value={hasLiveUnrealized ? formatCurrency(unrealizedPnL, true) : "—"}
+                subtitle={hasLiveUnrealized ? "Open positions" : "Live data unavailable"}
+                icon={Activity}
+                iconColor={hasLiveUnrealized ? getPnLColor(unrealizedPnL) : "text-muted-foreground"}
+                valueColor={hasLiveUnrealized ? getPnLColor(unrealizedPnL) : "text-muted-foreground"}
+                delay={0.4}
+                glowClass={hasLiveUnrealized ? (unrealizedPnL >= 0 ? "glow-green" : "glow-red") : ""}
+            />
+        ),
+        totalTrades: (
+            <MetricCard
+                title="Total Trades"
+                value={metrics.totalTrades}
+                subtitle="Closed positions"
+                icon={BarChart3}
+                iconColor="text-primary"
+                delay={0.5}
+            />
+        ),
+        avgWin: (
+            <MetricCard
+                title="Avg Win"
+                value={formatCurrency(metrics.avgWin, true)}
+                subtitle={`${metrics.avgWinPct}% avg return`}
+                icon={TrendingUp}
+                iconColor="text-gradient-green"
+                valueColor="text-gradient-green"
+                delay={0.6}
+            />
+        ),
+        avgLoss: (
+            <MetricCard
+                title="Avg Loss"
+                value={formatCurrency(-metrics.avgLoss, true)}
+                subtitle={`-${metrics.avgLossPct}% avg return`}
+                icon={TrendingDown}
+                iconColor="text-gradient-red"
+                valueColor="text-gradient-red"
+                delay={0.7}
+            />
+        ),
+        avgTrade: (
+            <MetricCard
+                title="Avg Trade"
+                value={formatCurrency(metrics.avgTrade, true)}
+                subtitle="Expected per trade"
+                icon={Target}
+                iconColor={getPnLColor(metrics.avgTrade)}
+                valueColor={getPnLColor(metrics.avgTrade)}
+                delay={0.8}
+            />
+        ),
+    };
 
     return (
         <PageTransition>
@@ -533,98 +687,25 @@ export default function DashboardPage() {
                 )}
 
                 {/* Metrics Cards */}
-                <div className={cn(
-                    "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4",
-                    !hasAccounts && "opacity-20 pointer-events-none grayscale select-none"
-                )}>
-                    <MetricCard
-                        title="Net P&L"
-                        value={formatCurrency(metrics.netPnL, true)}
-                        subtitle="Realized (closed positions)"
-                        icon={DollarSign}
-                        iconColor={getPnLColor(metrics.netPnL)}
-                        valueColor={getPnLColor(metrics.netPnL)}
-                        delay={0}
-                        glowClass={metrics.netPnL >= 0 ? "glow-green" : "glow-red"}
-                    />
-                    <MetricCard
-                        title="Win Rate"
-                        value={`${metrics.winRate}%`}
-                        subtitle={`${metrics.winningTrades}W / ${metrics.losingTrades}L`}
-                        icon={Target}
-                        iconColor={getWinRateColor(metrics.winRate)}
-                        valueColor={getWinRateColor(metrics.winRate)}
-                        delay={0.1}
-                    />
-                    <MetricCard
-                        title="Largest Win"
-                        value={formatCurrency(metrics.largestWin, true)}
-                        subtitle="Best single trade"
-                        icon={TrendingUp}
-                        iconColor="text-gradient-green"
-                        valueColor="text-gradient-green"
-                        delay={0.2}
-                    />
-                    <MetricCard
-                        title="Largest Loss"
-                        value={formatCurrency(metrics.largestLoss, true)}
-                        subtitle="Worst single trade"
-                        icon={TrendingDown}
-                        iconColor="text-gradient-red"
-                        valueColor="text-gradient-red"
-                        delay={0.3}
-                    />
-                </div>
+                <DraggableTileGrid
+                    items={primaryMetricTiles}
+                    order={dashboardPrimaryOrder}
+                    onReorder={handleDashboardPrimaryReorder}
+                    disabled={!hasAccounts}
+                    className={cn(
+                        "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4",
+                        !hasAccounts && "opacity-20 pointer-events-none grayscale select-none"
+                    )}
+                />
 
 
                 {/* Secondary Metrics */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-                    <MetricCard
-                        title="Unrealized P&L"
-                        value={hasLiveUnrealized ? formatCurrency(unrealizedPnL, true) : "—"}
-                        subtitle={hasLiveUnrealized ? "Open positions" : "Live data unavailable"}
-                        icon={Activity}
-                        iconColor={hasLiveUnrealized ? getPnLColor(unrealizedPnL) : "text-muted-foreground"}
-                        valueColor={hasLiveUnrealized ? getPnLColor(unrealizedPnL) : "text-muted-foreground"}
-                        delay={0.4}
-                        glowClass={hasLiveUnrealized ? (unrealizedPnL >= 0 ? "glow-green" : "glow-red") : ""}
-                    />
-                    <MetricCard
-                        title="Total Trades"
-                        value={metrics.totalTrades}
-                        subtitle="Closed positions"
-                        icon={BarChart3}
-                        iconColor="text-primary"
-                        delay={0.5}
-                    />
-                    <MetricCard
-                        title="Avg Win"
-                        value={formatCurrency(metrics.avgWin, true)}
-                        subtitle={`${metrics.avgWinPct}% avg return`}
-                        icon={TrendingUp}
-                        iconColor="text-gradient-green"
-                        valueColor="text-gradient-green"
-                        delay={0.6}
-                    />
-                    <MetricCard
-                        title="Avg Loss"
-                        value={formatCurrency(-metrics.avgLoss, true)}
-                        subtitle={`-${metrics.avgLossPct}% avg return`}
-                        icon={TrendingDown}
-                        iconColor="text-gradient-red"
-                        valueColor="text-gradient-red"
-                        delay={0.7}
-                    />
-                    <MetricCard
-                        title="Avg Trade"
-                        value={formatCurrency(metrics.avgTrade, true)}
-                        subtitle="Expected per trade"
-                        icon={Target}
-                        iconColor={getPnLColor(metrics.avgTrade)}
-                        valueColor={getPnLColor(metrics.avgTrade)}
-                        delay={0.8}
-                    />
-                </div>
+                <DraggableTileGrid
+                    items={secondaryMetricTiles}
+                    order={dashboardSecondaryOrder}
+                    onReorder={handleDashboardSecondaryReorder}
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4"
+                />
 
 
                 {/* AI Insights Section */}

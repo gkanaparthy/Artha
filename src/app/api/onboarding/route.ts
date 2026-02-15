@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 
 export async function POST(req: Request) {
     const session = await auth();
@@ -12,16 +13,28 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { tradingStyle, biggestChallenge, skippedAtStep } = body;
 
+        const existingUser = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { onboardingData: true },
+        });
+        const existingOnboardingData =
+            existingUser?.onboardingData &&
+                typeof existingUser.onboardingData === "object" &&
+                !Array.isArray(existingUser.onboardingData)
+                ? (existingUser.onboardingData as Record<string, unknown>)
+                : {};
+
         await prisma.user.update({
             where: { id: session.user.id },
             data: {
                 onboardingCompleted: true,
                 onboardingData: {
+                    ...existingOnboardingData,
                     tradingStyle: tradingStyle || null,
                     biggestChallenge: biggestChallenge || null,
                     skippedAtStep: skippedAtStep ?? null,
                     completedAt: new Date().toISOString(),
-                },
+                } as Prisma.InputJsonValue,
             },
         });
 

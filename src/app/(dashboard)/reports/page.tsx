@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, TrendingUp, TrendingDown, Target, BarChart3, Calendar, Activity, Zap, Trophy, Flame, Clock, Sparkles, LayoutGrid } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Target, BarChart3, Calendar, Activity, Zap, Trophy, Flame, Clock, LayoutGrid } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,12 @@ import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { CalendarView } from "@/components/calendar-view";
 import { TagPerformance } from "@/components/tag-performance";
+import { DraggableTileGrid } from "@/components/draggable-tile-grid";
+import {
+  REPORTS_SUMMARY_TILE_IDS,
+  REPORTS_SECONDARY_TILE_IDS,
+  type LayoutPreferences,
+} from "@/lib/layout-preferences";
 
 // Dynamic import for heavy Recharts components - only loaded when needed
 const ReportsCharts = dynamic(
@@ -132,6 +138,8 @@ export default function ReportsPage() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewType, setViewType] = useState<ViewType>("charts");
+  const [reportsSummaryOrder, setReportsSummaryOrder] = useState<string[]>([...REPORTS_SUMMARY_TILE_IDS]);
+  const [reportsSecondaryOrder, setReportsSecondaryOrder] = useState<string[]>([...REPORTS_SECONDARY_TILE_IDS]);
 
   const fetchMetrics = useCallback(async () => {
     try {
@@ -162,6 +170,48 @@ export default function ReportsPage() {
   useEffect(() => {
     fetchMetrics();
   }, [fetchMetrics, refreshKey]);
+
+  const fetchLayoutPreferences = useCallback(async () => {
+    try {
+      const res = await fetch("/api/layout-preferences");
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const preferences = data?.preferences as LayoutPreferences | undefined;
+      if (!preferences) return;
+
+      setReportsSummaryOrder(preferences.reportsSummaryOrder);
+      setReportsSecondaryOrder(preferences.reportsSecondaryOrder);
+    } catch (error) {
+      console.error("Failed to load layout preferences:", error);
+    }
+  }, []);
+
+  const saveLayoutPreferences = useCallback(async (preferences: Partial<LayoutPreferences>) => {
+    try {
+      await fetch("/api/layout-preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ preferences }),
+      });
+    } catch (error) {
+      console.error("Failed to save layout preferences:", error);
+    }
+  }, []);
+
+  const handleSummaryReorder = useCallback((nextOrder: string[]) => {
+    setReportsSummaryOrder(nextOrder);
+    void saveLayoutPreferences({ reportsSummaryOrder: nextOrder });
+  }, [saveLayoutPreferences]);
+
+  const handleSecondaryReorder = useCallback((nextOrder: string[]) => {
+    setReportsSecondaryOrder(nextOrder);
+    void saveLayoutPreferences({ reportsSecondaryOrder: nextOrder });
+  }, [saveLayoutPreferences]);
+
+  useEffect(() => {
+    void fetchLayoutPreferences();
+  }, [fetchLayoutPreferences]);
 
   const formatCurrency = (value: number) =>
     `$${Math.abs(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -328,6 +378,89 @@ export default function ReportsPage() {
     );
   }
 
+  const summaryTiles = {
+    netPnl: (
+      <SummaryCard
+        title="Net P&L"
+        value={`${metrics.netPnL >= 0 ? "+" : "-"}${formatCurrency(metrics.netPnL)}`}
+        icon={metrics.netPnL >= 0 ? TrendingUp : TrendingDown}
+        iconColor={metrics.netPnL >= 0 ? "text-green-500" : "text-red-500"}
+        valueColor={getPnLColor(metrics.netPnL)}
+        delay={0.1}
+      />
+    ),
+    winRate: (
+      <SummaryCard
+        title="Win Rate"
+        value={`${metrics.winRate}%`}
+        icon={Target}
+        iconColor="text-amber-500"
+        valueColor={metrics.winRate >= 50 ? "text-gradient-green" : "text-gradient-red"}
+        delay={0.15}
+      />
+    ),
+    profitFactor: (
+      <SummaryCard
+        title="Profit Factor"
+        value={metrics.profitFactor !== null ? metrics.profitFactor.toFixed(2) : "—"}
+        icon={BarChart3}
+        iconColor="text-blue-500"
+        valueColor={(metrics.profitFactor ?? 0) >= 1 ? "text-gradient-green" : "text-gradient-red"}
+        delay={0.2}
+      />
+    ),
+    riskReward: (
+      <SummaryCard
+        title="Risk/Reward"
+        value={chartData.riskRewardRatio.toFixed(2)}
+        icon={Zap}
+        iconColor="text-purple-500"
+        valueColor={chartData.riskRewardRatio >= 1 ? "text-gradient-green" : "text-gradient-red"}
+        delay={0.25}
+      />
+    ),
+  };
+
+  const secondaryTiles = {
+    maxWinStreak: (
+      <SummaryCard
+        title="Max Win Streak"
+        value={chartData.maxWinStreak}
+        icon={Trophy}
+        iconColor="text-green-500"
+        delay={0.3}
+      />
+    ),
+    maxLossStreak: (
+      <SummaryCard
+        title="Max Loss Streak"
+        value={chartData.maxLossStreak}
+        icon={Flame}
+        iconColor="text-red-500"
+        delay={0.35}
+      />
+    ),
+    maxDrawdown: (
+      <SummaryCard
+        title="Max Drawdown"
+        value={`-${formatCurrency(chartData.maxDrawdown)}`}
+        icon={TrendingDown}
+        iconColor="text-orange-500"
+        valueColor={chartData.maxDrawdown === 0 ? "text-green-500" : "text-red-500"}
+        delay={0.4}
+      />
+    ),
+    avgHolding: (
+      <SummaryCard
+        title="Avg Holding"
+        value={`${chartData.avgHoldingPeriod.toFixed(1)} days`}
+        icon={Clock}
+        iconColor="text-cyan-500"
+        delay={0.45}
+      />
+    ),
+  };
+
   return (
     <PageTransition>
       <div className="space-y-6 sm:space-y-8">
@@ -388,73 +521,20 @@ export default function ReportsPage() {
         {viewType === "charts" && (
           <>
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <SummaryCard
-                title="Net P&L"
-                value={`${metrics.netPnL >= 0 ? "+" : "-"}${formatCurrency(metrics.netPnL)}`}
-                icon={metrics.netPnL >= 0 ? TrendingUp : TrendingDown}
-                iconColor={metrics.netPnL >= 0 ? "text-green-500" : "text-red-500"}
-                valueColor={getPnLColor(metrics.netPnL)}
-                delay={0.1}
-              />
-              <SummaryCard
-                title="Win Rate"
-                value={`${metrics.winRate}%`}
-                icon={Target}
-                iconColor="text-amber-500"
-                valueColor={metrics.winRate >= 50 ? "text-gradient-green" : "text-gradient-red"}
-                delay={0.15}
-              />
-              <SummaryCard
-                title="Profit Factor"
-                value={metrics.profitFactor !== null ? metrics.profitFactor.toFixed(2) : "—"}
-                icon={BarChart3}
-                iconColor="text-blue-500"
-                valueColor={(metrics.profitFactor ?? 0) >= 1 ? "text-gradient-green" : "text-gradient-red"}
-                delay={0.2}
-              />
-              <SummaryCard
-                title="Risk/Reward"
-                value={chartData.riskRewardRatio.toFixed(2)}
-                icon={Zap}
-                iconColor="text-purple-500"
-                valueColor={chartData.riskRewardRatio >= 1 ? "text-gradient-green" : "text-gradient-red"}
-                delay={0.25}
-              />
-            </div>
+            <DraggableTileGrid
+              items={summaryTiles}
+              order={reportsSummaryOrder}
+              onReorder={handleSummaryReorder}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
+            />
 
             {/* Secondary Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-              <SummaryCard
-                title="Max Win Streak"
-                value={chartData.maxWinStreak}
-                icon={Trophy}
-                iconColor="text-green-500"
-                delay={0.3}
-              />
-              <SummaryCard
-                title="Max Loss Streak"
-                value={chartData.maxLossStreak}
-                icon={Flame}
-                iconColor="text-red-500"
-                delay={0.35}
-              />
-              <SummaryCard
-                title="Max Drawdown"
-                value={`-${formatCurrency(chartData.maxDrawdown)}`}
-                icon={TrendingDown}
-                iconColor="text-orange-500"
-                valueColor={chartData.maxDrawdown === 0 ? "text-green-500" : "text-red-500"}
-                delay={0.4}
-              />
-              <SummaryCard
-                title="Avg Holding"
-                value={`${chartData.avgHoldingPeriod.toFixed(1)} days`}
-                icon={Clock}
-                iconColor="text-cyan-500"
-                delay={0.45}
-              />
-            </div>
+            <DraggableTileGrid
+              items={secondaryTiles}
+              order={reportsSecondaryOrder}
+              onReorder={handleSecondaryReorder}
+              className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4"
+            />
 
             {/* Charts - dynamically loaded */}
             <ReportsCharts
