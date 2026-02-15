@@ -281,8 +281,9 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                         setFilters(prev => ({ ...prev, assetType: value }))
                     }
                 >
-                    <SelectTrigger className="w-[100px] h-8 text-xs bg-background/50 border-border/50">
-                        <SelectValue placeholder="Type" />
+                    <SelectTrigger className="w-[120px] h-8 text-xs bg-background/50 border-border/50">
+                        <span className="text-muted-foreground mr-1">Type:</span>
+                        <span className="truncate">{filters.assetType === 'all' ? 'All' : filters.assetType === 'STOCK' ? 'Stocks' : 'Options'}</span>
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all" className="text-xs">All Types</SelectItem>
@@ -298,8 +299,9 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                         setFilters(prev => ({ ...prev, action: value }))
                     }
                 >
-                    <SelectTrigger className="w-[100px] h-8 text-xs bg-background/50 border-border/50">
-                        <SelectValue placeholder="Side" />
+                    <SelectTrigger className="w-[120px] h-8 text-xs bg-background/50 border-border/50">
+                        <span className="text-muted-foreground mr-1">Side:</span>
+                        <span className="truncate">{filters.action === 'ALL' ? 'All' : filters.action === 'BUY' ? 'Long' : 'Short'}</span>
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="ALL" className="text-xs">All Sides</SelectItem>
@@ -333,8 +335,9 @@ export function GlobalFilterBar({ showStatusFilter = true, className, onExport, 
                             setFilters(prev => ({ ...prev, status: value }))
                         }
                     >
-                        <SelectTrigger className="w-[110px] h-8 text-xs bg-background/50 border-border/50">
-                            <SelectValue placeholder="Status" />
+                        <SelectTrigger className="w-[120px] h-8 text-xs bg-background/50 border-border/50">
+                            <span className="text-muted-foreground mr-1">Status:</span>
+                            <span className="truncate">{filters.status === 'all' ? 'All' : filters.status.charAt(0).toUpperCase() + filters.status.slice(1)}</span>
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all" className="text-xs">All Status</SelectItem>

@@ -78,12 +78,12 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Step 3: Attempt quick sync with 15s timeout
+        // Step 3: Attempt quick sync with 30s timeout
         let result;
         try {
             result = await timeout(
                 snapTradeService.syncTrades(userId),
-                15000,
+                30000,
                 { synced: 0, accounts: 0, failedAccounts: [], skippedTrades: 0, error: '__TIMEOUT__' }
             );
         } catch (syncError) {
@@ -189,3 +189,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ status: 'failed', message, accounts: 0, synced: 0 }, { status: 500 });
     }
 }
+
+export const runtime = "nodejs";
+export const maxDuration = 45;

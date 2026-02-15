@@ -285,7 +285,11 @@ export class SnapTradeService {
                     startDate: startDateStr,
                     endDate: endDateStr,
                 });
-                const activityList = activities.data?.data || [];
+                // Robust extraction: SnapTrade SDK handles responses inconsistently. 
+                // Sometimes data is the array, sometimes it's in .data.data
+                const activityList = Array.isArray(activities.data)
+                    ? activities.data
+                    : (activities.data as any)?.data || [];
                 console.log(`[SnapTrade Sync] Account ${acc.id} (${accountName}) returned ${activityList.length} activities since ${startDateStr}`);
 
                 // Attach account ID to each activity since it's not included in response
@@ -767,7 +771,9 @@ export class SnapTradeService {
                     onlyExecuted: false, // We want all recent orders (pending/executed) for better tracking
                 });
 
-                const ordersData = response.data.orders || [];
+                const ordersData = Array.isArray(response.data)
+                    ? response.data
+                    : (response.data as any)?.orders || (response.data as any)?.data || [];
                 console.log(`[Recent Orders] Account ${account.brokerName}: ${ordersData.length} orders found`);
 
                 // Filter for executed orders only to avoid polluting P&L with pending/canceled orders
