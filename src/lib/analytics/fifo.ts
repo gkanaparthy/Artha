@@ -172,6 +172,7 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
 
                     closedTrades.push({
                         symbol: keyDetails.get(key)?.symbol || trade.symbol,
+                        universalSymbolId: matchLot.universalSymbolId,
                         pnl: pnl,
                         entryPrice: matchLot.price,
                         exitPrice: price,
@@ -181,6 +182,9 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                         broker: matchLot.broker,
                         accountId: matchLot.accountId,
                         type: matchLot.type,
+                        optionType: matchLot.optionType || null,
+                        strikePrice: matchLot.strikePrice || null,
+                        expiryDate: matchLot.expiryDate ? matchLot.expiryDate.toISOString() : null,
                         multiplier: lotMultiplier,
                         positionKey: matchLot.positionKey,
                         tags: getTagsForItem({
@@ -202,6 +206,7 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                     longLots.push({
                         tradeId: trade.id,
                         date: date,
+                        universalSymbolId: trade.universalSymbolId || null,
                         price: price,
                         quantity: remainingQty,
                         originalQuantity: remainingQty,
@@ -209,6 +214,9 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                         accountId: accountId,
                         multiplier: multiplier,
                         type: tradeType,
+                        optionType: trade.optionType || null,
+                        strikePrice: trade.strikePrice || null,
+                        expiryDate: trade.expiryDate || null,
                         positionKey: trade.positionKey || null
                     });
                 }
@@ -221,6 +229,7 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
 
                     closedTrades.push({
                         symbol: keyDetails.get(key)?.symbol || trade.symbol,
+                        universalSymbolId: matchLot.universalSymbolId,
                         pnl: pnl,
                         entryPrice: matchLot.price,
                         exitPrice: price,
@@ -230,6 +239,9 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                         broker: matchLot.broker,
                         accountId: matchLot.accountId,
                         type: matchLot.type,
+                        optionType: matchLot.optionType || null,
+                        strikePrice: matchLot.strikePrice || null,
+                        expiryDate: matchLot.expiryDate ? matchLot.expiryDate.toISOString() : null,
                         multiplier: lotMultiplier,
                         positionKey: matchLot.positionKey,
                         tags: getTagsForItem({
@@ -252,6 +264,7 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                     if (!isExplicitShort && (tradeType === 'STOCK' || tradeType === 'ETF')) {
                         closedTrades.push({
                             symbol: keyDetails.get(key)?.symbol || trade.symbol,
+                            universalSymbolId: trade.universalSymbolId || null,
                             pnl: 0,
                             entryPrice: price,
                             exitPrice: price,
@@ -261,6 +274,9 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                             broker: broker,
                             accountId: accountId,
                             type: tradeType,
+                            optionType: trade.optionType || null,
+                            strikePrice: trade.strikePrice || null,
+                            expiryDate: trade.expiryDate ? trade.expiryDate.toISOString() : null,
                             multiplier: multiplier,
                             positionKey: trade.positionKey,
                             tags: getTagsForItem({
@@ -275,6 +291,7 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                         shortLots.push({
                             tradeId: trade.id,
                             date: date,
+                            universalSymbolId: trade.universalSymbolId || null,
                             price: price,
                             quantity: remainingQty,
                             originalQuantity: remainingQty,
@@ -282,6 +299,9 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                             accountId: accountId,
                             multiplier: multiplier,
                             type: tradeType,
+                            optionType: trade.optionType || null,
+                            strikePrice: trade.strikePrice || null,
+                            expiryDate: trade.expiryDate || null,
                             positionKey: trade.positionKey || null
                         });
                     }
@@ -300,6 +320,7 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                     const pnl = (0 - lot.price) * lot.quantity * lot.multiplier;
                     closedTrades.push({
                         symbol: symbol,
+                        universalSymbolId: lot.universalSymbolId,
                         pnl: pnl,
                         entryPrice: lot.price,
                         exitPrice: 0,
@@ -309,6 +330,9 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                         broker: lot.broker,
                         accountId: lot.accountId,
                         type: lot.type,
+                        optionType: lot.optionType || null,
+                        strikePrice: lot.strikePrice || null,
+                        expiryDate: lot.expiryDate ? lot.expiryDate.toISOString() : null,
                         multiplier: lot.multiplier,
                         tags: getTagsForItem({
                             symbol: symbol,
@@ -326,6 +350,7 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                     const pnl = lot.price * lot.quantity * lot.multiplier;
                     closedTrades.push({
                         symbol: symbol,
+                        universalSymbolId: lot.universalSymbolId,
                         pnl: pnl,
                         entryPrice: lot.price,
                         exitPrice: 0,
@@ -335,6 +360,9 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                         broker: lot.broker,
                         accountId: lot.accountId,
                         type: lot.type,
+                        optionType: lot.optionType || null,
+                        strikePrice: lot.strikePrice || null,
+                        expiryDate: lot.expiryDate ? lot.expiryDate.toISOString() : null,
                         multiplier: lot.multiplier,
                         tags: getTagsForItem({
                             symbol: symbol,
@@ -352,6 +380,7 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
         for (const lot of longLots) {
             allOpenPositions.push({
                 symbol: keyDetails.get(key)?.symbol || key,
+                universalSymbolId: lot.universalSymbolId,
                 quantity: lot.quantity,
                 entryPrice: lot.price,
                 openedAt: lot.date,
@@ -360,6 +389,9 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                 currentValue: lot.price * lot.quantity * lot.multiplier,
                 tradeId: lot.tradeId,
                 type: lot.type,
+                optionType: lot.optionType || null,
+                strikePrice: lot.strikePrice || null,
+                expiryDate: lot.expiryDate || null,
                 positionKey: lot.positionKey,
                 tags: getTagsForItem({
                     symbol: keyDetails.get(key)?.symbol || key,
@@ -386,6 +418,7 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
             for (const lot of shortLots) {
                 allOpenPositions.push({
                     symbol: keyDetails.get(key)?.symbol || key,
+                    universalSymbolId: lot.universalSymbolId,
                     quantity: -lot.quantity,
                     entryPrice: lot.price,
                     openedAt: lot.date,
@@ -394,6 +427,9 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
                     currentValue: lot.price * -lot.quantity * lot.multiplier,
                     tradeId: lot.tradeId,
                     type: lot.type,
+                    optionType: lot.optionType || null,
+                    strikePrice: lot.strikePrice || null,
+                    expiryDate: lot.expiryDate || null,
                     positionKey: lot.positionKey,
                     tags: getTagsForItem({
                         symbol: keyDetails.get(key)?.symbol || key,

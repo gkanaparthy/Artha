@@ -171,6 +171,7 @@ export default function DashboardPage() {
             // Format positions for the table
             const closedDisplayPositions = (data.closedTrades || []).map((p: any) => ({
                 symbol: p.symbol,
+                universalSymbolId: p.universalSymbolId,
                 quantity: p.quantity,
                 entryPrice: p.entryPrice,
                 exitPrice: p.exitPrice,
@@ -181,10 +182,15 @@ export default function DashboardPage() {
                 accountId: p.accountId,
                 status: "closed" as const,
                 type: p.type,
+                side: p.side,
+                optionType: p.optionType,
+                strikePrice: p.strikePrice,
+                expiryDate: p.expiryDate,
             }));
 
             const openDisplayPositions = (data.openPositions || []).map((p: any) => ({
                 symbol: p.symbol,
+                universalSymbolId: p.universalSymbolId,
                 quantity: p.quantity,
                 entryPrice: p.entryPrice,
                 exitPrice: null,
@@ -196,6 +202,10 @@ export default function DashboardPage() {
                 status: "open" as const,
                 tradeId: p.tradeId,
                 type: p.type,
+                side: p.side,
+                optionType: p.optionType,
+                strikePrice: p.strikePrice,
+                expiryDate: p.expiryDate,
             }));
 
             setAllPositions([...openDisplayPositions, ...closedDisplayPositions]);
@@ -407,6 +417,9 @@ export default function DashboardPage() {
         return "text-gradient-red";
     };
 
+    const unrealizedPnL = livePositions?.summary.totalUnrealizedPnl ?? 0;
+    const hasLiveUnrealized = livePositions !== null;
+
     return (
         <PageTransition>
             <div className="space-y-6 sm:space-y-8 p-3 sm:p-4 md:p-8 pt-4 sm:pt-6">
@@ -515,7 +528,7 @@ export default function DashboardPage() {
                     <MetricCard
                         title="Net P&L"
                         value={formatCurrency(metrics.netPnL, true)}
-                        subtitle="Based on filtered trades"
+                        subtitle="Realized (closed positions)"
                         icon={DollarSign}
                         iconColor={getPnLColor(metrics.netPnL)}
                         valueColor={getPnLColor(metrics.netPnL)}
@@ -553,14 +566,24 @@ export default function DashboardPage() {
 
 
                 {/* Secondary Metrics */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+                    <MetricCard
+                        title="Unrealized P&L"
+                        value={hasLiveUnrealized ? formatCurrency(unrealizedPnL, true) : "—"}
+                        subtitle={hasLiveUnrealized ? "Open positions" : "Live data unavailable"}
+                        icon={Activity}
+                        iconColor={hasLiveUnrealized ? getPnLColor(unrealizedPnL) : "text-muted-foreground"}
+                        valueColor={hasLiveUnrealized ? getPnLColor(unrealizedPnL) : "text-muted-foreground"}
+                        delay={0.4}
+                        glowClass={hasLiveUnrealized ? (unrealizedPnL >= 0 ? "glow-green" : "glow-red") : ""}
+                    />
                     <MetricCard
                         title="Total Trades"
                         value={metrics.totalTrades}
                         subtitle="Closed positions"
                         icon={BarChart3}
                         iconColor="text-primary"
-                        delay={0.4}
+                        delay={0.5}
                     />
                     <MetricCard
                         title="Avg Win"
@@ -569,7 +592,7 @@ export default function DashboardPage() {
                         icon={TrendingUp}
                         iconColor="text-gradient-green"
                         valueColor="text-gradient-green"
-                        delay={0.5}
+                        delay={0.6}
                     />
                     <MetricCard
                         title="Avg Loss"
@@ -578,7 +601,7 @@ export default function DashboardPage() {
                         icon={TrendingDown}
                         iconColor="text-gradient-red"
                         valueColor="text-gradient-red"
-                        delay={0.6}
+                        delay={0.7}
                     />
                     <MetricCard
                         title="Avg Trade"
@@ -587,7 +610,7 @@ export default function DashboardPage() {
                         icon={Target}
                         iconColor={getPnLColor(metrics.avgTrade)}
                         valueColor={getPnLColor(metrics.avgTrade)}
-                        delay={0.7}
+                        delay={0.8}
                     />
                 </div>
 

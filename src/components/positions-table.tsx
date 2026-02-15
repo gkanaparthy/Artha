@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import {
     Table,
     TableBody,
@@ -11,17 +11,16 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Clock, TrendingUp, TrendingDown, Trash2, Calendar, DollarSign, AlertCircle } from "lucide-react";
+import { Loader2, Clock, TrendingUp, TrendingDown, Trash2 } from "lucide-react";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useFilters } from "@/contexts/filter-context";
-import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { useSort } from "@/hooks/use-sort";
 import type { DisplayPosition, Metrics } from "@/types/trading";
-import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "@/lib/export";
 
 interface LivePosition {
     symbol: string;
+    universalSymbolId?: string | null;
     units: number;
     price: number | null;
     averageCost: number | null;
@@ -30,6 +29,16 @@ interface LivePosition {
     type: 'STOCK' | 'OPTION';
     accountId: string;
     brokerName: string;
+    optionType?: string | null;
+    strikePrice?: number | null;
+    expirationDate?: string | null;
+}
+
+interface EnrichedLivePosition {
+    livePrice: number | null;
+    unrealizedPnl: number | null;
+    marketValue: number | null;
+    units: number;
 }
 
 interface PositionsTableProps {
@@ -43,8 +52,60 @@ interface PositionsTableProps {
 
 type SortField = "symbol" | "status" | "entryDate" | "exitDate" | "quantity" | "entryPrice" | "exitPrice" | "pnl" | "return" | "broker";
 
+const normalizeSymbol = (symbol: string) => symbol.trim().toUpperCase();
+
+const normalizeOptionType = (optionType?: string | null) => (optionType || '').trim().toUpperCase();
+
+const normalizeStrike = (strikePrice?: number | null) => {
+    if (strikePrice === null || strikePrice === undefined || Number.isNaN(Number(strikePrice))) return '';
+    return Number(strikePrice).toFixed(4);
+};
+
+const normalizeExpiry = (expiryDate?: string | null) => {
+    if (!expiryDate) return '';
+    const parsed = new Date(expiryDate);
+    if (Number.isNaN(parsed.getTime())) return String(expiryDate).slice(0, 10);
+    return parsed.toISOString().slice(0, 10);
+};
+
+const getInstrumentKeyPart = (params: {
+    symbol: string;
+    universalSymbolId?: string | null;
+    type?: string;
+    optionType?: string | null;
+    strikePrice?: number | null;
+    expiryDate?: string | null;
+}) => {
+    if (params.universalSymbolId) {
+        return `uid:${params.universalSymbolId}`;
+    }
+
+    if ((params.type || '').toUpperCase() === 'OPTION') {
+        return `opt:${normalizeSymbol(params.symbol)}:${normalizeOptionType(params.optionType)}:${normalizeStrike(params.strikePrice)}:${normalizeExpiry(params.expiryDate)}`;
+    }
+
+    return `sym:${normalizeSymbol(params.symbol)}:${(params.type || '').toUpperCase()}`;
+};
+
+const getLivePositionKey = (params: {
+    accountId: string;
+    symbol: string;
+    universalSymbolId?: string | null;
+    type?: string;
+    optionType?: string | null;
+    strikePrice?: number | null;
+    expiryDate?: string | null;
+}) => `${params.accountId}::${getInstrumentKeyPart(params)}`;
+
+const addNullable = (a: number | null, b: number | null): number | null => {
+    if (a === null && b === null) return null;
+    return (a ?? 0) + (b ?? 0);
+};
+
 // Get sort value for a position based on field
 const getSortValue = (p: DisplayPosition, field: SortField): string | number => {
+    const comparePrice = p.status === 'open' ? p.livePrice : p.exitPrice;
+    const isShort = p.side === 'short';
     switch (field) {
         case "symbol": return p.symbol;
         case "status": return p.status;
@@ -52,9 +113,14 @@ const getSortValue = (p: DisplayPosition, field: SortField): string | number => 
         case "exitDate": return p.closedAt ? new Date(p.closedAt).getTime() : 0;
         case "quantity": return p.quantity;
         case "entryPrice": return p.entryPrice;
-        case "exitPrice": return p.exitPrice ?? 0;
-        case "pnl": return p.pnl ?? 0;
-        case "return": return p.exitPrice && p.entryPrice ? (p.exitPrice - p.entryPrice) / p.entryPrice : 0;
+        case "exitPrice": return comparePrice ?? 0;
+        case "pnl": return p.status === 'open' ? (p.unrealizedPnl ?? 0) : (p.pnl ?? 0);
+        case "return":
+            return comparePrice !== null && comparePrice !== undefined && p.entryPrice
+                ? (isShort
+                    ? (p.entryPrice - comparePrice) / p.entryPrice
+                    : (comparePrice - p.entryPrice) / p.entryPrice)
+                : 0;
         case "broker": return p.broker;
         default: return 0;
     }
@@ -64,7 +130,7 @@ export function PositionsTable({
     onMetricsUpdate,
     initialPositions = [],
     isDemo = false,
-    livePositions: _livePositions,
+    livePositions,
     positions: externalPositions,
     loading: externalLoading
 }: PositionsTableProps) {
@@ -74,16 +140,53 @@ export function PositionsTable({
     const allPositions = externalPositions || initialPositions;
     const loading = externalLoading ?? false;
 
+    // Aggregate live positions by account/symbol/type so open rows can display current price + unrealized P&L.
+    const livePositionMap = useMemo(() => {
+        const map = new Map<string, EnrichedLivePosition>();
+
+        for (const position of livePositions || []) {
+            const key = getLivePositionKey({
+                accountId: position.accountId,
+                symbol: position.symbol,
+                universalSymbolId: position.universalSymbolId,
+                type: position.type,
+                optionType: position.optionType,
+                strikePrice: position.strikePrice,
+                expiryDate: position.expirationDate,
+            });
+            const existing = map.get(key);
+
+            if (!existing) {
+                map.set(key, {
+                    livePrice: position.price,
+                    unrealizedPnl: position.openPnl,
+                    marketValue: position.marketValue,
+                    units: position.units,
+                });
+                continue;
+            }
+
+            const existingWeight = Math.abs(existing.units);
+            const nextWeight = Math.abs(position.units);
+            const totalWeight = existingWeight + nextWeight;
+            const weightedPrice = existing.livePrice !== null && position.price !== null && totalWeight > 0
+                ? ((existing.livePrice * existingWeight) + (position.price * nextWeight)) / totalWeight
+                : null;
+
+            map.set(key, {
+                livePrice: weightedPrice ?? position.price ?? existing.livePrice,
+                unrealizedPnl: addNullable(existing.unrealizedPnl, position.openPnl),
+                marketValue: addNullable(existing.marketValue, position.marketValue),
+                units: existing.units + position.units,
+            });
+        }
+
+        return map;
+    }, [livePositions]);
+
     // The API now handles all filtering (status, tags, etc.)
     // We no longer need client-side filtering here
     const filteredPositions = allPositions;
-
-    const { sortedData: sortedPositions, handleSort, getSortIcon } = useSort<DisplayPosition, SortField>({
-        data: filteredPositions,
-        defaultField: "entryDate",
-        defaultDirection: "desc",
-        getValueForField: getSortValue,
-    });
 
     // Handle metrics update if needed
     useEffect(() => {
@@ -111,13 +214,103 @@ export function PositionsTable({
                 symbolData: [],
                 cumulativePnL: [],
                 openPositionsCount: allPositions.filter((p: DisplayPosition) => p.status === "open").length,
-                closedTrades: closed as any[] // Type assertion for compatibility if needed
+                closedTrades: []
             });
         }
     }, [filteredPositions, onMetricsUpdate, isDemo, allPositions]);
 
-    // Filtering is done on the backend now
-    const positionsWithLiveData = sortedPositions;
+    const getLiveForPosition = useCallback((position: DisplayPosition): { key: string; live: EnrichedLivePosition } | null => {
+        if (position.status !== "open") return null;
+
+        const candidateKeys = [
+            getLivePositionKey({
+                accountId: position.accountId,
+                symbol: position.symbol,
+                universalSymbolId: position.universalSymbolId,
+                type: position.type,
+                optionType: position.optionType,
+                strikePrice: position.strikePrice,
+                expiryDate: position.expiryDate,
+            }),
+            getLivePositionKey({
+                accountId: position.accountId,
+                symbol: position.symbol,
+                type: position.type,
+                optionType: position.optionType,
+                strikePrice: position.strikePrice,
+                expiryDate: position.expiryDate,
+            }),
+            getLivePositionKey({
+                accountId: position.accountId,
+                symbol: position.symbol,
+                type: 'STOCK',
+            }),
+            getLivePositionKey({
+                accountId: position.accountId,
+                symbol: position.symbol,
+                type: 'OPTION',
+                optionType: position.optionType,
+                strikePrice: position.strikePrice,
+                expiryDate: position.expiryDate,
+            }),
+        ];
+
+        for (const key of candidateKeys) {
+            const matched = livePositionMap.get(key);
+            if (matched) return { key, live: matched };
+        }
+
+        return null;
+    }, [livePositionMap]);
+
+    // Enrich open positions with live market data and allocate aggregate unrealized values across matching lots.
+    const positionsWithLiveData = useMemo(() => {
+        const matches = filteredPositions.map((position) => getLiveForPosition(position));
+        const groupTotals = new Map<string, { totalAbsQty: number; rows: number }>();
+
+        matches.forEach((match, idx) => {
+            if (!match) return;
+            const position = filteredPositions[idx];
+            const existing = groupTotals.get(match.key) || { totalAbsQty: 0, rows: 0 };
+            existing.totalAbsQty += Math.abs(position.quantity || 0);
+            existing.rows += 1;
+            groupTotals.set(match.key, existing);
+        });
+
+        return filteredPositions.map((position, idx) => {
+            const match = matches[idx];
+            if (!match) return position;
+
+            const total = groupTotals.get(match.key);
+            if (!total) return position;
+
+            const absQty = Math.abs(position.quantity || 0);
+            const weight = total.totalAbsQty > 0
+                ? absQty / total.totalAbsQty
+                : 1 / Math.max(total.rows, 1);
+
+            const allocatedUnrealized = match.live.unrealizedPnl === null
+                ? null
+                : match.live.unrealizedPnl * weight;
+            const allocatedMarketValue = match.live.marketValue === null
+                ? null
+                : match.live.marketValue * weight;
+
+            return {
+                ...position,
+                livePrice: match.live.livePrice,
+                unrealizedPnl: allocatedUnrealized,
+                marketValue: allocatedMarketValue,
+            };
+        });
+    }, [filteredPositions, getLiveForPosition]);
+
+    const { sortedData: sortedPositions, handleSort, getSortIcon } = useSort<DisplayPosition, SortField>({
+        data: positionsWithLiveData,
+        defaultField: "entryDate",
+        defaultDirection: "desc",
+        getValueForField: getSortValue,
+    });
 
     // Handle Delete (disabled in demo mode)
     const handleDelete = async (tradeId: string) => {
@@ -144,10 +337,10 @@ export function PositionsTable({
     // Mobile Card Component
     const MobilePositionCard = ({ position, idx }: { position: DisplayPosition; idx: number }) => {
         const isOpen = position.status === "open";
-        const displayPnl = isOpen ? null : position.pnl;
-        const displayPrice = isOpen ? null : position.exitPrice;
+        const displayPnl = isOpen ? (position.unrealizedPnl ?? null) : position.pnl;
+        const displayPrice = isOpen ? (position.livePrice ?? null) : position.exitPrice;
         const isShort = position.side === "short";
-        const returnPct = !isOpen && displayPrice && position.entryPrice
+        const returnPct = displayPrice !== null && displayPrice !== undefined && position.entryPrice
             ? (isShort
                 ? ((position.entryPrice - displayPrice) / position.entryPrice) * 100
                 : ((displayPrice - position.entryPrice) / position.entryPrice) * 100)
@@ -213,50 +406,48 @@ export function PositionsTable({
                     </div>
                 </div>
 
-                {/* P&L Section - Only for closed positions */}
-                {!isOpen && (
-                    <div className="grid grid-cols-2 gap-3 pt-3 border-t">
-                        <div>
-                            <p className="text-xs text-muted-foreground mb-1">Exit Price</p>
-                            <p className="text-sm font-medium">
-                                {displayPrice !== null && displayPrice !== undefined ? `$${formatCurrency(displayPrice)}` : "—"}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-xs text-muted-foreground mb-1">Return</p>
-                            {returnPct !== null ? (
-                                <Badge
-                                    variant="outline"
-                                    className={cn(
-                                        "font-mono text-xs",
-                                        isProfit
-                                            ? "border-green-500/50 text-green-500 bg-green-500/10"
-                                            : "border-red-500/50 text-red-500 bg-red-500/10"
-                                    )}
-                                >
-                                    {returnPct >= 0 ? "+" : ""}{returnPct.toFixed(1)}%
-                                </Badge>
-                            ) : (
-                                <span className="text-sm text-muted-foreground">—</span>
-                            )}
-                        </div>
-                        <div className="col-span-2">
-                            <p className="text-xs text-muted-foreground mb-1">P&L</p>
-                            {displayPnl !== null && displayPnl !== undefined ? (
-                                <p
-                                    className={cn(
-                                        "text-lg font-bold",
-                                        isProfit ? "text-green-500" : "text-red-500"
-                                    )}
-                                >
-                                    {isProfit ? "+" : "-"}${formatCurrency(Math.abs(displayPnl))}
-                                </p>
-                            ) : (
-                                <span className="text-sm text-muted-foreground">—</span>
-                            )}
-                        </div>
+                {/* Price / Return / P&L */}
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+                    <div>
+                        <p className="text-xs text-muted-foreground mb-1">{isOpen ? "Now Price" : "Exit Price"}</p>
+                        <p className="text-sm font-medium">
+                            {displayPrice !== null && displayPrice !== undefined ? `$${formatCurrency(displayPrice)}` : "—"}
+                        </p>
                     </div>
-                )}
+                    <div>
+                        <p className="text-xs text-muted-foreground mb-1">Return</p>
+                        {returnPct !== null ? (
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    "font-mono text-xs",
+                                    isProfit
+                                        ? "border-green-500/50 text-green-500 bg-green-500/10"
+                                        : "border-red-500/50 text-red-500 bg-red-500/10"
+                                )}
+                            >
+                                {returnPct >= 0 ? "+" : ""}{returnPct.toFixed(1)}%
+                            </Badge>
+                        ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                        )}
+                    </div>
+                    <div className="col-span-2">
+                        <p className="text-xs text-muted-foreground mb-1">{isOpen ? "Unrealized P&L" : "P&L"}</p>
+                        {displayPnl !== null && displayPnl !== undefined ? (
+                            <p
+                                className={cn(
+                                    "text-lg font-bold",
+                                    isProfit ? "text-green-500" : "text-red-500"
+                                )}
+                            >
+                                {isProfit ? "+" : "-"}${formatCurrency(Math.abs(displayPnl))}
+                            </p>
+                        ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                        )}
+                    </div>
+                </div>
 
                 {/* Actions */}
                 {!isDemo && isOpen && position.tradeId && (
@@ -286,7 +477,7 @@ export function PositionsTable({
                     <div className="flex justify-center py-12">
                         <Loader2 className="animate-spin text-primary h-6 w-6" />
                     </div>
-                ) : positionsWithLiveData.length === 0 ? (
+                ) : sortedPositions.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                         {hasActiveFilters
                             ? "No positions match your filters."
@@ -295,7 +486,7 @@ export function PositionsTable({
                                 : "No positions found. Connect your broker to sync data."}
                     </div>
                 ) : (
-                    positionsWithLiveData.map((position, idx) => (
+                    sortedPositions.map((position, idx) => (
                         <MobilePositionCard key={`${position.symbol}-${position.openedAt}-${idx}`} position={position} idx={idx} />
                     ))
                 )}
@@ -349,7 +540,7 @@ export function PositionsTable({
                                     </div>
                                 </TableCell>
                             </TableRow>
-                        ) : positionsWithLiveData.length === 0 ? (
+                        ) : sortedPositions.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={11} className="text-center h-24 text-muted-foreground">
                                     {hasActiveFilters
@@ -360,12 +551,12 @@ export function PositionsTable({
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            positionsWithLiveData.map((position, idx) => {
+                            sortedPositions.map((position, idx) => {
                                 const isOpen = position.status === "open";
-                                const displayPnl = isOpen ? null : position.pnl;
-                                const displayPrice = isOpen ? null : position.exitPrice;
+                                const displayPnl = isOpen ? (position.unrealizedPnl ?? null) : position.pnl;
+                                const displayPrice = isOpen ? (position.livePrice ?? null) : position.exitPrice;
                                 const isShort = position.side === "short";
-                                const returnPct = !isOpen && displayPrice && position.entryPrice
+                                const returnPct = displayPrice !== null && displayPrice !== undefined && position.entryPrice
                                     ? (isShort
                                         ? ((position.entryPrice - displayPrice) / position.entryPrice) * 100
                                         : ((displayPrice - position.entryPrice) / position.entryPrice) * 100)
@@ -420,6 +611,9 @@ export function PositionsTable({
                                             {displayPrice !== null && displayPrice !== undefined ? (
                                                 <span>
                                                     ${formatCurrency(displayPrice)}
+                                                    {isOpen && (
+                                                        <span className="ml-1 text-[10px] text-muted-foreground">live</span>
+                                                    )}
                                                 </span>
                                             ) : "—"}
                                         </TableCell>
@@ -432,6 +626,9 @@ export function PositionsTable({
                                                     )}
                                                 >
                                                     {isProfit ? "+" : "-"}${formatCurrency(Math.abs(displayPnl))}
+                                                    {isOpen && (
+                                                        <span className="ml-1 text-[10px] text-muted-foreground">unrealized</span>
+                                                    )}
                                                 </span>
                                             ) : (
                                                 <span className="text-muted-foreground">—</span>

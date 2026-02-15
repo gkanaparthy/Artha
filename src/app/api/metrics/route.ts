@@ -148,6 +148,7 @@ function getMetrics(trades: any[], filters?: any) {
             openedAt: p.openedAt.toISOString(),
             entryPrice: Math.round(p.entryPrice * 100) / 100,
             currentValue: Math.round(p.currentValue * 100) / 100,
+            expiryDate: p.expiryDate ? p.expiryDate.toISOString() : null,
         })),
         cumulativePnL,
         monthlyData,

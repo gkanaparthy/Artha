@@ -597,6 +597,7 @@ export class SnapTradeService {
     async getPositions(localUserId: string): Promise<{
         positions: Array<{
             symbol: string;
+            universalSymbolId?: string | null;
             units: number;
             price: number | null;
             averageCost: number | null;
@@ -644,7 +645,9 @@ export class SnapTradeService {
         const allPositions: any[] = [];
 
         for (const acc of accounts.data || []) {
-            const brokerName = acc.institution_name || 'Unknown';
+            const localAccount = user.brokerAccounts.find((a) => a.snapTradeAccountId === acc.id);
+            const localAccountId = localAccount?.id || acc.id;
+            const brokerName = localAccount?.brokerName || acc.institution_name || 'Unknown';
 
             try {
                 // Fetch stock/ETF positions
@@ -661,13 +664,14 @@ export class SnapTradeService {
 
                     allPositions.push({
                         symbol: pos.symbol?.symbol?.symbol || pos.symbol?.symbol?.raw_symbol || 'UNKNOWN',
+                        universalSymbolId: pos.symbol?.id || null,
                         units,
                         price,
                         averageCost: avgCost,
                         openPnl: pos.open_pnl ?? null,
                         marketValue: price && units ? price * units : null,
                         type: 'STOCK' as const,
-                        accountId: acc.id,
+                        accountId: localAccountId,
                         brokerName,
                     });
                 }
@@ -708,13 +712,14 @@ export class SnapTradeService {
 
                     allPositions.push({
                         symbol: optionSymbol?.ticker || 'UNKNOWN',
+                        universalSymbolId: optionSymbol?.id || null,
                         units,
                         price,
                         averageCost: avgCostPerContract,
                         openPnl,
                         marketValue,
                         type: 'OPTION' as const,
-                        accountId: acc.id,
+                        accountId: localAccountId,
                         brokerName,
                         optionType: optionSymbol?.option_type,
                         strikePrice: optionSymbol?.strike_price,

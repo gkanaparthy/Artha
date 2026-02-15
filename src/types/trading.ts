@@ -2,6 +2,7 @@
 
 export interface ClosedPosition {
   symbol: string;
+  universalSymbolId?: string | null;
   pnl: number;
   entryPrice: number;
   exitPrice: number;
@@ -11,12 +12,16 @@ export interface ClosedPosition {
   broker: string;
   accountId: string;
   type: string;
+  optionType?: string | null;
+  strikePrice?: number | null;
+  expiryDate?: string | null;
   tags?: { id: string; name: string; color: string; category: string; icon: string | null }[];
   side: "long" | "short";
 }
 
 export interface OpenPosition {
   symbol: string;
+  universalSymbolId?: string | null;
   quantity: number;
   entryPrice: number;
   openedAt: string;
@@ -25,12 +30,16 @@ export interface OpenPosition {
   currentValue: number;
   tradeId: string;
   type: string;
+  optionType?: string | null;
+  strikePrice?: number | null;
+  expiryDate?: string | null;
   tags?: { id: string; name: string; color: string; category: string; icon: string | null }[];
   side: "long" | "short";
 }
 
 export interface DisplayPosition {
   symbol: string;
+  universalSymbolId?: string | null;
   quantity: number;
   entryPrice: number;
   exitPrice: number | null;
@@ -42,6 +51,9 @@ export interface DisplayPosition {
   status: "open" | "closed";
   tradeId?: string;
   type: string;
+  optionType?: string | null;
+  strikePrice?: number | null;
+  expiryDate?: string | null;
   // Live data from broker (for open positions)
   livePrice?: number | null;
   unrealizedPnl?: number | null;
@@ -112,6 +124,7 @@ export interface TradeInput {
 export interface Lot {
   tradeId: string;
   date: Date;
+  universalSymbolId?: string | null;
   price: number;
   quantity: number;
   broker: string;
@@ -119,6 +132,9 @@ export interface Lot {
   originalQuantity: number;
   multiplier: number;
   type: string;
+  optionType?: string | null;
+  strikePrice?: number | null;
+  expiryDate?: Date | null;
   positionKey: string | null;
 }
 
@@ -141,6 +157,7 @@ export interface FilterOptions {
 // Let's export them here as "ClosedTrade" matching `metrics/route.ts` original logic
 export interface ClosedTrade {
   symbol: string;
+  universalSymbolId?: string | null;
   pnl: number;
   entryPrice: number;
   exitPrice: number;
@@ -150,6 +167,9 @@ export interface ClosedTrade {
   broker: string;
   accountId: string;
   type: string;
+  optionType?: string | null;
+  strikePrice?: number | null;
+  expiryDate?: string | null;
   multiplier: number;
   positionKey?: string | null;
   tags?: { id: string; name: string; color: string; category: string; icon: string | null }[];
@@ -162,6 +182,7 @@ export interface ClosedTrade {
 
 export interface OpenPositionInternal {
   symbol: string;
+  universalSymbolId?: string | null;
   quantity: number;
   entryPrice: number;
   openedAt: Date;
@@ -170,6 +191,9 @@ export interface OpenPositionInternal {
   currentValue: number;
   tradeId: string;
   type: string;
+  optionType?: string | null;
+  strikePrice?: number | null;
+  expiryDate?: Date | null;
   positionKey?: string | null;
   tags?: { id: string; name: string; color: string; category: string; icon: string | null }[];
   side: "long" | "short";
