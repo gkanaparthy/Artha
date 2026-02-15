@@ -127,6 +127,7 @@ export function DashboardView({
   const [livePositions, setLivePositions] = useState<LivePositionsData | null>(null);
   const [allPositions, setAllPositions] = useState<DisplayPosition[]>(initialPositions || []);
   const [loading, setLoading] = useState(!isDemo);
+  const [tableUnrealizedPnL, setTableUnrealizedPnL] = useState<number | null | undefined>(undefined);
 
   // Fetch metrics whenever ANY filter changes (only in non-demo mode)
   const fetchMetrics = useCallback(async () => {
@@ -134,6 +135,7 @@ export function DashboardView({
 
     try {
       setLoading(true);
+      setTableUnrealizedPnL(undefined);
       const params = new URLSearchParams();
       if (filters.symbol) params.append("symbol", filters.symbol);
       if (filters.startDate) params.append("startDate", filters.startDate);
@@ -160,6 +162,7 @@ export function DashboardView({
         accountId: p.accountId,
         status: "closed" as const,
         type: p.type,
+        contractMultiplier: p.contractMultiplier ?? p.multiplier,
         side: p.side,
         optionType: p.optionType,
         strikePrice: p.strikePrice,
@@ -181,6 +184,7 @@ export function DashboardView({
         status: "open" as const,
         tradeId: p.tradeId,
         type: p.type,
+        contractMultiplier: p.contractMultiplier ?? p.multiplier,
         side: p.side,
         optionType: p.optionType,
         strikePrice: p.strikePrice,
@@ -229,6 +233,10 @@ export function DashboardView({
     },
     [isDemo]
   );
+
+  const handleOpenUnrealizedChange = useCallback((value: number | null) => {
+    setTableUnrealizedPnL(value);
+  }, []);
 
   // Refetch when filters or global refreshKey change (non-demo mode only)
   useEffect(() => {
@@ -306,8 +314,13 @@ export function DashboardView({
     return "text-gradient-red";
   };
 
-  const unrealizedPnL = livePositions?.summary.totalUnrealizedPnl ?? 0;
-  const hasLiveUnrealized = livePositions !== null;
+  const hasTableUnrealized = tableUnrealizedPnL !== undefined;
+  const unrealizedPnL = hasTableUnrealized
+    ? (tableUnrealizedPnL ?? 0)
+    : (livePositions?.summary.totalUnrealizedPnl ?? 0);
+  const hasLiveUnrealized = hasTableUnrealized
+    ? tableUnrealizedPnL !== null
+    : livePositions !== null;
 
   return (
     <PageTransition>
@@ -477,6 +490,7 @@ export function DashboardView({
               <PositionsTable
                 key={isDemo ? undefined : refreshKey}
                 onMetricsUpdate={isDemo ? undefined : handleMetricsUpdate}
+                onOpenUnrealizedChange={isDemo ? undefined : handleOpenUnrealizedChange}
                 initialPositions={initialPositions}
                 positions={allPositions}
                 loading={loading}

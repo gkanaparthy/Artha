@@ -43,6 +43,7 @@ interface EnrichedLivePosition {
 
 interface PositionsTableProps {
     onMetricsUpdate?: (metrics: Metrics) => void;
+    onOpenUnrealizedChange?: (totalUnrealizedPnl: number | null) => void;
     initialPositions?: DisplayPosition[];
     isDemo?: boolean;
     livePositions?: LivePosition[];
@@ -160,6 +161,7 @@ const getSortValue = (p: DisplayPosition, field: SortField): string | number => 
 
 export function PositionsTable({
     onMetricsUpdate,
+    onOpenUnrealizedChange,
     initialPositions = [],
     isDemo = false,
     livePositions,
@@ -286,7 +288,9 @@ export function PositionsTable({
         return null;
     }, [livePositionMap]);
 
-    // Enrich open positions with live market data and allocate aggregate unrealized values across matching lots.
+    // Enrich open positions with live market data.
+    // Prefer row-level unrealized from live price + lot entry to keep split lots accurate.
+    // Fall back to proportional allocation only when live price is unavailable.
     const positionsWithLiveData = useMemo(() => {
         const matches = filteredPositions.map((position) => getLiveForPosition(position));
         const groupTotals = new Map<string, { totalAbsQty: number; rows: number }>();
@@ -304,29 +308,79 @@ export function PositionsTable({
             const match = matches[idx];
             if (!match) return position;
 
-            const total = groupTotals.get(match.key);
-            if (!total) return position;
-
+            const livePrice = match.live.livePrice;
             const absQty = Math.abs(position.quantity || 0);
-            const weight = total.totalAbsQty > 0
-                ? absQty / total.totalAbsQty
-                : 1 / Math.max(total.rows, 1);
+            const inferredMultiplier = (
+                livePrice !== null &&
+                livePrice !== undefined &&
+                livePrice !== 0 &&
+                match.live.marketValue !== null &&
+                match.live.marketValue !== undefined &&
+                match.live.units !== 0
+            )
+                ? Math.abs(match.live.marketValue) / (Math.abs(livePrice) * Math.abs(match.live.units))
+                : null;
+            const multiplier = position.contractMultiplier
+                ?? inferredMultiplier
+                ?? (position.type === 'OPTION' ? 100 : 1);
 
-            const allocatedUnrealized = match.live.unrealizedPnl === null
-                ? null
-                : match.live.unrealizedPnl * weight;
-            const allocatedMarketValue = match.live.marketValue === null
-                ? null
-                : match.live.marketValue * weight;
+            let rowUnrealized: number | null = null;
+            let rowMarketValue: number | null = null;
+
+            if (livePrice !== null && livePrice !== undefined) {
+                const isShort = position.side === 'short' || (position.side !== 'long' && position.quantity < 0);
+                const priceDiff = isShort
+                    ? position.entryPrice - livePrice
+                    : livePrice - position.entryPrice;
+
+                rowUnrealized = priceDiff * absQty * multiplier;
+                rowMarketValue = livePrice * absQty * multiplier;
+            } else {
+                const total = groupTotals.get(match.key);
+                if (total) {
+                    const weight = total.totalAbsQty > 0
+                        ? absQty / total.totalAbsQty
+                        : 1 / Math.max(total.rows, 1);
+
+                    rowUnrealized = match.live.unrealizedPnl === null
+                        ? null
+                        : match.live.unrealizedPnl * weight;
+                    rowMarketValue = match.live.marketValue === null
+                        ? null
+                        : match.live.marketValue * weight;
+                }
+            }
 
             return {
                 ...position,
-                livePrice: match.live.livePrice,
-                unrealizedPnl: allocatedUnrealized,
-                marketValue: allocatedMarketValue,
+                livePrice,
+                unrealizedPnl: rowUnrealized,
+                marketValue: rowMarketValue,
             };
         });
     }, [filteredPositions, getLiveForPosition]);
+
+    useEffect(() => {
+        if (!onOpenUnrealizedChange) return;
+
+        const openPositions = positionsWithLiveData.filter((p) => p.status === 'open');
+        if (openPositions.length === 0) {
+            onOpenUnrealizedChange(0);
+            return;
+        }
+
+        let total = 0;
+        let hasValue = false;
+
+        for (const position of openPositions) {
+            if (position.unrealizedPnl !== null && position.unrealizedPnl !== undefined) {
+                total += position.unrealizedPnl;
+                hasValue = true;
+            }
+        }
+
+        onOpenUnrealizedChange(hasValue ? Math.round(total * 100) / 100 : null);
+    }, [positionsWithLiveData, onOpenUnrealizedChange]);
 
     const { sortedData: sortedPositions, handleSort, getSortIcon } = useSort<DisplayPosition, SortField>({
         data: positionsWithLiveData,

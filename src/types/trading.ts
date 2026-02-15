@@ -12,6 +12,7 @@ export interface ClosedPosition {
   broker: string;
   accountId: string;
   type: string;
+  contractMultiplier?: number;
   optionType?: string | null;
   strikePrice?: number | null;
   expiryDate?: string | null;
@@ -30,6 +31,7 @@ export interface OpenPosition {
   currentValue: number;
   tradeId: string;
   type: string;
+  contractMultiplier?: number;
   optionType?: string | null;
   strikePrice?: number | null;
   expiryDate?: string | null;
@@ -51,6 +53,7 @@ export interface DisplayPosition {
   status: "open" | "closed";
   tradeId?: string;
   type: string;
+  contractMultiplier?: number;
   optionType?: string | null;
   strikePrice?: number | null;
   expiryDate?: string | null;
@@ -191,6 +194,7 @@ export interface OpenPositionInternal {
   currentValue: number;
   tradeId: string;
   type: string;
+  contractMultiplier?: number;
   optionType?: string | null;
   strikePrice?: number | null;
   expiryDate?: Date | null;

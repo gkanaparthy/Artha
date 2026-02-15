@@ -145,12 +145,14 @@ export default function DashboardPage() {
     const [hasAccounts, setHasAccounts] = useState<boolean | null>(null);
     const [syncState, setSyncState] = useState<SyncState | null>(null);
     const [syncPollingActive, setSyncPollingActive] = useState(false);
+    const [tableUnrealizedPnL, setTableUnrealizedPnL] = useState<number | null | undefined>(undefined);
     const retryTriggeredRef = useRef(false);
 
     // Fetch metrics whenever ANY filter changes
     const fetchMetrics = useCallback(async () => {
         try {
             setLoading(true);
+            setTableUnrealizedPnL(undefined);
             const params = new URLSearchParams();
             if (filters.symbol) params.append("symbol", filters.symbol);
             if (filters.startDate) params.append("startDate", filters.startDate);
@@ -182,6 +184,7 @@ export default function DashboardPage() {
                 accountId: p.accountId,
                 status: "closed" as const,
                 type: p.type,
+                contractMultiplier: p.contractMultiplier ?? p.multiplier,
                 side: p.side,
                 optionType: p.optionType,
                 strikePrice: p.strikePrice,
@@ -202,6 +205,7 @@ export default function DashboardPage() {
                 status: "open" as const,
                 tradeId: p.tradeId,
                 type: p.type,
+                contractMultiplier: p.contractMultiplier ?? p.multiplier,
                 side: p.side,
                 optionType: p.optionType,
                 strikePrice: p.strikePrice,
@@ -267,6 +271,10 @@ export default function DashboardPage() {
             winningTrades: newMetrics.winningTrades,
             losingTrades: newMetrics.losingTrades,
         }));
+    }, []);
+
+    const handleOpenUnrealizedChange = useCallback((value: number | null) => {
+        setTableUnrealizedPnL(value);
     }, []);
 
     // Realtime Sync (Fix #2): Poll for recent trades every 2 minutes
@@ -417,8 +425,13 @@ export default function DashboardPage() {
         return "text-gradient-red";
     };
 
-    const unrealizedPnL = livePositions?.summary.totalUnrealizedPnl ?? 0;
-    const hasLiveUnrealized = livePositions !== null;
+    const hasTableUnrealized = tableUnrealizedPnL !== undefined;
+    const unrealizedPnL = hasTableUnrealized
+        ? (tableUnrealizedPnL ?? 0)
+        : (livePositions?.summary.totalUnrealizedPnl ?? 0);
+    const hasLiveUnrealized = hasTableUnrealized
+        ? tableUnrealizedPnL !== null
+        : livePositions !== null;
 
     return (
         <PageTransition>
@@ -641,6 +654,7 @@ export default function DashboardPage() {
                             <PositionsTable
                                 key={refreshKey}
                                 onMetricsUpdate={handleMetricsUpdate}
+                                onOpenUnrealizedChange={handleOpenUnrealizedChange}
                                 positions={allPositions}
                                 loading={loading}
                                 livePositions={livePositions?.positions}
