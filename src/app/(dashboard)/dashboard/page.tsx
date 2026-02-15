@@ -152,7 +152,6 @@ export default function DashboardPage() {
     const fetchMetrics = useCallback(async () => {
         try {
             setLoading(true);
-            setTableUnrealizedPnL(undefined);
             const params = new URLSearchParams();
             if (filters.symbol) params.append("symbol", filters.symbol);
             if (filters.startDate) params.append("startDate", filters.startDate);
