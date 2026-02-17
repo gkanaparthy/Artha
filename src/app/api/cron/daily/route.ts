@@ -8,8 +8,10 @@ import { safeDecrypt } from '@/lib/encryption';
  * GET /api/cron/daily
  *
  * Unified daily cron (Free Tier = 1 cron limit)
+ * 0. Expire trials
  * 1. Check broker connection health + send email alerts
  * 2. Sync all user trades
+ * 3. Activation email drip for users who haven't connected a broker
  *
  * Schedule: 9 AM EST (Discord recommended)
  */
@@ -27,6 +29,7 @@ export async function GET(request: Request) {
             trialExpiry: {} as any,
             healthCheck: {} as any,
             sync: {} as any,
+            activationDrip: {} as any,
             timestamp: new Date().toISOString()
         };
 
@@ -58,6 +61,16 @@ export async function GET(request: Request) {
         } catch (error) {
             console.error("[Daily Cron] Sync failed:", error);
             results.sync = { error: error instanceof Error ? error.message : "Failed" };
+        }
+
+        // ============================================
+        // STEP 3: Activation Email Drip (unconnected users)
+        // ============================================
+        try {
+            results.activationDrip = await sendActivationDripEmails();
+        } catch (error) {
+            console.error("[Daily Cron] Activation drip failed:", error);
+            results.activationDrip = { error: error instanceof Error ? error.message : "Failed" };
         }
 
         console.log("[Daily Cron] ✅ Complete");
@@ -261,6 +274,111 @@ async function syncAllUsers() {
     }
 
     return { totalUsers: users.length, successful, failed, totalTrades };
+}
+
+// ============================================
+// HELPER: Send activation drip emails
+// T+24h: Broker connection nudge (social proof)
+// T+72h: Personal check-in from Gautham
+// ============================================
+async function sendActivationDripEmails() {
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    // Find users who completed onboarding but have zero broker accounts
+    // Only consider users who signed up within the last 7 days (don't spam old users)
+    const unconnectedUsers = await prisma.user.findMany({
+        where: {
+            onboardingCompleted: true,
+            email: { not: null },
+            createdAt: { gte: sevenDaysAgo },
+            brokerAccounts: { none: {} },
+        },
+        select: {
+            id: true,
+            email: true,
+            name: true,
+            createdAt: true,
+            onboardingData: true,
+        },
+    });
+
+    let nudgesSent = 0;
+    let checkinsSent = 0;
+    let skipped = 0;
+
+    for (const user of unconnectedUsers) {
+        if (!user.email) continue;
+
+        const onboardingData =
+            user.onboardingData &&
+                typeof user.onboardingData === "object" &&
+                !Array.isArray(user.onboardingData)
+                ? (user.onboardingData as Record<string, unknown>)
+                : {};
+
+        const accountAge = now.getTime() - user.createdAt.getTime();
+        const accountAgeHours = accountAge / (1000 * 60 * 60);
+        const displayName = user.name || "Trader";
+
+        try {
+            // T+24h: Send broker connection nudge
+            if (
+                accountAgeHours >= 24 &&
+                !onboardingData.nudgeEmailSentAt
+            ) {
+                const { sendBrokerConnectionNudgeEmail } = await import('@/lib/email');
+                await sendBrokerConnectionNudgeEmail(user.email, displayName);
+
+                await prisma.user.update({
+                    where: { id: user.id },
+                    data: {
+                        onboardingData: {
+                            ...onboardingData,
+                            nudgeEmailSentAt: now.toISOString(),
+                        },
+                    },
+                });
+
+                nudgesSent++;
+                console.log(`[Activation Drip] T+24h nudge sent to ${user.email}`);
+            }
+            // T+72h: Send personal check-in
+            else if (
+                accountAgeHours >= 72 &&
+                onboardingData.nudgeEmailSentAt &&
+                !onboardingData.checkinEmailSentAt
+            ) {
+                const { sendOnboardingCheckInEmail } = await import('@/lib/email');
+                await sendOnboardingCheckInEmail(user.email, displayName);
+
+                await prisma.user.update({
+                    where: { id: user.id },
+                    data: {
+                        onboardingData: {
+                            ...onboardingData,
+                            checkinEmailSentAt: now.toISOString(),
+                        },
+                    },
+                });
+
+                checkinsSent++;
+                console.log(`[Activation Drip] T+72h check-in sent to ${user.email}`);
+            } else {
+                skipped++;
+            }
+        } catch (error) {
+            console.error(`[Activation Drip] Error for ${user.email}:`, error);
+        }
+
+        // Rate limit protection
+        await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+    console.log(`[Activation Drip] Nudges: ${nudgesSent}, Check-ins: ${checkinsSent}, Skipped: ${skipped}`);
+    return { totalEligible: unconnectedUsers.length, nudgesSent, checkinsSent, skipped };
 }
 
 export const runtime = "nodejs";
