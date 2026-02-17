@@ -24,7 +24,7 @@ async function sendCheckIn(email: string, name: string) {
 
     try {
         await resend.emails.send({
-            from: "Gautham from Artha <kgauthamprasad@gmail.com>",
+            from: "Gautham from Artha <gautham@send.arthatrades.com>",
             to: email,
             subject: "Checking in - everything okay?",
             html: html,

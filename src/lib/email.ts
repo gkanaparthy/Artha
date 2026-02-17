@@ -430,7 +430,7 @@ export async function sendBrokerConnectionNudgeEmail(email: string, name: string
  * Send onboarding check-in email to users who haven't finished setup
  */
 export async function sendOnboardingCheckInEmail(email: string, name: string) {
-    const from = "Gautham from Artha <kgauthamprasad@gmail.com>";
+    const from = "Gautham from Artha <gautham@send.arthatrades.com>";
     const firstName = name.split(' ')[0];
     const template = EMAIL_TEMPLATES.ONBOARDING_CHECK_IN;
 

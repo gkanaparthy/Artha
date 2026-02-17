@@ -101,7 +101,16 @@ export function AIInsightsCard({ startDate, endDate, accountId, isDemo = false }
             }
 
             if (!response.ok) {
-                throw new Error("Failed to generate insights");
+                let message = "Failed to generate insights";
+                try {
+                    const data = await response.json();
+                    if (typeof data?.error === "string" && data.error.trim().length > 0) {
+                        message = data.error;
+                    }
+                } catch {
+                    // Ignore JSON parse failures and keep generic message
+                }
+                throw new Error(message);
             }
 
             const data = await response.json();
