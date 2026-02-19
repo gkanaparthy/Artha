@@ -33,15 +33,7 @@ export async function GET(req: NextRequest) {
         if (success === 'true' && brokerageAuthorizationId) {
             console.log('[SnapTrade Callback] Broker connected successfully');
 
-            const { snapTradeService } = await import('@/lib/services/snaptrade.service');
-
-            // 1. Discover accounts fast
-            await snapTradeService.syncAccounts(session.user.id);
-
-            // 2. Start deep sync in background
-            const syncPromise = snapTradeService.syncTrades(session.user.id);
-
-            // Check for reconnect
+            // Check for reconnect FIRST (before syncAccounts, which may race)
             const existingAccount = await prisma.brokerAccount.findFirst({
                 where: {
                     userId: session.user.id,
@@ -49,6 +41,36 @@ export async function GET(req: NextRequest) {
                 }
             });
             const isReconnect = !!existingAccount;
+
+            // If this is a reconnect, force-update the account to enabled immediately.
+            // syncAccounts may race with SnapTrade's backend still processing the
+            // re-auth, so we do this explicitly to avoid the "still disconnected" bug.
+            if (isReconnect && existingAccount.disabled) {
+                console.log(`[SnapTrade Callback] Reconnect detected — re-enabling account ${existingAccount.id} (${existingAccount.brokerName})`);
+                await prisma.brokerAccount.update({
+                    where: { id: existingAccount.id },
+                    data: {
+                        disabled: false,
+                        disabledAt: null,
+                        disabledReason: null,
+                        lastCheckedAt: new Date(),
+                    }
+                });
+            }
+
+            const { snapTradeService } = await import('@/lib/services/snaptrade.service');
+
+            // Small delay to let SnapTrade fully process the OAuth reconnection
+            // before we query their API for account status
+            if (isReconnect) {
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+
+            // 1. Discover accounts (this also updates disabled status from SnapTrade)
+            await snapTradeService.syncAccounts(session.user.id);
+
+            // 2. Start deep sync in background
+            const syncPromise = snapTradeService.syncTrades(session.user.id);
 
             // Wait max 2s for initial progress
             const syncStarted = await Promise.race([
