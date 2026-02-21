@@ -14,11 +14,11 @@ export function PsychologyPreview() {
             <div className="container mx-auto px-4 max-w-6xl">
                 <div className="text-center mb-16">
                     <h2 className={cn("text-3xl md:text-5xl font-bold text-[#2E4A3B] mb-6", playfair.className)}>
-                        Stop Losing Money to the <br />
-                        <span className="italic text-[#E59889]">Same Mistakes</span>
+                        Your Trades Tell a Story. <br />
+                        <span className="italic text-[#E59889]">Artha Finds the Patterns.</span>
                     </h2>
                     <p className="text-lg text-[#2E4A3B]/70 max-w-2xl mx-auto">
-                        Artha tracks your 'Behavioral Alpha'—the hidden profits you lose to FOMO, revenge trading, and emotional exits.
+                        Artha tracks your &lsquo;Behavioral Alpha&rsquo;&mdash;the hidden profits you lose to FOMO, revenge trading, and emotional exits.
                     </p>
                 </div>
 

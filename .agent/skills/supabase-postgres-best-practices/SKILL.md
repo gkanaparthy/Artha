@@ -1,6 +1,6 @@
 ---
 name: supabase-postgres-best-practices
-description: A collection of best practices for writing efficient, secure, and scalable Postgres code for Supabase.
+description: Use this skill when writing or reviewing Postgres queries, Prisma migrations, RLS policies, or Supabase schema changes for Artha. Also use when debugging slow queries, connection pool errors, deadlocks, or N+1 issues in the database layer.
 ---
 
 # Supabase Postgres Best Practices

@@ -1,6 +1,6 @@
 ---
 name: pricing-and-subscription-management
-description: Comprehensive knowledge for managing Artha's pricing strategy, Stripe integration, subscription gating, and administrative billing actions.
+description: Comprehensive knowledge for managing Artha's pricing strategy, Stripe integration, subscription gating, and administrative billing actions. Use this skill when modifying pricing tiers, grandfather/trial logic, MRR calculations, the admin subscriptions dashboard, or subscription-related email automation.
 ---
 
 # Pricing and Subscription Management Skill

@@ -1,6 +1,6 @@
 ---
 name: stripe-subscription
-description: Stripe subscription billing system for Artha. Covers webhook handling, access control, checkout flows, pricing tiers, and common pitfalls with payment state management.
+description: Comprehensive knowledge for managing Artha's Stripe billing system. Use this skill when working on subscription webhooks, checkout flows, feature gating/access control, pricing tiers, or administrative billing actions like grandfathering users or extending trials.
 ---
 
 # Stripe Subscription Billing Skill

@@ -1,6 +1,6 @@
 ---
 name: product-strategy
-description: Strategic knowledge regarding Artha's market position, competitive landscape, pricing strategy, and product roadmap.
+description: Use this skill when discussing Artha's pricing, competitive positioning, market strategy, product roadmap, or how Artha compares to competitors like TraderSync or TradeZella.
 ---
 
 # Product Strategy & Market Intelligence

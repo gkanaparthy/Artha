@@ -1,7 +1,6 @@
 ---
 name: geo-fundamentals
-description: Generative Engine Optimization for AI search engines (ChatGPT, Claude, Perplexity).
-allowed-tools: Read, Glob, Grep
+description: Use this skill when the user wants to optimize content to be cited by AI search engines (ChatGPT, Claude, Perplexity, Gemini) or asks about GEO, Generative Engine Optimization, AI citations, AI search visibility, or how to rank in AI-powered answers.
 ---
 
 # GEO Fundamentals

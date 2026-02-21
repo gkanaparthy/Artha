@@ -16,7 +16,8 @@ import {
     X,
     Shield,
     Lock,
-    Users,
+    TrendingUp,
+    Flame,
 } from "lucide-react";
 import { useState } from "react";
 import { PsychologyPreview } from "@/components/landing/psychology-preview";
@@ -183,18 +184,15 @@ export default function LandingPage() {
                                 transition={{ duration: 0.6 }}
                             >
                                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white/80 text-xs font-medium mb-4 sm:mb-6 border border-white/10">
-                                    <span className="relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4ADE80] opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#4ADE80]"></span>
-                                    </span>
-                                    v1.0 is now live
+                                    <Flame className="h-3.5 w-3.5 text-[#E59889]" />
+                                    Founder pricing: 17 of 100 spots left
                                 </div>
                                 <h1 className={cn("text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.1] mb-4 sm:mb-6", playfair.className)}>
-                                    Your Trades Tell a Story. <br />
-                                    <span className="italic text-[#4ADE80]">Artha Finds the Patterns.</span>
+                                    Stop Losing Money to the <br />
+                                    <span className="italic text-[#4ADE80]">Same Mistakes.</span>
                                 </h1>
                                 <p className="text-base sm:text-lg md:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0">
-                                    <dfn className="not-italic text-white">Artha is defined as</dfn> the beautiful, automated trading journal designed to help serious traders identify winning setups and master their psychology.
+                                    You already know <span className="text-white/80">what</span> you traded. Artha shows you <span className="text-white/80">why</span> you lost — then helps you stop.
                                 </p>
 
                             </motion.div>
@@ -213,7 +211,7 @@ export default function LandingPage() {
                                 </Link>
                                 <Link href="/demo" className="w-full sm:w-auto">
                                     <Button variant="outline" className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-full border-white/20 text-white hover:bg-white/5 text-base sm:text-lg">
-                                        Try Demo
+                                        See How It Works
                                     </Button>
                                 </Link>
                             </motion.div>
@@ -242,6 +240,7 @@ export default function LandingPage() {
                                             loop
                                             muted
                                             playsInline
+                                            poster="/og-image.png"
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
@@ -293,24 +292,26 @@ export default function LandingPage() {
                     <div className="container mx-auto px-4 max-w-6xl">
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 text-[#2E4A3B]/50">
                             <div className="flex items-center gap-2">
-                                <Users className="h-4 w-4" />
-                                <span className="text-xs sm:text-sm font-medium">Trusted by active traders</span>
+                                <TrendingUp className="h-4 w-4" />
+                                <span className="text-xs sm:text-sm font-medium">100+ brokers supported</span>
                             </div>
                             <div className="hidden sm:block w-px h-4 bg-[#2E4A3B]/10" />
                             <div className="flex items-center gap-2">
                                 <Lock className="h-4 w-4" />
-                                <span className="text-xs sm:text-sm font-medium">AES-256 Encrypted</span>
+                                <span className="text-xs sm:text-sm font-medium">AES-256 encrypted &middot; Read-only access</span>
                             </div>
                             <div className="hidden sm:block w-px h-4 bg-[#2E4A3B]/10" />
                             <div className="flex items-center gap-2">
                                 <Shield className="h-4 w-4" />
-                                <span className="text-xs sm:text-sm font-medium">Bank-level security via SnapTrade</span>
+                                <span className="text-xs sm:text-sm font-medium">Zero manual entry</span>
                             </div>
                         </div>
                     </div>
                 </section>
 
                 <HowItWorks />
+
+                <ComparisonTable />
 
                 <PsychologyPreview />
 
@@ -349,15 +350,13 @@ export default function LandingPage() {
                     </div>
                 </section>
 
-                <ComparisonTable />
-
                 <BrokerLogos />
 
                 <PricingSection />
 
-                <BlogPreview />
-
                 <FAQSection />
+
+                <BlogPreview />
 
                 <FinalCTA />
             </main>
