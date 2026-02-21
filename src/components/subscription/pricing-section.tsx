@@ -14,17 +14,14 @@ const playfair = Playfair_Display({ subsets: ["latin"] });
 interface PricingSectionProps {
     className?: string;
     isFounderPricingActive?: boolean;
-    founderSpotsRemaining?: number;
 }
 
 export function PricingSection({
     className,
     isFounderPricingActive = true,
-    founderSpotsRemaining = 87 // Default for UI, should be dynamic later
 }: PricingSectionProps) {
     const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "ANNUAL">("MONTHLY");
     const [loading, setLoading] = useState<string | null>(null);
-    const [dynamicFounderSpots, setDynamicFounderSpots] = useState<number | null>(null);
     const [dynamicGrandfatheredCount, setDynamicGrandfatheredCount] = useState<number | null>(null);
     const [userStatus, setUserStatus] = useState<string | null>(null);
     const [hasCommitted, setHasCommitted] = useState(false);
@@ -35,15 +32,14 @@ export function PricingSection({
         const fetchStats = async () => {
             try {
                 const res = await fetch('/api/stats/founder-count');
-                const data = await res.json();
-                if (typeof data.count === 'number') {
-                    setDynamicFounderSpots(Math.max(0, 100 - data.count));
-                }
-                if (typeof data.grandfatheredCount === 'number') {
-                    setDynamicGrandfatheredCount(data.grandfatheredCount);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (typeof data.grandfatheredCount === 'number') {
+                        setDynamicGrandfatheredCount(data.grandfatheredCount);
+                    }
                 }
             } catch (err) {
-                console.error('Failed to fetch founder count:', err);
+                console.error('Failed to fetch stats:', err);
             }
         };
         fetchStats();
@@ -66,7 +62,7 @@ export function PricingSection({
         fetchSub();
     }, [session]);
 
-    const spotsRemaining = dynamicFounderSpots ?? founderSpotsRemaining;
+    const spotsRemaining = 17;
     const isFounderActive = spotsRemaining > 0;
     const grandfatheredDisplayCount = dynamicGrandfatheredCount ?? 23;
 
