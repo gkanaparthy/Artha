@@ -641,7 +641,7 @@ export class SnapTradeService {
             userSecret: snapTradeUserSecret,
         });
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         const allPositions: any[] = [];
 
         for (const acc of accounts.data || []) {

@@ -33,7 +33,11 @@ export const FAQ_DATA = [
     },
     {
         question: "How is this different from other trading journals?",
-        answer: "Most journals just track P&L. Artha tracks your psychology. Tag every trade with setups (Breakout, Support Bounce), mistakes (FOMO, Revenge Trade), and emotions (Fear, Greed, Focused). Then see your 'Behavioral Alpha' - exactly how much your mistakes cost you and which setups actually make money."
+        answer: "Most journals just track P&L. Artha tracks your psychology and risk-adjusted outcomes. Tag every trade with setups (Breakout, Support Bounce), mistakes (FOMO, Revenge Trade), and emotions (Fear, Greed, Focused), then review Behavioral Alpha plus Pro R-multiple analytics (Net R, Avg R, and risk coverage) to see what actually works."
+    },
+    {
+        question: "Does Artha Pro include R-multiple analytics?",
+        answer: "Yes. Artha Pro includes R-multiple analytics on supported trades, including Net R, Avg R, and risk coverage. Set your planned risk (1R) per position and Artha automatically calculates R outcomes from your synced trades."
     },
     {
         question: "Do you support options trading?",

@@ -9,7 +9,7 @@ export function JsonLd() {
         "alternateName": "Artha Trades",
         "url": "https://arthatrades.com",
         "logo": "https://arthatrades.com/logo.png",
-        "description": "The beautiful, automated trading journal for serious traders. Master your psychology and find your edge.",
+        "description": "Automated trading journal for serious traders. Master psychology, track setup performance, and measure risk with R-multiple analytics.",
         "sameAs": [
             "https://x.com/arthatrades",
             "https://github.com/gkanaparthy/Pravaha"
@@ -26,6 +26,13 @@ export function JsonLd() {
         "name": "Artha",
         "operatingSystem": "Web",
         "applicationCategory": "FinanceApplication",
+        "description": "Artha Pro includes R-multiple analytics (Net R, Avg R, risk coverage), FIFO P&L metrics, and psychology-based performance tracking.",
+        "featureList": [
+            "R-multiple analytics (Net R, Avg R, risk coverage)",
+            "FIFO-calculated P&L and win rate",
+            "Psychology and setup tagging",
+            "Automated broker sync across 100+ brokerages"
+        ],
         "aggregateRating": {
             "@type": "AggregateRating",
             "ratingValue": "4.9",

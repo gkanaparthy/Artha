@@ -163,7 +163,7 @@ async function main() {
     console.log(`\n📊 YTD P&L Breakdown for Suman Pulusu (spulusu@gmail.com)`);
     console.log(`📅 Period: 2026-01-01 to Present\n`);
 
-    let totalPnL = 0;
+    const totalPnL = 0;
     // Final reporting
     const allAccounts = await prisma.brokerAccount.findMany({ where: { userId: user.id } });
 

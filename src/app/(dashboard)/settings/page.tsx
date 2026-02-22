@@ -29,6 +29,7 @@ import {
   Trash2,
   Tags,
   BrainCircuit,
+  AlignJustify,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
@@ -67,10 +68,26 @@ export default function SettingsPage() {
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [reconnecting, setReconnecting] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== 'undefined') {
+      const currentDensity = localStorage.getItem('layout-density') as "compact" | "comfortable";
+      if (currentDensity === "compact") setDensity("compact");
+    }
   }, []);
+
+  const handleDensityToggle = (checked: boolean) => {
+    const newDensity = checked ? "compact" : "comfortable";
+    setDensity(newDensity);
+    localStorage.setItem('layout-density', newDensity);
+    if (newDensity === "compact") {
+      document.documentElement.setAttribute('data-density', 'compact');
+    } else {
+      document.documentElement.removeAttribute('data-density');
+    }
+  };
 
   const fetchUserData = async () => {
     try {
@@ -772,6 +789,21 @@ export default function SettingsPage() {
                   </div>
                   <p className="text-sm text-muted-foreground">
                     All values displayed in US Dollars.
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg border bg-muted/20">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-foreground flex items-center gap-2">
+                      <AlignJustify className="h-4 w-4" />
+                      Compact Layout
+                    </span>
+                    <Switch
+                      checked={mounted && density === "compact"}
+                      onCheckedChange={handleDensityToggle}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {mounted && density === "compact" ? "High density mode enabled" : "Standard density mode"}
                   </p>
                 </div>
               </div>

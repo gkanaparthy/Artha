@@ -386,8 +386,8 @@ export function ReportsView({
   };
 
   const getPnLColor = (value: number) => {
-    if (value > 0) return "text-gradient-green";
-    if (value < 0) return "text-gradient-red";
+    if (value > 0) return "text-emerald-500";
+    if (value < 0) return "text-rose-500";
     return "text-muted-foreground";
   };
 
@@ -566,7 +566,7 @@ export function ReportsView({
           <div className="space-y-0.5 sm:space-y-1">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2 sm:gap-3">
               <span className="text-gradient">Reports</span>
-              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-500 float" />
+              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-500 float" />
               {isDemo && (
                 <span className="text-xs sm:text-sm font-normal text-muted-foreground ml-2">
                   (Demo Mode)
@@ -627,7 +627,7 @@ export function ReportsView({
                 title="Net P&L"
                 value={`${metrics.netPnL >= 0 ? "+" : "-"}${formatCurrency(metrics.netPnL)}`}
                 icon={metrics.netPnL >= 0 ? TrendingUp : TrendingDown}
-                iconColor={metrics.netPnL >= 0 ? "text-green-500" : "text-red-500"}
+                iconColor={metrics.netPnL >= 0 ? "text-emerald-500" : "text-rose-500"}
                 valueColor={getPnLColor(metrics.netPnL)}
                 delay={0.1}
               />
@@ -638,8 +638,8 @@ export function ReportsView({
                 iconColor="text-amber-500"
                 valueColor={
                   metrics.winRate >= 50
-                    ? "text-gradient-green"
-                    : "text-gradient-red"
+                    ? "text-emerald-500"
+                    : "text-rose-500"
                 }
                 delay={0.15}
               />
@@ -654,8 +654,8 @@ export function ReportsView({
                 iconColor="text-blue-500"
                 valueColor={
                   (metrics.profitFactor ?? 0) >= 1
-                    ? "text-gradient-green"
-                    : "text-gradient-red"
+                    ? "text-emerald-500"
+                    : "text-rose-500"
                 }
                 delay={0.2}
               />
@@ -666,8 +666,8 @@ export function ReportsView({
                 iconColor="text-purple-500"
                 valueColor={
                   riskRewardRatio >= 1
-                    ? "text-gradient-green"
-                    : "text-gradient-red"
+                    ? "text-emerald-500"
+                    : "text-rose-500"
                 }
                 delay={0.25}
               />
@@ -679,14 +679,14 @@ export function ReportsView({
                 title="Max Win Streak"
                 value={maxWinStreak}
                 icon={Trophy}
-                iconColor="text-green-500"
+                iconColor="text-emerald-500"
                 delay={0.3}
               />
               <SummaryCard
                 title="Max Loss Streak"
                 value={maxLossStreak}
                 icon={Flame}
-                iconColor="text-red-500"
+                iconColor="text-rose-500"
                 delay={0.35}
               />
               <SummaryCard
@@ -694,7 +694,7 @@ export function ReportsView({
                 value={`-${formatCurrency(maxDrawdown)}`}
                 icon={TrendingDown}
                 iconColor="text-orange-500"
-                valueColor={maxDrawdown === 0 ? "text-green-500" : "text-red-500"}
+                valueColor={maxDrawdown === 0 ? "text-emerald-500" : "text-rose-500"}
                 delay={0.4}
               />
               <SummaryCard
@@ -1353,8 +1353,8 @@ export function ReportsView({
                                   className={cn(
                                     "p-4 text-right font-mono font-semibold",
                                     symbol.pnl >= 0
-                                      ? "text-green-500"
-                                      : "text-red-500"
+                                      ? "text-emerald-500"
+                                      : "text-rose-500"
                                   )}
                                 >
                                   {symbol.pnl >= 0 ? "+" : "-"}
@@ -1367,10 +1367,10 @@ export function ReportsView({
                                   className={cn(
                                     "p-4 text-right font-semibold",
                                     symbol.winRate >= 60
-                                      ? "text-green-500"
+                                      ? "text-emerald-500"
                                       : symbol.winRate >= 50
                                         ? "text-amber-500"
-                                        : "text-red-500"
+                                        : "text-rose-500"
                                   )}
                                 >
                                   {symbol.winRate}%
@@ -1421,27 +1421,27 @@ export function ReportsView({
                     </div>
                     <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
                       <p className="text-xs sm:text-sm text-muted-foreground mb-1">Avg Win</p>
-                      <p className="text-lg sm:text-2xl font-bold text-green-500">+{formatCurrency(metrics.avgWin)}</p>
+                      <p className="text-lg sm:text-2xl font-bold text-emerald-500">+{formatCurrency(metrics.avgWin)}</p>
                     </div>
                     <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
                       <p className="text-xs sm:text-sm text-muted-foreground mb-1">Avg Loss</p>
-                      <p className="text-lg sm:text-2xl font-bold text-red-500">-{formatCurrency(metrics.avgLoss)}</p>
+                      <p className="text-lg sm:text-2xl font-bold text-rose-500">-{formatCurrency(metrics.avgLoss)}</p>
                     </div>
                     <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
                       <p className="text-xs sm:text-sm text-muted-foreground mb-1">MTD P&L</p>
-                      <p className={cn("text-lg sm:text-2xl font-bold", mtdPnL >= 0 ? "text-green-500" : "text-red-500")}>
+                      <p className={cn("text-lg sm:text-2xl font-bold", mtdPnL >= 0 ? "text-emerald-500" : "text-rose-500")}>
                         {mtdPnL >= 0 ? "+" : "-"}{formatCurrency(mtdPnL)}
                       </p>
                     </div>
                     <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
                       <p className="text-xs sm:text-sm text-muted-foreground mb-1">YTD P&L</p>
-                      <p className={cn("text-lg sm:text-2xl font-bold", ytdPnL >= 0 ? "text-green-500" : "text-red-500")}>
+                      <p className={cn("text-lg sm:text-2xl font-bold", ytdPnL >= 0 ? "text-emerald-500" : "text-rose-500")}>
                         {ytdPnL >= 0 ? "+" : "-"}{formatCurrency(ytdPnL)}
                       </p>
                     </div>
                     <div className="text-center p-3 sm:p-4 rounded-lg bg-card/50 border">
                       <p className="text-xs sm:text-sm text-muted-foreground mb-1">Expectancy</p>
-                      <p className={cn("text-lg sm:text-2xl font-bold", metrics.netPnL >= 0 ? "text-green-500" : "text-red-500")}>
+                      <p className={cn("text-lg sm:text-2xl font-bold", metrics.netPnL >= 0 ? "text-emerald-500" : "text-rose-500")}>
                         {metrics.totalTrades > 0 ? `${metrics.netPnL >= 0 ? "+" : "-"}${formatCurrency(metrics.netPnL / metrics.totalTrades)}` : "—"}
                       </p>
                     </div>

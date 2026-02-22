@@ -41,7 +41,7 @@ export default auth((req) => {
   // Check onboarding status from both JWT and fallback cookie.
   // The JWT may not refresh reliably in Edge runtime, so the API sets
   // a direct cookie as a belt-and-suspenders fallback.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const jwtOnboarded = (req.auth as any)?.user?.onboardingCompleted === true;
   const cookieOnboarded = req.cookies.get("onboarding_completed")?.value === "true";
   const onboardingCompleted = jwtOnboarded || cookieOnboarded;

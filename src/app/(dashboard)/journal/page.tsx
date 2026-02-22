@@ -516,8 +516,8 @@ export default function JournalPage() {
                             } className={cn(
                               "font-mono uppercase text-xs shrink-0",
                               (trade.action.includes("BUY") || trade.action === "ASSIGNMENT")
-                                ? "border-green-500 text-green-500 bg-green-500/10"
-                                : "text-red-500 bg-red-500/10"
+                                ? "border-emerald-500 text-emerald-500 bg-emerald-500/10"
+                                : "text-rose-500 bg-rose-500/10"
                             )}>
                               {trade.action}
                             </Badge>
@@ -559,8 +559,8 @@ export default function JournalPage() {
                   {/* Desktop Table View */}
                   <div className="hidden md:block rounded-md border bg-background">
                     <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/50">
+                      <TableHeader className="sticky top-0 bg-background/80 backdrop-blur-md z-10 shadow-sm">
+                        <TableRow className="bg-muted/50 border-none">
                           <TableHead className="w-[40px]">
                             <input
                               type="checkbox"
@@ -613,7 +613,7 @@ export default function JournalPage() {
                             return (
                               <motion.tr
                                 key={trade.id}
-                                className="table-row-hover cursor-pointer"
+                                className="table-row-hover cursor-pointer group even:bg-muted/30"
                                 onClick={() => {
                                   setSelectedTrade(trade);
                                   setSheetOpen(true);
@@ -642,8 +642,8 @@ export default function JournalPage() {
                                   } className={cn(
                                     "font-mono uppercase text-xs",
                                     (trade.action.includes("BUY") || trade.action === "ASSIGNMENT")
-                                      ? "border-green-500 text-green-500 bg-green-500/10"
-                                      : "text-red-500 bg-red-500/10"
+                                      ? "border-emerald-500 text-emerald-500 bg-emerald-500/10"
+                                      : "text-rose-500 bg-rose-500/10"
                                   )}>
                                     {trade.action}
                                   </Badge>
@@ -663,16 +663,16 @@ export default function JournalPage() {
                                     )}
                                   </div>
                                 </TableCell>
-                                <TableCell className="text-right font-mono">
+                                <TableCell className="text-right font-mono tabular-nums">
                                   {trade.quantity}
                                 </TableCell>
-                                <TableCell className="text-right font-mono">
+                                <TableCell className="text-right font-mono tabular-nums">
                                   ${trade.price.toFixed(2)}
                                 </TableCell>
-                                <TableCell className="text-right font-mono text-muted-foreground">
+                                <TableCell className="text-right font-mono text-muted-foreground tabular-nums">
                                   ${(trade.quantity * trade.price).toFixed(2)}
                                 </TableCell>
-                                <TableCell className="text-right">
+                                <TableCell className="text-right opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
                                   <Button
                                     variant="ghost"
                                     size="icon"

@@ -83,26 +83,6 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
     }, []);
 
     // Check if broker was connected via callback redirect
-    useEffect(() => {
-        const connected = searchParams.get("connected");
-        if (connected === "true") {
-            // User connected broker in popup-blocked scenario, complete onboarding
-            saveAndRedirect();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchParams]);
-
-    const canContinue = (() => {
-        switch (currentStep) {
-            case 0: return !!tradingStyle;
-            case 1: return !!challenge;
-            case 2: return true; // Pain step is read-only
-            case 3: return true; // Solution step is read-only
-            case 4: return true; // Connect step has its own flow
-            default: return false;
-        }
-    })();
-
     const saveAndRedirect = useCallback(async (skippedAtStep?: number) => {
         setSaving(true);
         try {
@@ -134,6 +114,27 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
         }
         window.location.href = "/dashboard";
     }, [tradingStyle, challenge, update]);
+
+    useEffect(() => {
+        const connected = searchParams.get("connected");
+        if (connected === "true") {
+            // User connected broker in popup-blocked scenario, complete onboarding
+            saveAndRedirect();
+        }
+
+    }, [searchParams]);
+
+    const canContinue = (() => {
+        switch (currentStep) {
+            case 0: return !!tradingStyle;
+            case 1: return !!challenge;
+            case 2: return true; // Pain step is read-only
+            case 3: return true; // Solution step is read-only
+            case 4: return true; // Connect step has its own flow
+            default: return false;
+        }
+    })();
+
 
     const goNext = useCallback(() => {
         if (currentStep < TOTAL_STEPS - 1) {

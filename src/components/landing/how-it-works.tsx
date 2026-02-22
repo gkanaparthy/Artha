@@ -26,7 +26,7 @@ const steps = [
         number: "03",
         icon: TrendingUp,
         title: "Grow",
-        description: "See your Behavioral Alpha — the exact dollar cost of your mistakes. Understand what's working and what's not.",
+        description: "See your Behavioral Alpha and Pro R-multiples (Net R, Avg R, risk coverage). Understand what's working and what's not.",
         color: "bg-[#4ADE80]/10 text-[#16A34A]",
     },
 ];

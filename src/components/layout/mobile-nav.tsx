@@ -39,7 +39,7 @@ export function MobileNav({ isAdmin }: MobileNavProps) {
 
     // Close menu when route changes
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         setIsOpen(false);
     }, [pathname]);
 

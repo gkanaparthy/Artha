@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toPng } from "html-to-image";
 import { Share2, Download, Loader2, Share } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -136,7 +137,7 @@ export function ShareReport({ elementId, title = "Trading Performance" }: ShareR
                                 <p className="text-sm text-muted-foreground">Generating image...</p>
                             </div>
                         ) : previewImage ? (
-                            <img src={previewImage} alt="Performance Preview" className="h-full w-full object-contain" />
+                            <Image src={previewImage} alt="Performance Preview" width={400} height={200} className="h-full w-full object-contain" />
                         ) : (
                             <p className="text-sm text-muted-foreground">Failed to generate image</p>
                         )}

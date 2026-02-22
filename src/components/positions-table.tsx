@@ -451,9 +451,9 @@ export function PositionsTable({
                         {isOpen ? (
                             <Clock className="h-5 w-5 text-blue-500 shrink-0" />
                         ) : isProfit ? (
-                            <TrendingUp className="h-5 w-5 text-green-500 shrink-0" />
+                            <TrendingUp className="h-5 w-5 text-emerald-500 shrink-0" />
                         ) : (
-                            <TrendingDown className="h-5 w-5 text-red-500 shrink-0" />
+                            <TrendingDown className="h-5 w-5 text-rose-500 shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-base truncate">{position.symbol}</h3>
@@ -475,8 +475,8 @@ export function PositionsTable({
                             isOpen
                                 ? "border-blue-500/50 text-blue-500 bg-blue-500/10"
                                 : isProfit
-                                    ? "border-green-500/50 text-green-500 bg-green-500/10"
-                                    : "border-red-500/50 text-red-500 bg-red-500/10"
+                                    ? "border-emerald-500/50 text-emerald-500 bg-emerald-500/10"
+                                    : "border-rose-500/50 text-rose-500 bg-rose-500/10"
                         )}
                     >
                         {isOpen ? "OPEN" : "CLOSED"}
@@ -519,8 +519,8 @@ export function PositionsTable({
                                 className={cn(
                                     "font-mono text-xs",
                                     isProfit
-                                        ? "border-green-500/50 text-green-500 bg-green-500/10"
-                                        : "border-red-500/50 text-red-500 bg-red-500/10"
+                                        ? "border-emerald-500/50 text-emerald-500 bg-emerald-500/10"
+                                        : "border-rose-500/50 text-rose-500 bg-rose-500/10"
                                 )}
                             >
                                 {returnPct >= 0 ? "+" : ""}{returnPct.toFixed(1)}%
@@ -539,7 +539,7 @@ export function PositionsTable({
                             <p
                                 className={cn(
                                     "text-lg font-bold",
-                                    isProfit ? "text-green-500" : "text-red-500"
+                                    isProfit ? "text-emerald-500" : "text-rose-500"
                                 )}
                             >
                                 {isProfit ? "+" : "-"}${formatCurrency(Math.abs(displayPnl))}
@@ -610,7 +610,7 @@ export function PositionsTable({
             {/* Desktop Table View */}
             <div className="hidden md:block rounded-xl border-0 px-1">
                 <Table className="border-separate border-spacing-y-2">
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 bg-background/80 backdrop-blur-md z-10 shadow-sm">
                         <TableRow className="hover:bg-transparent border-none">
                             <TableHead className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("symbol")}>
                                 <div className="flex items-center gap-2">Symbol {getSortIcon("symbol")}</div>
@@ -689,16 +689,16 @@ export function PositionsTable({
                                         initial={shouldAnimate ? { opacity: 0, y: 10 } : false}
                                         animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
                                         transition={shouldAnimate ? { duration: 0.2, delay: idx * 0.02 } : undefined}
-                                        className="group transition-all hover:translate-y-[-2px] hover:shadow-lg bg-card/40 hover:bg-card border-0 [&_td:first-child]:rounded-l-xl [&_td:last-child]:rounded-r-xl"
+                                        className="group transition-all hover:translate-y-[-2px] hover:shadow-lg bg-card/40 hover:bg-card border-0 [&_td:first-child]:rounded-l-xl [&_td:last-child]:rounded-r-xl even:bg-muted/30"
                                     >
                                         <TableCell className="font-medium">
                                             <div className="flex items-center gap-2">
                                                 {isOpen ? (
                                                     <Clock className="h-4 w-4 text-blue-500" />
                                                 ) : isProfit ? (
-                                                    <TrendingUp className="h-4 w-4 text-green-500" />
+                                                    <TrendingUp className="h-4 w-4 text-emerald-500" />
                                                 ) : (
-                                                    <TrendingDown className="h-4 w-4 text-red-500" />
+                                                    <TrendingDown className="h-4 w-4 text-rose-500" />
                                                 )}
                                                 <span>{position.symbol}</span>
                                                 {position.futuresMultiplierWarning && (
@@ -715,8 +715,8 @@ export function PositionsTable({
                                                     isOpen
                                                         ? "border-blue-500/50 text-blue-500 bg-blue-500/10"
                                                         : isProfit
-                                                            ? "border-green-500/50 text-green-500 bg-green-500/10"
-                                                            : "border-red-500/50 text-red-500 bg-red-500/10"
+                                                            ? "border-emerald-500/50 text-emerald-500 bg-emerald-500/10"
+                                                            : "border-rose-500/50 text-rose-500 bg-rose-500/10"
                                                 )}
                                             >
                                                 {isOpen ? "OPEN" : "CLOSED"}
@@ -728,8 +728,8 @@ export function PositionsTable({
                                         <TableCell className="text-muted-foreground">
                                             {position.closedAt ? formatDate(position.closedAt) : "—"}
                                         </TableCell>
-                                        <TableCell className="text-right">{position.quantity}</TableCell>
-                                        <TableCell className="text-right">${formatCurrency(position.entryPrice)}</TableCell>
+                                        <TableCell className="text-right tabular-nums">{position.quantity}</TableCell>
+                                        <TableCell className="text-right tabular-nums">${formatCurrency(position.entryPrice)}</TableCell>
                                         <TableCell className="text-right">
                                             {displayPrice !== null && displayPrice !== undefined ? (
                                                 <span>
@@ -740,12 +740,12 @@ export function PositionsTable({
                                                 </span>
                                             ) : "—"}
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-right tabular-nums">
                                             {displayPnl !== null && displayPnl !== undefined ? (
                                                 <span
                                                     className={cn(
                                                         "font-semibold",
-                                                        isProfit ? "text-green-500" : "text-red-500"
+                                                        isProfit ? "text-emerald-500" : "text-rose-500"
                                                     )}
                                                 >
                                                     {isProfit ? "+" : "-"}${formatCurrency(Math.abs(displayPnl))}
@@ -767,8 +767,8 @@ export function PositionsTable({
                                                     className={cn(
                                                         "font-mono",
                                                         isProfit
-                                                            ? "border-green-500/50 text-green-500 bg-green-500/10"
-                                                            : "border-red-500/50 text-red-500 bg-red-500/10"
+                                                            ? "border-emerald-500/50 text-emerald-500 bg-emerald-500/10"
+                                                            : "border-rose-500/50 text-rose-500 bg-rose-500/10"
                                                     )}
                                                 >
                                                     {returnPct >= 0 ? "+" : ""}{returnPct.toFixed(1)}%
@@ -797,15 +797,15 @@ export function PositionsTable({
                                         </TableCell>
                                         <TableCell>
                                             {!isDemo && isOpen && position.tradeId && (
-                                                <div className="flex items-center justify-end">
+                                                <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
                                                     <Button
                                                         variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                                        size="sm"
                                                         onClick={() => handleDelete(position.tradeId!)}
-                                                        title="Delete position"
+                                                        className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                                                     >
-                                                        <Trash2 className="h-4 w-4" />
+                                                        <Trash2 className="h-4 w-4 mr-1" />
+                                                        <span className="hidden sm:inline">Delete</span>
                                                     </Button>
                                                 </div>
                                             )}
@@ -836,8 +836,8 @@ export function PositionsTable({
                                 className={cn(
                                     "font-semibold",
                                     filteredPositions.filter(p => p.status === "closed").reduce((sum, p) => sum + (p.pnl ?? 0), 0) >= 0
-                                        ? "text-green-500"
-                                        : "text-red-500"
+                                        ? "text-emerald-500"
+                                        : "text-rose-500"
                                 )}
                             >
                                 ${formatCurrency(filteredPositions.filter(p => p.status === "closed").reduce((sum, p) => sum + (p.pnl ?? 0), 0))}

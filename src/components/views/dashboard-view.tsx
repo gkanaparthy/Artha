@@ -500,15 +500,15 @@ export function DashboardView({
   };
 
   const getPnLColor = (value: number) => {
-    if (value > 0) return "text-gradient-green";
-    if (value < 0) return "text-gradient-red";
+    if (value > 0) return "text-emerald-500";
+    if (value < 0) return "text-rose-500";
     return "text-muted-foreground";
   };
 
   const getWinRateColor = (value: number) => {
-    if (value >= 60) return "text-gradient-green";
+    if (value >= 60) return "text-emerald-500";
     if (value >= 50) return "text-amber-500";
-    return "text-gradient-red";
+    return "text-rose-500";
   };
 
   const hasTableUnrealized = tableUnrealizedPnL !== undefined;
@@ -581,7 +581,7 @@ export function DashboardView({
             iconColor={getPnLColor(metrics.netPnL)}
             valueColor={getPnLColor(metrics.netPnL)}
             delay={0}
-            glowClass={metrics.netPnL >= 0 ? "glow-green" : "glow-red"}
+            glowClass={metrics.netPnL >= 0 ? "glow-emerald" : "glow-rose"}
             onClick={() => handleMetricClick("all")}
           />
           <MetricCard
@@ -592,7 +592,7 @@ export function DashboardView({
             iconColor={hasLiveUnrealized ? getPnLColor(unrealizedPnL) : 'text-muted-foreground'}
             valueColor={hasLiveUnrealized ? getPnLColor(unrealizedPnL) : 'text-muted-foreground'}
             delay={0.1}
-            glowClass={hasLiveUnrealized ? (unrealizedPnL >= 0 ? 'glow-green' : 'glow-red') : ''}
+            glowClass={hasLiveUnrealized ? (unrealizedPnL >= 0 ? 'glow-emerald' : 'glow-rose') : ''}
             onClick={() => handleMetricClick("open")}
           />
           <MetricCard
@@ -610,8 +610,8 @@ export function DashboardView({
             value={formatCurrency(metrics.largestWin, true)}
             subtitle="Best single trade"
             icon={TrendingUp}
-            iconColor="text-gradient-green"
-            valueColor="text-gradient-green"
+            iconColor="text-emerald-500"
+            valueColor="text-emerald-500"
             delay={0.3}
             onClick={() => handleMetricClick("winners")}
           />
@@ -620,8 +620,8 @@ export function DashboardView({
             value={formatCurrency(metrics.largestLoss, true)}
             subtitle="Worst single trade"
             icon={TrendingDown}
-            iconColor="text-gradient-red"
-            valueColor="text-gradient-red"
+            iconColor="text-rose-500"
+            valueColor="text-rose-500"
             delay={0.4}
             onClick={() => handleMetricClick("losers")}
           />
@@ -639,8 +639,8 @@ export function DashboardView({
             value={formatCurrency(metrics.avgWin, true)}
             subtitle={`${metrics.avgWinPct}% avg return`}
             icon={TrendingUp}
-            iconColor="text-gradient-green"
-            valueColor="text-gradient-green"
+            iconColor="text-emerald-500"
+            valueColor="text-emerald-500"
             delay={0.6}
             onClick={() => handleMetricClick("winners")}
           />
@@ -649,8 +649,8 @@ export function DashboardView({
             value={formatCurrency(-metrics.avgLoss, true)}
             subtitle={`-${metrics.avgLossPct}% avg return`}
             icon={TrendingDown}
-            iconColor="text-gradient-red"
-            valueColor="text-gradient-red"
+            iconColor="text-rose-500"
+            valueColor="text-rose-500"
             delay={0.7}
             onClick={() => handleMetricClick("losers")}
           />
@@ -669,10 +669,10 @@ export function DashboardView({
             value={formatR(metrics.netR, true)}
             subtitle={metrics.rCoverage ? `${metrics.rCoverage}% risk coverage` : "Set risk per position to unlock"}
             icon={Target}
-            iconColor={(metrics.netR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
-            valueColor={(metrics.netR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
+            iconColor={(metrics.netR ?? 0) >= 0 ? "text-emerald-500" : "text-rose-500"}
+            valueColor={(metrics.netR ?? 0) >= 0 ? "text-emerald-500" : "text-rose-500"}
             delay={0.9}
-            glowClass={(metrics.netR ?? 0) >= 0 ? "glow-green" : "glow-red"}
+            glowClass={(metrics.netR ?? 0) >= 0 ? "glow-emerald" : "glow-rose"}
             onClick={() => handleMetricClick("all")}
           />
           <MetricCard
@@ -684,8 +684,8 @@ export function DashboardView({
                 : "No risk-tagged trades yet"
             }
             icon={Target}
-            iconColor={(metrics.avgR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
-            valueColor={(metrics.avgR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
+            iconColor={(metrics.avgR ?? 0) >= 0 ? "text-emerald-500" : "text-rose-500"}
+            valueColor={(metrics.avgR ?? 0) >= 0 ? "text-emerald-500" : "text-rose-500"}
             delay={1.0}
             onClick={() => handleMetricClick("all")}
           />

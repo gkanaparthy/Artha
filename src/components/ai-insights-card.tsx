@@ -203,12 +203,12 @@ export function AIInsightsCard({ startDate, endDate, accountId, isDemo = false }
 
                 {error && (
                     <div className="flex flex-col items-center justify-center py-10 text-center">
-                        <div className="mb-4 rounded-full bg-red-500/10 p-4">
-                            <AlertTriangle className="h-8 w-8 text-red-500" />
+                        <div className="mb-4 rounded-full bg-rose-500/10 p-4">
+                            <AlertTriangle className="h-8 w-8 text-rose-500" />
                         </div>
                         <h3 className="mb-2 text-lg font-semibold">Insight Generation Failed</h3>
                         <p className="mb-6 max-w-sm text-sm text-muted-foreground">{error}</p>
-                        <Button onClick={generateInsights} variant="outline" className="border-red-500/20 hover:bg-red-500/10">
+                        <Button onClick={generateInsights} variant="outline" className="border-rose-500/20 hover:bg-rose-500/10">
                             <RefreshCcw className="mr-2 h-4 w-4" />
                             Try Again
                         </Button>

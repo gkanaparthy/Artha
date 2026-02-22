@@ -48,14 +48,14 @@ export default function LandingPage() {
                                 "@type": "WebSite",
                                 "name": "Artha",
                                 "url": "https://arthatrades.com",
-                                "description": "The beautiful, automated trading journal for serious traders."
+                                "description": "The automated trading journal for serious traders with psychology tracking, FIFO analytics, and R-multiple reporting."
                             },
                             {
                                 "@type": "SoftwareApplication",
                                 "name": "Artha Trading Journal",
                                 "applicationCategory": "FinanceApplication",
                                 "operatingSystem": "Web",
-                                "description": "Artha is the beautiful, automated trading journal designed to help serious traders identify winning setups and master their psychology.",
+                                "description": "Artha is an automated trading journal built for serious traders. Artha Pro includes R-multiple analytics (Net R, Avg R, risk coverage), setup performance, and psychology insights.",
                                 "author": {
                                     "@type": "Person",
                                     "name": "Gautham Kanaparthy"
@@ -192,7 +192,7 @@ export default function LandingPage() {
                                     <span className="italic text-[#4ADE80]">Same Mistakes.</span>
                                 </h1>
                                 <p className="text-base sm:text-lg md:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0">
-                                    You already know <span className="text-white/80">what</span> you traded. Artha shows you <span className="text-white/80">why</span> you lost — then helps you stop.
+                                    You already know <span className="text-white/80">what</span> you traded. Artha shows you <span className="text-white/80">why</span> you lost — then helps you stop, with Net R and Avg R clarity built into Pro.
                                 </p>
 
                             </motion.div>
@@ -343,7 +343,7 @@ export default function LandingPage() {
                             <FeatureCard
                                 icon={BarChart3}
                                 title="Real P&L Clarity"
-                                description="FIFO-calculated profits, win rates, and R:R ratios. Filter by date, account, symbol, or tag to find what's working."
+                                description="FIFO-calculated profits, win rates, and R-multiples (Net R, Avg R, risk coverage). Filter by date, account, symbol, or tag to find what's working."
                                 accentColor="border-t-[#2E4A3B]"
                             />
                         </div>

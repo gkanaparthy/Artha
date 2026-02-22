@@ -8,6 +8,7 @@ const playfair = Playfair_Display({ subsets: ["latin"] });
 
 const features = [
     { name: "Auto-sync trades", spreadsheet: false, other: true, artha: true },
+    { name: "R-multiple analytics (Net R, Avg R)", spreadsheet: false, other: "Limited", artha: true },
     { name: "Psychology tracking", spreadsheet: false, other: false, artha: true },
     { name: "Mistake patterns", spreadsheet: false, other: false, artha: true },
     { name: "Setup analytics", spreadsheet: false, other: false, artha: true },

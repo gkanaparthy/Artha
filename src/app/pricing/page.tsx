@@ -28,7 +28,7 @@ export default function PricingPage() {
                                 "@context": "https://schema.org",
                                 "@type": "WebPage",
                                 "name": "Artha Pricing Plans",
-                                "description": "Affordable pricing plans for the Artha trading journal, including Pro and Lifetime access.",
+                                "description": "Affordable Artha plans including Pro and Lifetime access with R-multiple analytics, FIFO performance metrics, and psychology tracking.",
                                 "publisher": {
                                     "@type": "Organization",
                                     "name": "Artha"
@@ -36,6 +36,11 @@ export default function PricingPage() {
                                 "mainEntity": {
                                     "@type": "SoftwareApplication",
                                     "name": "Artha Pro",
+                                    "featureList": [
+                                        "R-multiple analytics (Net R, Avg R, risk coverage)",
+                                        "FIFO P&L and win-rate reporting",
+                                        "Psychology and setup analytics"
+                                    ],
                                     "offers": {
                                         "@type": "AggregateOffer",
                                         "priceCurrency": "USD",
@@ -51,7 +56,7 @@ export default function PricingPage() {
                             Pricing Plans for Every Trader
                         </h1>
                         <p className="text-[#2E4A3B]/60 text-center text-lg max-w-2xl mx-auto">
-                            Every new user gets 30 days of full Pro access free. No credit card required.
+                            Every new user gets 30 days of full Pro access free, including R-multiple analytics. No credit card required.
                         </p>
                     </div>
                     <PricingSection className="py-10" />

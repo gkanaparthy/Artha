@@ -177,10 +177,11 @@ export function PricingSection({
                         subtitle={billingCycle === "MONTHLY" ? "/ month" : "/ year"}
                         description={isFounderActive
                             ? "Founder pricing locked-in forever. Includes all current and future Pro features."
-                            : "Full access to the behavioral trading suite. Automated sync and unlimited insights."
+                            : "Full access to the behavioral trading suite, including R-multiple analytics, automated sync, and unlimited insights."
                         }
                         features={[
                             "Unlimited brokerage sync",
+                            "R-multiple analytics (Net R, Avg R, coverage)",
                             "AI Behavioral Insights",
                             "Emotional correlation analytics",
                             "Setup performance tracking",

@@ -10,11 +10,11 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: {
-    default: "Artha - Free Trading Journal & Analytics",
+    default: "Artha - Automated Trading Journal & R-Multiple Analytics",
     template: "%s | Artha",
   },
-  description: "The beautiful, automated trading journal for serious traders. Sync trades instantly, track performance, and refine your edge—completely free.",
-  keywords: ["trading journal", "stock trading", "options trading", "trade tracker", "trading analytics", "portfolio tracker", "free trading journal"],
+  description: "Automated trading journal for serious traders. Sync trades instantly, track psychology, and measure performance with FIFO P&L plus R-multiple analytics in Artha Pro.",
+  keywords: ["trading journal", "stock trading", "options trading", "trade tracker", "trading analytics", "portfolio tracker", "r multiple", "risk multiple", "net r", "avg r", "trading risk management"],
   authors: [{ name: "Gautham Kanaparthy" }],
   creator: "Gautham Kanaparthy",
   metadataBase: new URL("https://arthatrades.com"),
@@ -23,8 +23,8 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://arthatrades.com",
     siteName: "Artha",
-    title: "Artha - Free Trading Journal & Analytics",
-    description: "The beautiful, automated trading journal for serious traders. Sync trades instantly, track performance, and refine your edge—completely free.",
+    title: "Artha - Automated Trading Journal & R-Multiple Analytics",
+    description: "Automated trading journal for serious traders. Track psychology, FIFO P&L, and R-multiple analytics in Artha Pro.",
     images: [
       {
         url: "https://arthatrades.com/og-image.png",
@@ -36,8 +36,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Artha - Free Trading Journal & Analytics",
-    description: "The beautiful, automated trading journal for serious traders. Sync trades instantly, track performance, and refine your edge—completely free.",
+    title: "Artha - Automated Trading Journal & R-Multiple Analytics",
+    description: "Automated trading journal for serious traders. Track psychology, FIFO P&L, and R-multiple analytics in Artha Pro.",
     images: ["https://arthatrades.com/og-image.png"],
     creator: "@arthatrades",
   },
@@ -61,6 +61,17 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <JsonLd />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                if (localStorage.getItem('layout-density') === 'compact') {
+                  document.documentElement.setAttribute('data-density', 'compact');
+                }
+              } catch (_) {}
+            `,
+          }}
+        />
       </head>
       <body className={inter.className}>
         <SessionProvider>
