@@ -64,3 +64,20 @@ scripts/debug-*
 scripts/fix-*
 scripts/test-*
 scripts/check-*
+
+# local one-off / scratch utilities
+debug-*.js
+debug-*.mjs
+debug-*.ts
+check-*.js
+check-*.mjs
+check-*.ts
+test-*.js
+test-*.mjs
+test-*.ts
+tmp-*.js
+tmp-*.mjs
+tmp-*.ts
+search_*.js
+fix-*.js
+lint-output*.txt
