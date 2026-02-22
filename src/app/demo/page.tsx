@@ -1,28 +1,38 @@
 import { DashboardView } from "@/components/views/dashboard-view";
 import { DEMO_METRICS, DEMO_POSITIONS } from "@/lib/demo-data";
+import { buildDemoMetricsWithR } from "@/lib/demo-r-multiple";
 import type { DisplayPosition } from "@/types/trading";
 
-const toClosedPosition = (trade: (typeof DEMO_METRICS.closedTrades)[number]): DisplayPosition => ({
-  symbol: trade.symbol,
-  quantity: trade.quantity,
-  entryPrice: trade.entryPrice,
-  exitPrice: trade.exitPrice,
-  pnl: trade.pnl,
-  openedAt: trade.openedAt,
-  closedAt: trade.closedAt,
-  broker: trade.broker,
-  accountId: trade.accountId,
-  status: "closed",
-  type: trade.type,
-  side: trade.side,
-  contractMultiplier: trade.contractMultiplier,
-  optionType: trade.optionType,
-  strikePrice: trade.strikePrice,
-  expiryDate: trade.expiryDate,
-  tags: trade.tags,
-});
+const DEMO_METRICS_WITH_R = buildDemoMetricsWithR(DEMO_METRICS);
 
-const toOpenPosition = (position: NonNullable<(typeof DEMO_METRICS.openPositions)>[number]): DisplayPosition => ({
+const toClosedPosition = (trade: (typeof DEMO_METRICS_WITH_R.closedTrades)[number]): DisplayPosition => {
+  return {
+    symbol: trade.symbol,
+    quantity: trade.quantity,
+    entryPrice: trade.entryPrice,
+    exitPrice: trade.exitPrice,
+    pnl: trade.pnl,
+    openedAt: trade.openedAt,
+    closedAt: trade.closedAt,
+    broker: trade.broker,
+    accountId: trade.accountId,
+    status: "closed",
+    type: trade.type,
+    side: trade.side,
+    contractMultiplier: trade.contractMultiplier,
+    optionType: trade.optionType,
+    strikePrice: trade.strikePrice,
+    expiryDate: trade.expiryDate,
+    positionKey: trade.positionKey ?? null,
+    rMultiple: trade.rMultiple ?? null,
+    initialRiskUsd: trade.initialRiskUsd ?? null,
+    allocatedRiskUsd: trade.allocatedRiskUsd ?? null,
+    riskSource: trade.riskSource ?? null,
+    tags: trade.tags,
+  };
+};
+
+const toOpenPosition = (position: NonNullable<(typeof DEMO_METRICS_WITH_R.openPositions)>[number]): DisplayPosition => ({
   symbol: position.symbol,
   quantity: position.quantity,
   entryPrice: position.entryPrice,
@@ -40,32 +50,51 @@ const toOpenPosition = (position: NonNullable<(typeof DEMO_METRICS.openPositions
   optionType: position.optionType,
   strikePrice: position.strikePrice,
   expiryDate: position.expiryDate,
+  positionKey: position.positionKey ?? null,
   tags: position.tags,
 });
 
-const getClosedPositionKey = (position: DisplayPosition) =>
-  `${position.status}|${position.accountId}|${position.symbol}|${position.openedAt}|${position.closedAt ?? ""}`;
+const getClosedPositionKey = (position: Pick<DisplayPosition, "accountId" | "symbol" | "openedAt" | "closedAt">) =>
+  `closed|${position.accountId}|${position.symbol}|${position.openedAt}|${position.closedAt ?? ""}`;
+
+const enrichedClosedPositions = DEMO_METRICS_WITH_R.closedTrades.map(toClosedPosition);
+const enrichedClosedByKey = new Map(
+  enrichedClosedPositions.map((position) => [getClosedPositionKey(position), position])
+);
+
+const demoBasePositions = DEMO_POSITIONS.map((position) => {
+  if (position.status !== "closed") return position;
+  const enriched = enrichedClosedByKey.get(getClosedPositionKey(position));
+  if (!enriched) return position;
+
+  return {
+    ...position,
+    rMultiple: enriched.rMultiple,
+    initialRiskUsd: enriched.initialRiskUsd,
+    allocatedRiskUsd: enriched.allocatedRiskUsd,
+    riskSource: enriched.riskSource,
+  };
+});
 
 const mergedClosedPositions = (() => {
   const existing = new Set(
-    DEMO_POSITIONS.filter((p) => p.status === "closed").map(getClosedPositionKey)
+    demoBasePositions.filter((p) => p.status === "closed").map(getClosedPositionKey)
   );
-  return DEMO_METRICS.closedTrades
-    .map(toClosedPosition)
+  return enrichedClosedPositions
     .filter((position) => !existing.has(getClosedPositionKey(position)));
 })();
 
 const mergedOpenPositions = (() => {
   const existing = new Set(
-    DEMO_POSITIONS.filter((p) => p.status === "open" && p.tradeId).map((p) => p.tradeId)
+    demoBasePositions.filter((p) => p.status === "open" && p.tradeId).map((p) => p.tradeId)
   );
-  return (DEMO_METRICS.openPositions ?? [])
+  return (DEMO_METRICS_WITH_R.openPositions ?? [])
     .map(toOpenPosition)
     .filter((position) => !position.tradeId || !existing.has(position.tradeId));
 })();
 
 const DEMO_DASHBOARD_POSITIONS: DisplayPosition[] = [
-  ...DEMO_POSITIONS,
+  ...demoBasePositions,
   ...mergedClosedPositions,
   ...mergedOpenPositions,
 ];
@@ -89,7 +118,7 @@ export default function DemoDashboardPage() {
         }}
       />
       <DashboardView
-        initialMetrics={DEMO_METRICS}
+        initialMetrics={DEMO_METRICS_WITH_R}
         initialPositions={DEMO_DASHBOARD_POSITIONS}
         isDemo={true}
       />

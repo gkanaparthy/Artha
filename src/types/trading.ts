@@ -16,6 +16,12 @@ export interface ClosedPosition {
   optionType?: string | null;
   strikePrice?: number | null;
   expiryDate?: string | null;
+  positionKey?: string | null;
+  rMultiple?: number | null;
+  initialRiskUsd?: number | null;
+  allocatedRiskUsd?: number | null;
+  riskSource?: 'MANUAL' | 'TRADE_GROUP' | 'AUTO_PREMIUM' | null;
+  futuresMultiplierWarning?: string | null;
   tags?: { id: string; name: string; color: string; category: string; icon: string | null }[];
   side: "long" | "short";
 }
@@ -35,6 +41,7 @@ export interface OpenPosition {
   optionType?: string | null;
   strikePrice?: number | null;
   expiryDate?: string | null;
+  positionKey?: string | null;
   tags?: { id: string; name: string; color: string; category: string; icon: string | null }[];
   side: "long" | "short";
 }
@@ -57,6 +64,12 @@ export interface DisplayPosition {
   optionType?: string | null;
   strikePrice?: number | null;
   expiryDate?: string | null;
+  positionKey?: string | null;
+  rMultiple?: number | null;
+  initialRiskUsd?: number | null;
+  allocatedRiskUsd?: number | null;
+  riskSource?: 'MANUAL' | 'TRADE_GROUP' | 'AUTO_PREMIUM' | null;
+  futuresMultiplierWarning?: string | null;
   // Live data from broker (for open positions)
   livePrice?: number | null;
   unrealizedPnl?: number | null;
@@ -96,6 +109,25 @@ export interface Metrics {
   largestWin: number;
   largestLoss: number;
   avgTrade: number;
+  netR?: number | null;
+  avgR?: number | null;
+  avgWinR?: number | null;
+  avgLossR?: number | null;
+  maxR?: number | null;
+  minR?: number | null;
+  rCoverage?: number;
+  rMultiple?: {
+    coverage: number;
+    coveredTrades: number;
+    totalTrades: number;
+    netR: number;
+    avgR: number;
+    avgWinR: number | null;
+    avgLossR: number | null;
+    maxR: number;
+    minR: number;
+    monthlyR: { month: string; r: number }[];
+  } | null;
   openPositionsCount: number;
   closedTrades: ClosedPosition[];
   openPositions?: OpenPosition[];
@@ -175,6 +207,11 @@ export interface ClosedTrade {
   expiryDate?: string | null;
   multiplier: number;
   positionKey?: string | null;
+  rMultiple?: number | null;
+  initialRiskUsd?: number | null;
+  allocatedRiskUsd?: number | null;
+  riskSource?: 'MANUAL' | 'TRADE_GROUP' | 'AUTO_PREMIUM' | null;
+  futuresMultiplierWarning?: string | null;
   tags?: { id: string; name: string; color: string; category: string; icon: string | null }[];
   side: "long" | "short";
 }

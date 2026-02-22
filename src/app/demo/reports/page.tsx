@@ -1,5 +1,8 @@
 import { ReportsView } from "@/components/views/reports-view";
 import { DEMO_METRICS } from "@/lib/demo-data";
+import { buildDemoMetricsWithR } from "@/lib/demo-r-multiple";
+
+const DEMO_METRICS_WITH_R = buildDemoMetricsWithR(DEMO_METRICS);
 
 export default function DemoReportsPage() {
   return (
@@ -19,7 +22,7 @@ export default function DemoReportsPage() {
           })
         }}
       />
-      <ReportsView initialMetrics={DEMO_METRICS} isDemo={true} />
+      <ReportsView initialMetrics={DEMO_METRICS_WITH_R} isDemo={true} />
     </>
   );
 }

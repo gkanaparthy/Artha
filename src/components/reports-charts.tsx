@@ -61,6 +61,11 @@ interface DrawdownData {
   drawdown: number;
 }
 
+interface RDistributionData {
+  range: string;
+  count: number;
+}
+
 interface ReportsChartsProps {
   cumulativePnL: CumulativePnLData[];
   monthlyData: MonthlyData[];
@@ -69,6 +74,8 @@ interface ReportsChartsProps {
   tradingProfileData: TradingProfileData[];
   drawdownData: DrawdownData[];
   winLossData: Array<{ name: string; value: number; fill: string }>;
+  rDistribution: RDistributionData[];
+  rDistributionCount: number;
   netPnL: number;
   totalTrades: number;
 }
@@ -117,6 +124,8 @@ export function ReportsCharts({
   tradingProfileData,
   drawdownData,
   winLossData,
+  rDistribution,
+  rDistributionCount,
   netPnL,
   totalTrades,
 }: ReportsChartsProps) {
@@ -318,6 +327,61 @@ export function ReportsCharts({
           </CardContent>
         </Card>
       </div>
+
+      {/* R Distribution */}
+      <Card className="card-hover">
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+            R Distribution ({rDistributionCount} trades)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-2 sm:px-6">
+          {rDistributionCount > 0 ? (
+            <ResponsiveContainer width="100%" height={250} className="sm:h-[280px]">
+              <BarChart data={rDistribution}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
+                <XAxis
+                  dataKey="range"
+                  tick={{ fontSize: 10, fill: "currentColor" }}
+                  stroke="currentColor"
+                  angle={-20}
+                  textAnchor="end"
+                  height={70}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "currentColor" }}
+                  allowDecimals={false}
+                  stroke="currentColor"
+                  width={45}
+                />
+                <Tooltip
+                  content={({ active, payload, label }) => (
+                    <CustomTooltip
+                      active={active}
+                      payload={payload?.map(p => ({
+                        value: p.value as number,
+                        name: "Trades",
+                        color: "oklch(0.68 0.17 250)"
+                      }))}
+                      label={String(label ?? "")}
+                      formatter={(value) => [String(value), "Trades"]}
+                    />
+                  )}
+                />
+                <Bar dataKey="count" fill="oklch(0.68 0.17 250)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[280px] flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                <p>No covered trades for R distribution.</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Day of Week & Trading Profile */}
       <div className="grid gap-4 md:grid-cols-2">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     Table,
     TableBody,
@@ -11,12 +11,13 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Clock, TrendingUp, TrendingDown, Trash2 } from "lucide-react";
+import { Loader2, Clock, TrendingUp, TrendingDown, Trash2, PencilLine, AlertTriangle } from "lucide-react";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useFilters } from "@/contexts/filter-context";
 import { useSort } from "@/hooks/use-sort";
 import type { DisplayPosition, Metrics } from "@/types/trading";
+import { encodePositionKey } from "@/lib/utils/position-key";
 
 interface LivePosition {
     symbol: string;
@@ -44,6 +45,7 @@ interface EnrichedLivePosition {
 interface PositionsTableProps {
     onMetricsUpdate?: (metrics: Metrics) => void;
     onOpenUnrealizedChange?: (totalUnrealizedPnl: number | null) => void;
+    onRiskSaved?: () => void;
     initialPositions?: DisplayPosition[];
     isDemo?: boolean;
     livePositions?: LivePosition[];
@@ -51,7 +53,7 @@ interface PositionsTableProps {
     loading?: boolean;
 }
 
-type SortField = "symbol" | "status" | "entryDate" | "exitDate" | "quantity" | "entryPrice" | "exitPrice" | "pnl" | "return" | "broker";
+type SortField = "symbol" | "status" | "entryDate" | "exitDate" | "quantity" | "entryPrice" | "exitPrice" | "pnl" | "rMultiple" | "return" | "broker";
 
 const normalizeSymbol = (symbol: string) => symbol.trim().toUpperCase();
 
@@ -148,6 +150,7 @@ const getSortValue = (p: DisplayPosition, field: SortField): string | number => 
         case "entryPrice": return p.entryPrice;
         case "exitPrice": return comparePrice ?? 0;
         case "pnl": return p.status === 'open' ? (p.unrealizedPnl ?? 0) : (p.pnl ?? 0);
+        case "rMultiple": return p.status === 'closed' ? (p.rMultiple ?? Number.NEGATIVE_INFINITY) : Number.NEGATIVE_INFINITY;
         case "return":
             return comparePrice !== null && comparePrice !== undefined && p.entryPrice
                 ? (isShort
@@ -162,6 +165,7 @@ const getSortValue = (p: DisplayPosition, field: SortField): string | number => 
 export function PositionsTable({
     onMetricsUpdate,
     onOpenUnrealizedChange,
+    onRiskSaved,
     initialPositions = [],
     isDemo = false,
     livePositions,
@@ -169,6 +173,7 @@ export function PositionsTable({
     loading: externalLoading
 }: PositionsTableProps) {
     const { filters } = useFilters();
+    const [savingRiskKey, setSavingRiskKey] = useState<string | null>(null);
 
     // Use external positions if provided, otherwise fallback to local/initial
     const allPositions = externalPositions || initialPositions;
@@ -405,6 +410,69 @@ export function PositionsTable({
         }
     };
 
+    const formatRMultiple = (value: number) => {
+        if (!Number.isFinite(value)) return "—";
+        const rounded = Math.round(value * 100) / 100;
+        return `${rounded >= 0 ? "+" : ""}${rounded.toFixed(2)}R`;
+    };
+
+    const handleSetRisk = async (position: DisplayPosition) => {
+        if (isDemo || !position.positionKey) return;
+
+        const currentValue =
+            position.initialRiskUsd !== null &&
+                position.initialRiskUsd !== undefined &&
+                Number.isFinite(position.initialRiskUsd)
+                ? String(position.initialRiskUsd)
+                : "";
+
+        const input = window.prompt(
+            "Set initial risk in USD for this position (1R). Leave blank to clear it.",
+            currentValue
+        );
+        if (input === null) return;
+
+        const encodedPositionKey = encodePositionKey(position.positionKey);
+        const value = input.trim();
+        setSavingRiskKey(position.positionKey);
+
+        try {
+            if (!value) {
+                const res = await fetch(`/api/positions/${encodedPositionKey}/risk`, {
+                    method: "DELETE",
+                });
+                if (!res.ok) {
+                    throw new Error("Failed to clear risk");
+                }
+                onRiskSaved?.();
+                return;
+            }
+
+            const parsedRisk = Number(value);
+            if (!Number.isFinite(parsedRisk) || parsedRisk <= 0) {
+                alert("Risk must be a positive number.");
+                return;
+            }
+
+            const res = await fetch(`/api/positions/${encodedPositionKey}/risk`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ initialRiskUsd: parsedRisk }),
+            });
+
+            if (!res.ok) {
+                throw new Error("Failed to save risk");
+            }
+
+            onRiskSaved?.();
+        } catch (error) {
+            console.error("Failed to update position risk:", error);
+            alert("Failed to update risk. Please try again.");
+        } finally {
+            setSavingRiskKey(null);
+        }
+    };
+
     const hasActiveFilters = filters.symbol || filters.startDate || filters.endDate ||
         filters.status !== "all" || filters.action !== "ALL" || (filters.accountId && filters.accountId.length > 0) || filters.assetType !== "all";
 
@@ -422,6 +490,7 @@ export function PositionsTable({
                 ? ((position.entryPrice - displayPrice) / position.entryPrice) * 100
                 : ((displayPrice - position.entryPrice) / position.entryPrice) * 100)
             : null;
+        const rMultiple = position.status === "closed" ? position.rMultiple : null;
         const isProfit = (displayPnl ?? 0) >= 0;
         const shouldAnimate = idx < 10;
 
@@ -446,6 +515,14 @@ export function PositionsTable({
                         <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-base truncate">{position.symbol}</h3>
                             <p className="text-xs text-muted-foreground truncate">{position.broker}</p>
+                            {position.futuresMultiplierWarning && (
+                                <p
+                                    className="text-[10px] text-amber-600 mt-1 line-clamp-2"
+                                    title={position.futuresMultiplierWarning}
+                                >
+                                    {position.futuresMultiplierWarning}
+                                </p>
+                            )}
                         </div>
                     </div>
                     <Badge
@@ -509,6 +586,24 @@ export function PositionsTable({
                             <span className="text-sm text-muted-foreground">—</span>
                         )}
                     </div>
+                    <div>
+                        <p className="text-xs text-muted-foreground mb-1">R Multiple</p>
+                        {rMultiple !== null && rMultiple !== undefined ? (
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    "font-mono text-xs",
+                                    rMultiple >= 0
+                                        ? "border-green-500/50 text-green-500 bg-green-500/10"
+                                        : "border-red-500/50 text-red-500 bg-red-500/10"
+                                )}
+                            >
+                                {formatRMultiple(rMultiple)}
+                            </Badge>
+                        ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                        )}
+                    </div>
                     <div className="col-span-2">
                         <p className="text-xs text-muted-foreground mb-1">{isOpen ? "Unrealized P&L" : "P&L"}</p>
                         {displayPnl !== null && displayPnl !== undefined ? (
@@ -527,17 +622,37 @@ export function PositionsTable({
                 </div>
 
                 {/* Actions */}
-                {!isDemo && isOpen && position.tradeId && (
+                {!isDemo && (position.positionKey || (isOpen && position.tradeId)) && (
                     <div className="pt-3 border-t">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleDelete(position.tradeId!)}
-                        >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete Position
-                        </Button>
+                        <div className="grid grid-cols-2 gap-2">
+                            {position.positionKey && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full"
+                                    onClick={() => handleSetRisk(position)}
+                                    disabled={savingRiskKey === position.positionKey}
+                                >
+                                    {savingRiskKey === position.positionKey ? (
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    ) : (
+                                        <PencilLine className="h-4 w-4 mr-2" />
+                                    )}
+                                    Set Risk
+                                </Button>
+                            )}
+                            {isOpen && position.tradeId && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={() => handleDelete(position.tradeId!)}
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 )}
             </motion.div>
@@ -598,6 +713,9 @@ export function PositionsTable({
                             <TableHead className="text-right cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("pnl")}>
                                 <div className="flex items-center justify-end gap-2">P&L {getSortIcon("pnl")}</div>
                             </TableHead>
+                            <TableHead className="text-right cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("rMultiple")}>
+                                <div className="flex items-center justify-end gap-2">R {getSortIcon("rMultiple")}</div>
+                            </TableHead>
                             <TableHead className="text-right cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort("return")}>
                                 <div className="flex items-center justify-end gap-2">Return {getSortIcon("return")}</div>
                             </TableHead>
@@ -611,7 +729,7 @@ export function PositionsTable({
                     <TableBody>
                         {loading && allPositions.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={11} className="text-center h-24">
+                                <TableCell colSpan={13} className="text-center h-24">
                                     <div className="flex justify-center">
                                         <Loader2 className="animate-spin text-primary h-6 w-6" />
                                     </div>
@@ -619,7 +737,7 @@ export function PositionsTable({
                             </TableRow>
                         ) : sortedPositions.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={11} className="text-center h-24 text-muted-foreground">
+                                <TableCell colSpan={13} className="text-center h-24 text-muted-foreground">
                                     {hasActiveFilters
                                         ? "No positions match your filters."
                                         : isDemo
@@ -638,6 +756,7 @@ export function PositionsTable({
                                         ? ((position.entryPrice - displayPrice) / position.entryPrice) * 100
                                         : ((displayPrice - position.entryPrice) / position.entryPrice) * 100)
                                     : null;
+                                const rMultiple = position.status === "closed" ? position.rMultiple : null;
                                 const isProfit = (displayPnl ?? 0) >= 0;
 
                                 const shouldAnimate = idx < 10;
@@ -659,7 +778,12 @@ export function PositionsTable({
                                                 ) : (
                                                     <TrendingDown className="h-4 w-4 text-red-500" />
                                                 )}
-                                                {position.symbol}
+                                                <span>{position.symbol}</span>
+                                                {position.futuresMultiplierWarning && (
+                                                    <span title={position.futuresMultiplierWarning}>
+                                                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                                                    </span>
+                                                )}
                                             </div>
                                         </TableCell>
                                         <TableCell>
@@ -712,6 +836,23 @@ export function PositionsTable({
                                             )}
                                         </TableCell>
                                         <TableCell className="text-right">
+                                            {rMultiple !== null && rMultiple !== undefined ? (
+                                                <Badge
+                                                    variant="outline"
+                                                    className={cn(
+                                                        "font-mono",
+                                                        rMultiple >= 0
+                                                            ? "border-green-500/50 text-green-500 bg-green-500/10"
+                                                            : "border-red-500/50 text-red-500 bg-red-500/10"
+                                                    )}
+                                                >
+                                                    {formatRMultiple(rMultiple)}
+                                                </Badge>
+                                            ) : (
+                                                <span className="text-muted-foreground">—</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-right">
                                             {returnPct !== null ? (
                                                 <Badge
                                                     variant="outline"
@@ -747,15 +888,36 @@ export function PositionsTable({
                                             {position.broker}
                                         </TableCell>
                                         <TableCell>
-                                            {!isDemo && isOpen && position.tradeId && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                                    onClick={() => handleDelete(position.tradeId!)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                            {!isDemo && (position.positionKey || (isOpen && position.tradeId)) && (
+                                                <div className="flex items-center justify-end gap-1">
+                                                    {position.positionKey && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                                            onClick={() => handleSetRisk(position)}
+                                                            disabled={savingRiskKey === position.positionKey}
+                                                            title="Set risk"
+                                                        >
+                                                            {savingRiskKey === position.positionKey ? (
+                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                            ) : (
+                                                                <PencilLine className="h-4 w-4" />
+                                                            )}
+                                                        </Button>
+                                                    )}
+                                                    {isOpen && position.tradeId && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                                            onClick={() => handleDelete(position.tradeId!)}
+                                                            title="Delete position"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             )}
                                         </TableCell>
                                     </motion.tr>
@@ -777,19 +939,33 @@ export function PositionsTable({
                         {" • "}
                         <span>{closedCount} closed</span>
                     </span>
-                    <span>
-                        Closed P&L:{" "}
-                        <span
-                            className={cn(
-                                "font-semibold",
-                                filteredPositions.filter(p => p.status === "closed").reduce((sum, p) => sum + (p.pnl ?? 0), 0) >= 0
-                                    ? "text-green-500"
-                                    : "text-red-500"
-                            )}
-                        >
-                            ${formatCurrency(filteredPositions.filter(p => p.status === "closed").reduce((sum, p) => sum + (p.pnl ?? 0), 0))}
+                    <div className="text-right">
+                        <span>
+                            Closed P&L:{" "}
+                            <span
+                                className={cn(
+                                    "font-semibold",
+                                    filteredPositions.filter(p => p.status === "closed").reduce((sum, p) => sum + (p.pnl ?? 0), 0) >= 0
+                                        ? "text-green-500"
+                                        : "text-red-500"
+                                )}
+                            >
+                                ${formatCurrency(filteredPositions.filter(p => p.status === "closed").reduce((sum, p) => sum + (p.pnl ?? 0), 0))}
+                            </span>
                         </span>
-                    </span>
+                        <div className="text-xs mt-0.5">
+                            Net R:{" "}
+                            <span className="font-semibold">
+                                {(() => {
+                                    const rTrades = filteredPositions.filter(
+                                        (p) => p.status === "closed" && p.rMultiple !== null && p.rMultiple !== undefined
+                                    );
+                                    const netR = rTrades.reduce((sum, p) => sum + (p.rMultiple || 0), 0);
+                                    return rTrades.length > 0 ? formatRMultiple(netR) : "—";
+                                })()}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

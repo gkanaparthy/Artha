@@ -99,6 +99,16 @@ interface LivePositionsData {
   };
 }
 
+const getRMultipleForPosition = (position: DisplayPosition) => {
+  if (position.status !== "closed") return null;
+  if (position.rMultiple !== null && position.rMultiple !== undefined) return position.rMultiple;
+  if (position.pnl === null || position.pnl === undefined) return null;
+
+  const riskUsd = position.initialRiskUsd;
+  if (typeof riskUsd !== "number" || !Number.isFinite(riskUsd) || riskUsd <= 0) return null;
+  return position.pnl / riskUsd;
+};
+
 export function DashboardView({
   initialMetrics,
   initialPositions,
@@ -108,6 +118,13 @@ export function DashboardView({
   const [metrics, setMetrics] = useState<Metrics>(
     initialMetrics || {
       netPnL: 0,
+      netR: null,
+      avgR: null,
+      avgWinR: null,
+      avgLossR: null,
+      maxR: null,
+      minR: null,
+      rCoverage: 0,
       winRate: 0,
       totalTrades: 0,
       avgWin: 0,
@@ -172,6 +189,12 @@ export function DashboardView({
         strikePrice: p.strikePrice,
         expiryDate: p.expiryDate,
         tags: p.tags,
+        positionKey: p.positionKey ?? null,
+        rMultiple: p.rMultiple ?? null,
+        initialRiskUsd: p.initialRiskUsd ?? null,
+        allocatedRiskUsd: p.allocatedRiskUsd ?? null,
+        riskSource: p.riskSource ?? null,
+        futuresMultiplierWarning: p.futuresMultiplierWarning ?? null,
       });
       });
 
@@ -200,6 +223,7 @@ export function DashboardView({
         strikePrice: p.strikePrice,
         expiryDate: p.expiryDate,
         tags: p.tags,
+        positionKey: p.positionKey ?? null,
       });
       });
 
@@ -325,11 +349,21 @@ export function DashboardView({
         });
       }
 
-      setAllPositions(filtered);
+      const withRMetrics = filtered.map((position) => {
+        if (position.status !== "closed") return position;
+
+        const rMultiple = getRMultipleForPosition(position);
+        return {
+          ...position,
+          rMultiple,
+        };
+      });
+
+      setAllPositions(withRMetrics);
 
       // Full metric recalculation for demo so cards stay consistent with filtered table rows.
-      const closed = filtered.filter(p => p.status === "closed");
-      const open = filtered.filter((p) => p.status === 'open');
+      const closed = withRMetrics.filter(p => p.status === "closed");
+      const open = withRMetrics.filter((p) => p.status === 'open');
       const winningTrades = closed.filter((p) => (p.pnl || 0) > 0);
       const losingTrades = closed.filter((p) => (p.pnl || 0) < 0);
       const netPnL = closed.reduce((sum, p) => sum + (p.pnl || 0), 0);
@@ -359,6 +393,19 @@ export function DashboardView({
         }, 0) / losingTrades.length)
         : 0;
 
+      const rTrades = closed
+        .map((p) => getRMultipleForPosition(p))
+        .filter((value): value is number => value !== null && value !== undefined && Number.isFinite(value));
+      const winningR = rTrades.filter((r) => r > 0);
+      const losingR = rTrades.filter((r) => r < 0);
+      const netR = rTrades.reduce((sum, r) => sum + r, 0);
+      const avgR = rTrades.length > 0 ? netR / rTrades.length : null;
+      const avgWinR = winningR.length > 0 ? winningR.reduce((sum, r) => sum + r, 0) / winningR.length : null;
+      const avgLossR = losingR.length > 0 ? losingR.reduce((sum, r) => sum + r, 0) / losingR.length : null;
+      const maxR = rTrades.length > 0 ? Math.max(...rTrades) : null;
+      const minR = rTrades.length > 0 ? Math.min(...rTrades) : null;
+      const rCoverage = closed.length > 0 ? (rTrades.length / closed.length) * 100 : 0;
+
       setMetrics((prev) => ({
         ...prev,
         netPnL: roundTo2(netPnL),
@@ -374,6 +421,13 @@ export function DashboardView({
         largestWin: roundTo2(largestWin),
         largestLoss: roundTo2(largestLoss),
         avgTrade: roundTo2(avgTrade),
+        netR: rTrades.length > 0 ? roundTo2(netR) : null,
+        avgR: avgR === null ? null : roundTo2(avgR),
+        avgWinR: avgWinR === null ? null : roundTo2(avgWinR),
+        avgLossR: avgLossR === null ? null : roundTo2(avgLossR),
+        maxR: maxR === null ? null : roundTo2(maxR),
+        minR: minR === null ? null : roundTo2(minR),
+        rCoverage: roundTo1(rCoverage),
         openPositionsCount: open.length,
       }));
     }
@@ -388,6 +442,16 @@ export function DashboardView({
       return value >= 0 ? `+$${formatted}` : `-$${formatted}`;
     }
     return `$${formatted}`;
+  };
+
+  const formatR = (value: number | null | undefined, showSign = false) => {
+    if (value === null || value === undefined || !Number.isFinite(value)) return "—";
+    const rounded = Math.round(value * 100) / 100;
+    const formatted = `${Math.abs(rounded).toFixed(2)}R`;
+    if (showSign && rounded !== 0) {
+      return rounded > 0 ? `+${formatted}` : `-${formatted}`;
+    }
+    return `${rounded < 0 ? "-" : ""}${formatted}`;
   };
 
   const getPnLColor = (value: number) => {
@@ -463,7 +527,7 @@ export function DashboardView({
         </div>
 
         {/* Metrics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
           <MetricCard
             title="Net P&L"
             value={formatCurrency(metrics.netPnL, true)}
@@ -473,6 +537,16 @@ export function DashboardView({
             valueColor={getPnLColor(metrics.netPnL)}
             delay={0}
             glowClass={metrics.netPnL >= 0 ? "glow-green" : "glow-red"}
+          />
+          <MetricCard
+            title="Net R"
+            value={formatR(metrics.netR, true)}
+            subtitle={metrics.rCoverage ? `${metrics.rCoverage}% risk coverage` : "Set risk per position to unlock"}
+            icon={Target}
+            iconColor={(metrics.netR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
+            valueColor={(metrics.netR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
+            delay={0.05}
+            glowClass={(metrics.netR ?? 0) >= 0 ? "glow-green" : "glow-red"}
           />
           <MetricCard
             title="Win Rate"
@@ -505,7 +579,7 @@ export function DashboardView({
 
 
         {/* Secondary Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
           <MetricCard
             title="Unrealized P&L"
             value={hasLiveUnrealized ? formatCurrency(unrealizedPnL, true) : '—'}
@@ -515,6 +589,19 @@ export function DashboardView({
             valueColor={hasLiveUnrealized ? getPnLColor(unrealizedPnL) : 'text-muted-foreground'}
             delay={0.4}
             glowClass={hasLiveUnrealized ? (unrealizedPnL >= 0 ? 'glow-green' : 'glow-red') : ''}
+          />
+          <MetricCard
+            title="Avg R"
+            value={formatR(metrics.avgR, true)}
+            subtitle={
+              metrics.avgR !== null && metrics.avgR !== undefined
+                ? `Win ${formatR(metrics.avgWinR)} / Loss ${formatR(metrics.avgLossR)}`
+                : "No risk-tagged trades yet"
+            }
+            icon={Target}
+            iconColor={(metrics.avgR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
+            valueColor={(metrics.avgR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
+            delay={0.45}
           />
           <MetricCard
             title="Total Trades"
@@ -579,6 +666,7 @@ export function DashboardView({
                 key={isDemo ? undefined : refreshKey}
                 onMetricsUpdate={isDemo ? undefined : handleMetricsUpdate}
                 onOpenUnrealizedChange={isDemo ? undefined : handleOpenUnrealizedChange}
+                onRiskSaved={isDemo ? undefined : fetchMetrics}
                 initialPositions={initialPositions}
                 positions={allPositions}
                 loading={loading}

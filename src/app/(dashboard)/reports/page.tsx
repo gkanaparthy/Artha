@@ -60,6 +60,7 @@ interface ClosedTrade {
   closedAt: string;
   openedAt: string;
   broker: string;
+  rMultiple?: number | null;
 }
 
 interface OpenPosition {
@@ -236,6 +237,8 @@ export default function ReportsPage() {
         avgHoldingPeriod: 0,
         riskRewardRatio: 0,
         tradingProfileData: [],
+        rDistribution: [],
+        rDistributionCount: 0,
       };
     }
 
@@ -264,6 +267,28 @@ export default function ReportsPage() {
         trades: data.trades,
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
+
+    const rDistributionBins = [
+      { label: "<-3R", min: Number.NEGATIVE_INFINITY, max: -3 },
+      { label: "-3R to -2R", min: -3, max: -2 },
+      { label: "-2R to -1R", min: -2, max: -1 },
+      { label: "-1R to 0R", min: -1, max: 0 },
+      { label: "0R to 1R", min: 0, max: 1 },
+      { label: "1R to 2R", min: 1, max: 2 },
+      { label: "2R to 3R", min: 2, max: 3 },
+      { label: ">3R", min: 3, max: Number.POSITIVE_INFINITY },
+    ];
+    const rDistribution = rDistributionBins.map((bin) => ({
+      range: bin.label,
+      count: 0,
+    }));
+    for (const trade of closedTrades) {
+      const r = trade.rMultiple;
+      if (typeof r !== "number" || !Number.isFinite(r)) continue;
+      const index = rDistributionBins.findIndex((bin) => r >= bin.min && r < bin.max);
+      if (index >= 0) rDistribution[index].count += 1;
+    }
+    const rDistributionCount = rDistribution.reduce((sum, bucket) => sum + bucket.count, 0);
 
     // Win/loss streaks
     let currentStreak = 0;
@@ -357,6 +382,8 @@ export default function ReportsPage() {
       avgHoldingPeriod,
       riskRewardRatio,
       tradingProfileData,
+      rDistribution,
+      rDistributionCount,
     };
   }, [metrics]);
 
@@ -545,6 +572,8 @@ export default function ReportsPage() {
               tradingProfileData={chartData.tradingProfileData}
               drawdownData={chartData.drawdownData}
               winLossData={chartData.winLossData}
+              rDistribution={chartData.rDistribution}
+              rDistributionCount={chartData.rDistributionCount}
               netPnL={metrics.netPnL}
               totalTrades={metrics.totalTrades}
             />

@@ -33,9 +33,17 @@ import {
     DASHBOARD_SECONDARY_TILE_IDS,
     type LayoutPreferences,
 } from "@/lib/layout-preferences";
+import type { ClosedPosition, DisplayPosition, OpenPosition } from "@/types/trading";
 
 interface Metrics {
     netPnL: number;
+    netR?: number | null;
+    avgR?: number | null;
+    avgWinR?: number | null;
+    avgLossR?: number | null;
+    maxR?: number | null;
+    minR?: number | null;
+    rCoverage?: number;
     winRate: number;
     totalTrades: number;
     avgWin: number;
@@ -49,7 +57,8 @@ interface Metrics {
     largestLoss: number;
     avgTrade: number;
     openPositionsCount: number;
-    closedTrades: any[];
+    closedTrades: ClosedPosition[];
+    openPositions?: OpenPosition[];
 }
 
 interface LivePosition {
@@ -124,11 +133,18 @@ function MetricCard({
 }
 
 export default function DashboardPage() {
-    const { filters, refreshKey, syncing } = useFilters();
+    const { filters, refreshKey } = useFilters();
     const router = useRouter();
     const searchParams = useSearchParams();
     const [metrics, setMetrics] = useState<Metrics>({
         netPnL: 0,
+        netR: null,
+        avgR: null,
+        avgWinR: null,
+        avgLossR: null,
+        maxR: null,
+        minR: null,
+        rCoverage: 0,
         winRate: 0,
         totalTrades: 0,
         avgWin: 0,
@@ -146,7 +162,7 @@ export default function DashboardPage() {
     });
     const [livePositions, setLivePositions] = useState<LivePositionsData | null>(null);
     const [hasDisabledConnections, setHasDisabledConnections] = useState(false);
-    const [allPositions, setAllPositions] = useState<any[]>([]);
+    const [allPositions, setAllPositions] = useState<DisplayPosition[]>([]);
     const [loading, setLoading] = useState(true);
     const [hasAccounts, setHasAccounts] = useState<boolean | null>(null);
     const [syncState, setSyncState] = useState<SyncState | null>(null);
@@ -174,11 +190,14 @@ export default function DashboardPage() {
             if (filters.tagFilterMode) params.append("tagFilterMode", filters.tagFilterMode);
 
             const res = await fetch(`/api/metrics?${params.toString()}`);
-            const data = await res.json();
+            const data: Metrics = await res.json();
             setMetrics(data);
 
             // Format positions for the table
-            const closedDisplayPositions = (data.closedTrades || []).map((p: any) => ({
+            const closedDisplayPositions: DisplayPosition[] = (data.closedTrades || []).map((p: ClosedPosition) => {
+                const rawPosition = p as ClosedPosition & { multiplier?: number };
+                const multiplier = p.contractMultiplier ?? rawPosition.multiplier;
+                return ({
                 symbol: p.symbol,
                 universalSymbolId: p.universalSymbolId,
                 quantity: p.quantity,
@@ -191,14 +210,24 @@ export default function DashboardPage() {
                 accountId: p.accountId,
                 status: "closed" as const,
                 type: p.type,
-                contractMultiplier: p.contractMultiplier ?? p.multiplier,
+                contractMultiplier: multiplier,
                 side: p.side,
                 optionType: p.optionType,
                 strikePrice: p.strikePrice,
                 expiryDate: p.expiryDate,
-            }));
+                positionKey: p.positionKey ?? null,
+                rMultiple: p.rMultiple ?? null,
+                initialRiskUsd: p.initialRiskUsd ?? null,
+                allocatedRiskUsd: p.allocatedRiskUsd ?? null,
+                riskSource: p.riskSource ?? null,
+                futuresMultiplierWarning: p.futuresMultiplierWarning ?? null,
+            });
+            });
 
-            const openDisplayPositions = (data.openPositions || []).map((p: any) => ({
+            const openDisplayPositions: DisplayPosition[] = (data.openPositions || []).map((p: OpenPosition) => {
+                const rawPosition = p as OpenPosition & { multiplier?: number };
+                const multiplier = p.contractMultiplier ?? rawPosition.multiplier;
+                return ({
                 symbol: p.symbol,
                 universalSymbolId: p.universalSymbolId,
                 quantity: p.quantity,
@@ -212,12 +241,14 @@ export default function DashboardPage() {
                 status: "open" as const,
                 tradeId: p.tradeId,
                 type: p.type,
-                contractMultiplier: p.contractMultiplier ?? p.multiplier,
+                contractMultiplier: multiplier,
                 side: p.side,
                 optionType: p.optionType,
                 strikePrice: p.strikePrice,
                 expiryDate: p.expiryDate,
-            }));
+                positionKey: p.positionKey ?? null,
+            });
+            });
 
             setAllPositions([...openDisplayPositions, ...closedDisplayPositions]);
         } catch (e) {
@@ -462,6 +493,16 @@ export default function DashboardPage() {
         return `$${formatted}`;
     };
 
+    const formatR = (value: number | null | undefined, showSign = false) => {
+        if (value === null || value === undefined || !Number.isFinite(value)) return "—";
+        const rounded = Math.round(value * 100) / 100;
+        const formatted = `${Math.abs(rounded).toFixed(2)}R`;
+        if (showSign && rounded !== 0) {
+            return rounded > 0 ? `+${formatted}` : `-${formatted}`;
+        }
+        return `${rounded < 0 ? "-" : ""}${formatted}`;
+    };
+
     const getPnLColor = (value: number) => {
         if (value > 0) return "text-gradient-green";
         if (value < 0) return "text-gradient-red";
@@ -492,6 +533,18 @@ export default function DashboardPage() {
                 valueColor={getPnLColor(metrics.netPnL)}
                 delay={0}
                 glowClass={metrics.netPnL >= 0 ? "glow-green" : "glow-red"}
+            />
+        ),
+        netR: (
+            <MetricCard
+                title="Net R"
+                value={formatR(metrics.netR, true)}
+                subtitle={(metrics.rCoverage ?? 0) > 0 ? `${metrics.rCoverage}% risk coverage` : "Set risk per position to unlock"}
+                icon={Target}
+                iconColor={(metrics.netR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
+                valueColor={(metrics.netR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
+                delay={0.05}
+                glowClass={(metrics.netR ?? 0) >= 0 ? "glow-green" : "glow-red"}
             />
         ),
         winRate: (
@@ -539,6 +592,21 @@ export default function DashboardPage() {
                 valueColor={hasLiveUnrealized ? getPnLColor(unrealizedPnL) : "text-muted-foreground"}
                 delay={0.4}
                 glowClass={hasLiveUnrealized ? (unrealizedPnL >= 0 ? "glow-green" : "glow-red") : ""}
+            />
+        ),
+        avgR: (
+            <MetricCard
+                title="Avg R"
+                value={formatR(metrics.avgR, true)}
+                subtitle={
+                    metrics.avgR !== null && metrics.avgR !== undefined
+                        ? `Win ${formatR(metrics.avgWinR)} / Loss ${formatR(metrics.avgLossR)}`
+                        : "No risk-tagged trades yet"
+                }
+                icon={Target}
+                iconColor={(metrics.avgR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
+                valueColor={(metrics.avgR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
+                delay={0.45}
             />
         ),
         totalTrades: (
@@ -693,7 +761,7 @@ export default function DashboardPage() {
                     onReorder={handleDashboardPrimaryReorder}
                     disabled={!hasAccounts}
                     className={cn(
-                        "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4",
+                        "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4",
                         !hasAccounts && "opacity-20 pointer-events-none grayscale select-none"
                     )}
                 />
@@ -704,7 +772,7 @@ export default function DashboardPage() {
                     items={secondaryMetricTiles}
                     order={dashboardSecondaryOrder}
                     onReorder={handleDashboardSecondaryReorder}
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4"
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4"
                 />
 
 
@@ -735,6 +803,7 @@ export default function DashboardPage() {
                                 key={refreshKey}
                                 onMetricsUpdate={handleMetricsUpdate}
                                 onOpenUnrealizedChange={handleOpenUnrealizedChange}
+                                onRiskSaved={fetchMetrics}
                                 positions={allPositions}
                                 loading={loading}
                                 livePositions={livePositions?.positions}

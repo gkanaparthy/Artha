@@ -21,6 +21,7 @@ model User {
   accounts            Account[]
   brokerAccounts      BrokerAccount[]
   positionTags        PositionTag[]
+  positionRisks       PositionRisk[]
   sessions            Session[]
   aiPersona           AiPersona       @default(PROFESSIONAL)
   tagDefinitions      TagDefinition[]
@@ -210,6 +211,22 @@ model PositionTag {
   @@index([userId, positionKey])
   @@index([tagDefinitionId])
   @@map("position_tags")
+}
+
+model PositionRisk {
+  id                 String   @id @default(cuid())
+  userId             String
+  positionKey        String
+  initialRiskUsd     Float
+  initialStopPrice   Float?
+  initialTargetPrice Float?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, positionKey])
+  @@index([positionKey])
+  @@map("position_risks")
 }
 
 model TradeGroup {

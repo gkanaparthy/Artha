@@ -1,5 +1,6 @@
 export const DASHBOARD_PRIMARY_TILE_IDS = [
   'netPnl',
+  'netR',
   'winRate',
   'largestWin',
   'largestLoss',
@@ -7,6 +8,7 @@ export const DASHBOARD_PRIMARY_TILE_IDS = [
 
 export const DASHBOARD_SECONDARY_TILE_IDS = [
   'unrealizedPnl',
+  'avgR',
   'totalTrades',
   'avgWin',
   'avgLoss',

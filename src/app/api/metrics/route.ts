@@ -5,7 +5,25 @@ import { auth } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 
 import { calculateMetricsFromTrades } from '@/lib/analytics/fifo';
-import { FilterOptions } from '@/types/trading';
+import { FilterOptions, TradeInput } from '@/types/trading';
+import {
+    buildPositionClosedUnits,
+    computeTradeRisk,
+    getFuturesMultiplierWarning,
+} from '@/lib/analytics/r-multiple';
+
+type TagDefinitionMapValue = {
+    id: string;
+    name: string;
+    color: string;
+    category: string;
+    icon: string | null;
+};
+
+type MetricsFilterOptions = FilterOptions & {
+    positionTags?: Map<string, string[]>;
+    tagDefs?: Map<string, TagDefinitionMapValue>;
+};
 
 // ... (keep surrounding code) ...
 
@@ -16,14 +34,48 @@ import { FilterOptions } from '@/types/trading';
 // Ideally, the aggregation logic (lines 504-649) should also be shared or kept here if specific to this view.
 // Given the complexity, let's keep the aggregation here for now but use the shared FIFO engine.
 
-function getMetrics(trades: any[], filters?: any) {
-    const { filteredTrades, filteredOpenPositions, unrealizedCost } = calculateMetricsFromTrades(trades, filters);
+function getMetrics(
+    trades: TradeInput[],
+    filters?: MetricsFilterOptions,
+    positionRiskMap: Map<string, number> = new Map(),
+    tradeGroupRiskMap: Map<string, number> = new Map()
+) {
+    const {
+        filteredTrades,
+        filteredOpenPositions,
+        unrealizedCost,
+        allClosedTrades,
+    } = calculateMetricsFromTrades(trades, filters);
+
+    const round2 = (value: number) => Math.round(value * 100) / 100;
+    const round1 = (value: number) => Math.round(value * 10) / 10;
+
+    // Allocate position-level risk using all CLOSED lots only.
+    // This keeps each closed trade's R stable under winners/losers/date filters.
+    const combinedRiskMap = new Map<string, number>(tradeGroupRiskMap);
+    for (const [positionKey, risk] of positionRiskMap.entries()) {
+        combinedRiskMap.set(positionKey, risk);
+    }
+    const positionUnits = buildPositionClosedUnits(allClosedTrades || [], combinedRiskMap);
+
+    const tradesWithR = filteredTrades.map((trade) => {
+        const risk = computeTradeRisk(trade, positionRiskMap, positionUnits, tradeGroupRiskMap);
+
+        return {
+            ...trade,
+            rMultiple: risk.rMultiple,
+            initialRiskUsd: risk.initialRiskUsd,
+            allocatedRiskUsd: risk.allocatedRiskUsd,
+            riskSource: risk.riskSource,
+            futuresMultiplierWarning: getFuturesMultiplierWarning(trade),
+        };
+    });
 
     // Calculate metrics from filtered trades
-    const winningTrades = filteredTrades.filter(t => t.pnl > 0);
-    const losingTrades = filteredTrades.filter(t => t.pnl < 0);
+    const winningTrades = tradesWithR.filter(t => t.pnl > 0);
+    const losingTrades = tradesWithR.filter(t => t.pnl < 0);
 
-    const totalClosedTrades = filteredTrades.length;
+    const totalClosedTrades = tradesWithR.length;
     const winRate = totalClosedTrades > 0 ? (winningTrades.length / totalClosedTrades) * 100 : 0;
 
     const totalWins = winningTrades.reduce((sum, t) => sum + t.pnl, 0);
@@ -45,7 +97,7 @@ function getMetrics(trades: any[], filters?: any) {
         }, 0) / losingTrades.length)
         : 0;
 
-    const netPnL = filteredTrades.reduce((sum, t) => sum + t.pnl, 0);
+    const netPnL = tradesWithR.reduce((sum, t) => sum + t.pnl, 0);
     const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0;
 
     const largestWin = winningTrades.length > 0
@@ -57,9 +109,37 @@ function getMetrics(trades: any[], filters?: any) {
 
     const avgTrade = totalClosedTrades > 0 ? netPnL / totalClosedTrades : 0;
 
-    const sortedClosedTrades = [...filteredTrades].sort(
+    const sortedClosedTrades = [...tradesWithR].sort(
         (a, b) => a.closedAt.getTime() - b.closedAt.getTime()
     );
+
+    const rTrades = sortedClosedTrades.flatMap((t) => {
+        if (typeof t.rMultiple !== 'number' || !Number.isFinite(t.rMultiple)) {
+            return [];
+        }
+        return [{ ...t, rMultiple: t.rMultiple }];
+    });
+    const winningRTrades = rTrades.filter(t => t.rMultiple > 0);
+    const losingRTrades = rTrades.filter(t => t.rMultiple < 0);
+    const netR = rTrades.reduce((sum, t) => sum + t.rMultiple, 0);
+    const avgR = rTrades.length > 0 ? netR / rTrades.length : null;
+    const avgWinR = winningRTrades.length > 0
+        ? winningRTrades.reduce((sum, t) => sum + t.rMultiple, 0) / winningRTrades.length
+        : null;
+    const avgLossR = losingRTrades.length > 0
+        ? losingRTrades.reduce((sum, t) => sum + t.rMultiple, 0) / losingRTrades.length
+        : null;
+    const maxR = rTrades.length > 0 ? Math.max(...rTrades.map(t => t.rMultiple)) : null;
+    const minR = rTrades.length > 0 ? Math.min(...rTrades.map(t => t.rMultiple)) : null;
+    const rCoverage = totalClosedTrades > 0 ? (rTrades.length / totalClosedTrades) * 100 : 0;
+    const monthlyRMap = new Map<string, number>();
+    for (const trade of rTrades) {
+        const monthKey = trade.closedAt.toISOString().slice(0, 7);
+        monthlyRMap.set(monthKey, (monthlyRMap.get(monthKey) || 0) + trade.rMultiple);
+    }
+    const monthlyR = Array.from(monthlyRMap.entries())
+        .map(([month, r]) => ({ month, r: round2(r) }))
+        .sort((a, b) => a.month.localeCompare(b.month));
 
     let cumulative = 0;
     const cumulativePnL = sortedClosedTrades.map((t) => {
@@ -85,7 +165,7 @@ function getMetrics(trades: any[], filters?: any) {
         .sort((a, b) => a.month.localeCompare(b.month));
 
     const symbolPerformance = new Map<string, { pnl: number; trades: number; wins: number }>();
-    for (const trade of filteredTrades) {
+    for (const trade of tradesWithR) {
         const existing = symbolPerformance.get(trade.symbol) || { pnl: 0, trades: 0, wins: 0 };
         existing.pnl += trade.pnl;
         existing.trades += 1;
@@ -102,52 +182,76 @@ function getMetrics(trades: any[], filters?: any) {
         .sort((a, b) => b.pnl - a.pnl);
 
     return {
-        netPnL: Math.round(netPnL * 100) / 100,
-        winRate: Math.round(winRate * 10) / 10,
+        netPnL: round2(netPnL),
+        winRate: round1(winRate),
         totalTrades: totalClosedTrades,
-        avgWin: Math.round(avgWin * 100) / 100,
-        avgLoss: Math.round(avgLoss * 100) / 100,
-        avgWinPct: Math.round(avgWinPct * 10) / 10,
-        avgLossPct: Math.round(avgLossPct * 10) / 10,
-        profitFactor: profitFactor === Infinity ? null : Math.round(profitFactor * 100) / 100,
+        avgWin: round2(avgWin),
+        avgLoss: round2(avgLoss),
+        avgWinPct: round1(avgWinPct),
+        avgLossPct: round1(avgLossPct),
+        profitFactor: profitFactor === Infinity ? null : round2(profitFactor),
         winningTrades: winningTrades.length,
         losingTrades: losingTrades.length,
-        largestWin: Math.round(largestWin * 100) / 100,
-        largestLoss: Math.round(largestLoss * 100) / 100,
-        avgTrade: Math.round(avgTrade * 100) / 100,
-        unrealizedCost: Math.round(unrealizedCost * 100) / 100,
+        largestWin: round2(largestWin),
+        largestLoss: round2(largestLoss),
+        avgTrade: round2(avgTrade),
+        netR: rTrades.length > 0 ? round2(netR) : null,
+        avgR: avgR === null ? null : round2(avgR),
+        avgWinR: avgWinR === null ? null : round2(avgWinR),
+        avgLossR: avgLossR === null ? null : round2(avgLossR),
+        maxR: maxR === null ? null : round2(maxR),
+        minR: minR === null ? null : round2(minR),
+        rCoverage: round1(rCoverage),
+        rMultiple: rTrades.length > 0 ? {
+            coverage: round1(rCoverage),
+            coveredTrades: rTrades.length,
+            totalTrades: totalClosedTrades,
+            netR: round2(netR),
+            avgR: avgR === null ? 0 : round2(avgR),
+            avgWinR: avgWinR === null ? null : round2(avgWinR),
+            avgLossR: avgLossR === null ? null : round2(avgLossR),
+            maxR: maxR === null ? 0 : round2(maxR),
+            minR: minR === null ? 0 : round2(minR),
+            monthlyR,
+        } : null,
+        unrealizedCost: round2(unrealizedCost),
         mtdPnL: (() => {
             const now = new Date();
             const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
             let sum = 0;
-            for (const t of filteredTrades) {
+            for (const t of tradesWithR) {
                 const closed = new Date(t.closedAt);
                 if (closed >= startOfMonth) sum += t.pnl;
             }
-            return Math.round(sum * 100) / 100;
+            return round2(sum);
         })(),
         ytdPnL: (() => {
             const now = new Date();
             const startOfYear = new Date(now.getFullYear(), 0, 1);
             let sum = 0;
-            for (const t of filteredTrades) {
+            for (const t of tradesWithR) {
                 const closed = new Date(t.closedAt);
                 if (closed >= startOfYear) sum += t.pnl;
             }
-            return Math.round(sum * 100) / 100;
+            return round2(sum);
         })(),
         openPositionsCount: filteredOpenPositions.length,
         closedTrades: sortedClosedTrades.map(t => ({
             ...t,
             closedAt: t.closedAt.toISOString(),
             openedAt: t.openedAt.toISOString(),
-            pnl: Math.round(t.pnl * 100) / 100,
+            pnl: round2(t.pnl),
+            rMultiple: t.rMultiple === null || t.rMultiple === undefined ? null : round2(t.rMultiple),
+            initialRiskUsd: t.initialRiskUsd === null || t.initialRiskUsd === undefined ? null : round2(t.initialRiskUsd),
+            allocatedRiskUsd: t.allocatedRiskUsd === null || t.allocatedRiskUsd === undefined ? null : round2(t.allocatedRiskUsd),
+            riskSource: t.riskSource ?? null,
+            futuresMultiplierWarning: t.futuresMultiplierWarning ?? null,
         })),
         openPositions: filteredOpenPositions.map(p => ({
             ...p,
             openedAt: p.openedAt.toISOString(),
-            entryPrice: Math.round(p.entryPrice * 100) / 100,
-            currentValue: Math.round(p.currentValue * 100) / 100,
+            entryPrice: round2(p.entryPrice),
+            currentValue: round2(p.currentValue),
             expiryDate: p.expiryDate ? p.expiryDate.toISOString() : null,
         })),
         cumulativePnL,
@@ -202,19 +306,58 @@ export async function GET(req: NextRequest) {
             where: { userId: session.user.id },
             include: { tagDefinition: true }
         });
+        const positionRisks = await prisma.positionRisk.findMany({
+            where: { userId: session.user.id },
+            select: {
+                positionKey: true,
+                initialRiskUsd: true,
+            },
+        });
+        const tradeGroups = await prisma.tradeGroup.findMany({
+            where: {
+                userId: session.user.id,
+                maxLoss: { not: null },
+            },
+            select: {
+                maxLoss: true,
+                legs: {
+                    select: {
+                        trade: {
+                            select: { positionKey: true },
+                        },
+                    },
+                },
+            },
+        });
 
         // Map positionKey to its tag definition IDs
         const ptMap = new Map<string, string[]>();
-        const defMap = new Map<string, any>();
-        positionTags.forEach((pt: any) => {
+        const defMap = new Map<string, TagDefinitionMapValue>();
+        positionTags.forEach((pt) => {
             if (!ptMap.has(pt.positionKey)) ptMap.set(pt.positionKey, []);
             ptMap.get(pt.positionKey)!.push(pt.tagDefinitionId);
             if (!defMap.has(pt.tagDefinitionId)) {
                 defMap.set(pt.tagDefinitionId, pt.tagDefinition);
             }
         });
+        const riskMap = new Map<string, number>();
+        positionRisks.forEach((risk) => {
+            riskMap.set(risk.positionKey, risk.initialRiskUsd);
+        });
+        const tradeGroupRiskMap = new Map<string, number>();
+        for (const group of tradeGroups) {
+            const maxLoss = Math.abs(group.maxLoss ?? 0);
+            if (maxLoss <= 0) continue;
 
-        const filters: FilterOptions = {};
+            for (const leg of group.legs) {
+                const positionKey = leg.trade.positionKey;
+                if (!positionKey) continue;
+                const existing = tradeGroupRiskMap.get(positionKey) || 0;
+                tradeGroupRiskMap.set(positionKey, Math.max(existing, maxLoss));
+            }
+        }
+
+        const filters: MetricsFilterOptions = {};
         if (startDate) filters.startDate = new Date(startDate + 'T00:00:00');
         if (endDate) {
             filters.endDate = new Date(endDate + 'T23:59:59');
@@ -222,16 +365,21 @@ export async function GET(req: NextRequest) {
         if (symbol) filters.symbol = symbol;
         if (accountId) filters.accountId = accountId;
         if (assetType) filters.assetType = assetType;
-        if (status) filters.status = status as any;
+        if (status) filters.status = status;
         if (action) filters.action = action;
         if (tagIds && tagIds.length > 0) {
             filters.tagIds = tagIds;
             filters.tagFilterMode = tagFilterMode;
         }
-        (filters as any).positionTags = ptMap;
-        (filters as any).tagDefs = defMap;
+        filters.positionTags = ptMap;
+        filters.tagDefs = defMap;
 
-        const metrics = getMetrics(trades, Object.keys(filters).length > 0 ? filters : undefined);
+        const metrics = getMetrics(
+            trades,
+            Object.keys(filters).length > 0 ? filters : undefined,
+            riskMap,
+            tradeGroupRiskMap
+        );
 
         return NextResponse.json(metrics);
 

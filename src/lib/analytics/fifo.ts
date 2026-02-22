@@ -524,5 +524,11 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
         unrealizedCost += Math.abs(pos.currentValue);
     }
 
-    return { filteredTrades, filteredOpenPositions, unrealizedCost };
+    return {
+        filteredTrades,
+        filteredOpenPositions,
+        unrealizedCost,
+        allClosedTrades: closedTrades,
+        allOpenPositions,
+    };
 }

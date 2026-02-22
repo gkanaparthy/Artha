@@ -417,6 +417,29 @@ export function ReportsView({
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
+  const rDistributionBins = [
+    { label: "<-3R", min: Number.NEGATIVE_INFINITY, max: -3 },
+    { label: "-3R to -2R", min: -3, max: -2 },
+    { label: "-2R to -1R", min: -2, max: -1 },
+    { label: "-1R to 0R", min: -1, max: 0 },
+    { label: "0R to 1R", min: 0, max: 1 },
+    { label: "1R to 2R", min: 1, max: 2 },
+    { label: "2R to 3R", min: 2, max: 3 },
+    { label: ">3R", min: 3, max: Number.POSITIVE_INFINITY },
+  ];
+  const rDistribution = rDistributionBins.map((bin) => ({
+    range: bin.label,
+    count: 0,
+  }));
+  for (const trade of closedTrades) {
+    const r = trade.rMultiple;
+    if (typeof r !== "number" || !Number.isFinite(r)) continue;
+
+    const index = rDistributionBins.findIndex((bin) => r >= bin.min && r < bin.max);
+    if (index >= 0) rDistribution[index].count += 1;
+  }
+  const rDistributionCount = rDistribution.reduce((sum, bucket) => sum + bucket.count, 0);
+
   // Calculate win/loss streaks
   let currentStreak = 0;
   let maxWinStreak = 0;
@@ -951,6 +974,62 @@ export function ReportsView({
                 </Card>
               </AnimatedCard>
             </div>
+
+            {/* R Distribution */}
+            <AnimatedCard delay={0.63}>
+              <Card className="card-hover">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                    R Distribution ({rDistributionCount} trades)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {rDistributionCount > 0 ? (
+                    <ResponsiveContainer width="100%" height={250} className="sm:h-[280px]">
+                      <BarChart data={rDistribution}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
+                        <XAxis
+                          dataKey="range"
+                          tick={{ fontSize: 10, fill: "currentColor" }}
+                          stroke="currentColor"
+                          angle={-20}
+                          textAnchor="end"
+                          height={70}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 11, fill: "currentColor" }}
+                          allowDecimals={false}
+                          stroke="currentColor"
+                        />
+                        <Tooltip
+                          content={({ active, payload, label }) => (
+                            <CustomTooltip
+                              active={active}
+                              payload={payload?.map((p) => ({
+                                value: p.value as number,
+                                name: "Trades",
+                                color: "oklch(0.68 0.17 250)",
+                              }))}
+                              label={String(label ?? "")}
+                              formatter={(value) => [String(value), "Trades"]}
+                            />
+                          )}
+                        />
+                        <Bar dataKey="count" fill="oklch(0.68 0.17 250)" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[280px] flex items-center justify-center text-muted-foreground">
+                      <div className="text-center">
+                        <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                        <p>No covered trades for R distribution.</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </AnimatedCard>
 
             {/* Day of Week & Trading Profile */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
