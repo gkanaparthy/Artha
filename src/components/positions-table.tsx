@@ -11,13 +11,13 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Clock, TrendingUp, TrendingDown, Trash2, PencilLine, AlertTriangle } from "lucide-react";
+import { Loader2, Clock, TrendingUp, TrendingDown, Trash2, AlertTriangle } from "lucide-react";
 import { cn, formatCurrency, formatDate, formatRMultiple } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useFilters } from "@/contexts/filter-context";
 import { useSort } from "@/hooks/use-sort";
 import type { DisplayPosition, Metrics } from "@/types/trading";
-import { RiskEntryPopover } from "@/components/risk-entry-popover";
+import { InlineRiskInput } from "@/components/inline-risk-input";
 
 interface LivePosition {
     symbol: string;
@@ -434,14 +434,8 @@ export function PositionsTable({
                 ? ((position.entryPrice - displayPrice) / position.entryPrice) * 100
                 : ((displayPrice - position.entryPrice) / position.entryPrice) * 100)
             : null;
-        const rMultiple = position.status === "closed" ? position.rMultiple : null;
         const isProfit = (displayPnl ?? 0) >= 0;
         const shouldAnimate = idx < 10;
-        const canEditRisk = !isDemo && position.status === "closed" && Boolean(position.positionKey);
-        const hasRiskInput =
-            typeof position.initialRiskUsd === "number" &&
-            Number.isFinite(position.initialRiskUsd) &&
-            position.initialRiskUsd > 0;
 
         return (
             <motion.div
@@ -537,31 +531,7 @@ export function PositionsTable({
                     </div>
                     <div>
                         <p className="text-xs text-muted-foreground mb-1">R Multiple</p>
-                        {rMultiple !== null && rMultiple !== undefined ? (
-                            <Badge
-                                variant="outline"
-                                className={cn(
-                                    "font-mono text-xs",
-                                    rMultiple >= 0
-                                        ? "border-green-500/50 text-green-500 bg-green-500/10"
-                                        : "border-red-500/50 text-red-500 bg-red-500/10"
-                                )}
-                            >
-                                {formatRMultiple(rMultiple)}
-                            </Badge>
-                        ) : canEditRisk ? (
-                            <RiskEntryPopover position={position} isDemo={isDemo} onRiskSaved={onRiskSaved}>
-                                <Button
-                                    variant="link"
-                                    className="h-auto p-0 text-xs text-muted-foreground hover:text-primary"
-                                >
-                                    <PencilLine className="h-3 w-3 mr-1" />
-                                    {hasRiskInput ? "Edit risk" : "Set risk"}
-                                </Button>
-                            </RiskEntryPopover>
-                        ) : (
-                            <span className="text-sm text-muted-foreground">—</span>
-                        )}
+                        <InlineRiskInput position={position} isDemo={isDemo} onRiskSaved={onRiskSaved} />
                     </div>
                     <div className="col-span-2">
                         <p className="text-xs text-muted-foreground mb-1">{isOpen ? "Unrealized P&L" : "P&L"}</p>
@@ -581,33 +551,17 @@ export function PositionsTable({
                 </div>
 
                 {/* Actions */}
-                {!isDemo && (position.positionKey || (isOpen && position.tradeId)) && (
+                {!isDemo && isOpen && position.tradeId && (
                     <div className="pt-3 border-t">
-                        <div className="grid grid-cols-2 gap-2">
-                            {position.positionKey && (
-                                <RiskEntryPopover position={position} isDemo={isDemo} onRiskSaved={onRiskSaved}>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="w-full"
-                                    >
-                                        <PencilLine className="h-4 w-4 mr-2" />
-                                        {hasRiskInput ? "Edit Risk" : "Set Risk"}
-                                    </Button>
-                                </RiskEntryPopover>
-                            )}
-                            {isOpen && position.tradeId && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    onClick={() => handleDelete(position.tradeId!)}
-                                >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                </Button>
-                            )}
-                        </div>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDelete(position.tradeId!)}
+                        >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                        </Button>
                     </div>
                 )}
             </motion.div>
@@ -623,7 +577,7 @@ export function PositionsTable({
                         <AlertTriangle className="h-4 w-4" />
                         <span>
                             Set 1R risk per closed position to unlock accurate R-multiples.
-                            Use <span className="font-medium">Set Risk</span> in Actions or the R column.
+                            Click the <span className="font-medium">pencil icon</span> in the R column.
                         </span>
                     </div>
                     <span className="text-xs text-amber-700/90 dark:text-amber-300/90">
@@ -725,13 +679,7 @@ export function PositionsTable({
                                         ? ((position.entryPrice - displayPrice) / position.entryPrice) * 100
                                         : ((displayPrice - position.entryPrice) / position.entryPrice) * 100)
                                     : null;
-                                const rMultiple = position.status === "closed" ? position.rMultiple : null;
                                 const isProfit = (displayPnl ?? 0) >= 0;
-                                const canEditRisk = !isDemo && Boolean(position.positionKey);
-                                const hasRiskInput =
-                                    typeof position.initialRiskUsd === "number" &&
-                                    Number.isFinite(position.initialRiskUsd) &&
-                                    position.initialRiskUsd > 0;
 
                                 const shouldAnimate = idx < 10;
 
@@ -809,33 +757,8 @@ export function PositionsTable({
                                                 <span className="text-muted-foreground">—</span>
                                             )}
                                         </TableCell>
-                                        <TableCell className="text-right">
-                                            {rMultiple !== null && rMultiple !== undefined ? (
-                                                <Badge
-                                                    variant="outline"
-                                                    className={cn(
-                                                        "font-mono",
-                                                        rMultiple >= 0
-                                                            ? "border-green-500/50 text-green-500 bg-green-500/10"
-                                                            : "border-red-500/50 text-red-500 bg-red-500/10"
-                                                    )}
-                                                >
-                                                    {formatRMultiple(rMultiple)}
-                                                </Badge>
-                                            ) : canEditRisk && !isOpen ? (
-                                                <RiskEntryPopover position={position} isDemo={isDemo} onRiskSaved={onRiskSaved}>
-                                                    <Button
-                                                        variant="link"
-                                                        size="sm"
-                                                        className="h-auto p-0 text-xs"
-                                                    >
-                                                        <PencilLine className="h-3 w-3 mr-1" />
-                                                        {hasRiskInput ? "Edit risk" : "Set risk"}
-                                                    </Button>
-                                                </RiskEntryPopover>
-                                            ) : (
-                                                <span className="text-muted-foreground">—</span>
-                                            )}
+                                        <TableCell>
+                                            <InlineRiskInput position={position} isDemo={isDemo} onRiskSaved={onRiskSaved} />
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {returnPct !== null ? (
@@ -873,32 +796,17 @@ export function PositionsTable({
                                             {position.broker}
                                         </TableCell>
                                         <TableCell>
-                                            {!isDemo && (position.positionKey || (isOpen && position.tradeId)) && (
-                                                <div className="flex items-center justify-end gap-1">
-                                                    {position.positionKey && (
-                                                        <RiskEntryPopover position={position} isDemo={isDemo} onRiskSaved={onRiskSaved}>
-                                                            <Button
-                                                                variant={hasRiskInput ? "outline" : "secondary"}
-                                                                size="sm"
-                                                                className="h-8 px-2 text-xs"
-                                                                title={hasRiskInput ? "Edit risk" : "Set risk"}
-                                                            >
-                                                                <PencilLine className="h-3 w-3 mr-1" />
-                                                                {hasRiskInput ? "Edit Risk" : "Set Risk"}
-                                                            </Button>
-                                                        </RiskEntryPopover>
-                                                    )}
-                                                    {isOpen && position.tradeId && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                                            onClick={() => handleDelete(position.tradeId!)}
-                                                            title="Delete position"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
+                                            {!isDemo && isOpen && position.tradeId && (
+                                                <div className="flex items-center justify-end">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                                        onClick={() => handleDelete(position.tradeId!)}
+                                                        title="Delete position"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
                                                 </div>
                                             )}
                                         </TableCell>
