@@ -75,7 +75,8 @@ function MetricCard({
         </CardHeader>
         <CardContent className="p-3 sm:p-4 pt-0 flex flex-col justify-center">
           <motion.div
-            className={cn("text-lg sm:text-xl xl:text-2xl font-bold tracking-tight stat-number truncate", valueColor)}
+            className={cn("font-bold tracking-tight stat-number whitespace-nowrap", valueColor)}
+            style={{ fontSize: 'clamp(1rem, 2.5vw, 1.5rem)' }}
             title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -576,7 +577,7 @@ export function DashboardView({
         </div>
 
         {/* Metrics Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
           <MetricCard
             title="Net P&L"
             value={formatCurrency(metrics.netPnL, true)}
