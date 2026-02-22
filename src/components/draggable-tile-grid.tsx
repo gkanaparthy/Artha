@@ -54,10 +54,10 @@ export function DraggableTileGrid({
         const isDragged = draggedId === id;
         const isHoverTarget = hoverId === id && draggedId !== id;
 
-        return (
-          <div
-            key={id}
-            draggable={!disabled}
+            return (
+              <div
+                key={id}
+                draggable={!disabled}
             onDragStart={() => setDraggedId(id)}
             onDragOver={(event) => {
               event.preventDefault();
@@ -68,11 +68,12 @@ export function DraggableTileGrid({
               if (!disabled) handleDrop(id);
             }}
             onDragEnd={resetDragState}
-            className={cn(
-              !disabled && "cursor-grab active:cursor-grabbing",
-              isDragged && "opacity-70",
-              isHoverTarget && "ring-2 ring-primary/40 rounded-xl"
-            )}
+                className={cn(
+                  "h-full",
+                  !disabled && "cursor-grab active:cursor-grabbing",
+                  isDragged && "opacity-70",
+                  isHoverTarget && "ring-2 ring-primary/40 rounded-xl"
+                )}
           >
             {content}
           </div>

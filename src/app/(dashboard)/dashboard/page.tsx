@@ -104,9 +104,9 @@ function MetricCard({
     glowClass?: string;
 }) {
     return (
-        <AnimatedCard delay={delay}>
+        <AnimatedCard delay={delay} className="h-full">
             <Card className={cn(
-                "h-full card-hover overflow-hidden relative glass border-0",
+                "h-full min-h-[130px] sm:min-h-[146px] card-hover overflow-hidden relative glass border-0",
                 glowClass && `hover:${glowClass}`
             )}>
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500" />
@@ -125,7 +125,9 @@ function MetricCard({
                     >
                         {value}
                     </motion.div>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">{subtitle}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 h-4 sm:h-5 leading-4 sm:leading-5 overflow-hidden text-ellipsis whitespace-nowrap">
+                        {subtitle}
+                    </p>
                 </CardContent>
             </Card>
         </AnimatedCard>
