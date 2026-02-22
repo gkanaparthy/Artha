@@ -67,22 +67,26 @@ function MetricCard({
           onClick && "cursor-pointer active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         )}>
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500" />
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
-          <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</CardTitle>
-          <div className="metric-icon-bg">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
+          <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground truncate pr-2" title={title}>{title}</CardTitle>
+          <div className="metric-icon-bg shrink-0">
             <Icon className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", iconColor)} />
           </div>
         </CardHeader>
-        <CardContent className="p-4 sm:p-6 pt-0">
+        <CardContent className="p-3 sm:p-4 pt-0 flex flex-col justify-center">
           <motion.div
-            className={cn("text-xl sm:text-2xl font-bold stat-number", valueColor)}
+            className={cn("text-lg sm:text-xl xl:text-2xl font-bold tracking-tight stat-number truncate", valueColor)}
+            title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: delay + 0.2 }}
           >
             {value}
           </motion.div>
-          <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 h-4 sm:h-5 leading-4 sm:leading-5 overflow-hidden text-ellipsis whitespace-nowrap">
+          <p
+            className="text-[10px] sm:text-[11px] lg:text-xs text-muted-foreground mt-1 min-h-[1.5rem] line-clamp-2 leading-snug text-balance"
+            title={subtitle}
+          >
             {subtitle}
           </p>
         </CardContent>
