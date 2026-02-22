@@ -49,6 +49,15 @@ function MetricCard({
   glowClass?: string;
   onClick?: () => void;
 }) {
+  // Auto-size: short values (≤6 chars like "40%", "-0.51R") get large text,
+  // medium values (≤9 chars) get medium, long values (like "-$1,037.75") get compact
+  const valueStr = String(value);
+  const valueSizeClass = valueStr.length <= 6
+    ? "text-xl sm:text-2xl"
+    : valueStr.length <= 9
+      ? "text-lg sm:text-xl"
+      : "text-base sm:text-lg";
+
   return (
     <AnimatedCard delay={delay} className="h-full">
       <Card
@@ -62,11 +71,13 @@ function MetricCard({
           }
         }}
         className={cn(
-          "h-full min-h-[130px] sm:min-h-[146px] card-hover overflow-hidden relative glass border-0",
+          "h-full min-h-[130px] sm:min-h-[146px] card-hover relative glass border-0",
           glowClass && `hover:${glowClass}`,
           onClick && "cursor-pointer active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         )}>
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute inset-0 overflow-hidden rounded-[inherit] pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500" />
+        </div>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
           <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground truncate pr-2" title={title}>{title}</CardTitle>
           <div className="metric-icon-bg shrink-0">
@@ -75,8 +86,7 @@ function MetricCard({
         </CardHeader>
         <CardContent className="p-3 sm:p-4 pt-0 flex flex-col justify-center">
           <motion.div
-            className={cn("font-bold tracking-tight stat-number whitespace-nowrap", valueColor)}
-            style={{ fontSize: 'clamp(1rem, 2.5vw, 1.5rem)' }}
+            className={cn("font-bold tracking-tight stat-number", valueSizeClass, valueColor)}
             title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
