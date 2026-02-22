@@ -47,3 +47,10 @@ export function calculateReturn(entry: number, exit: number | null): number | nu
   if (entry === 0 || exit === null) return null;
   return ((exit - entry) / entry) * 100;
 }
+
+// Format R-multiple value (e.g. +1.69R, -0.50R)
+export function formatRMultiple(value: number): string {
+  if (!Number.isFinite(value)) return "—";
+  const rounded = Math.round(value * 100) / 100;
+  return `${rounded >= 0 ? "+" : ""}${rounded.toFixed(2)}R`;
+}
