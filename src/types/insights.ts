@@ -12,6 +12,12 @@ export interface InsightDataSummary {
         avgLoss: number;
         profitFactor: number;
         riskRewardRatio: number;
+        netR: number | null;
+        avgR: number | null;
+        avgWinR: number | null;
+        avgLossR: number | null;
+        rCoverage: number;
+        coveredRTrades: number;
         largestWin: number;
         largestLoss: number;
         maxDrawdown: number;

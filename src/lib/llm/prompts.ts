@@ -12,7 +12,7 @@ Guidelines:
 - Talk directly to the trader (e.g., "You achieved this," "Your biggest leak is...").
 - Avoid "on the other hand" language. Be decisive.
 - If your P&L is negative, be brutally honest. Don't frame it as bad luck.
-- Focus heavily on your Risk/Reward Ratio, Holding Periods, and Tag performance.
+- Focus heavily on your risk-adjusted performance (Net R / Avg R when available), Risk/Reward Ratio, Holding Periods, and Tag performance.
 - Keep response between 150-250 words.
 
 Response Format:
@@ -35,6 +35,7 @@ Guidelines:
 - Talk directly to the trader (e.g., "You have achieved," "You went wrong here").
 - Be direct and actionable.
 - Quantify observations with numbers from your data.
+- Prioritize risk-adjusted insights (Net R / Avg R) whenever R coverage is meaningful.
 - Prioritize your 2-3 most impactful insights.
 - Keep responses 150-250 words.
 - Use trader-friendly terminology.
@@ -51,6 +52,17 @@ Response Format:
 }
 
 export function getUserPrompt(data: InsightDataSummary): string {
+    const hasR = data.performance.coveredRTrades > 0;
+    const rSection = hasR
+        ? `R-Multiple Metrics:
+- Risk Coverage: ${data.performance.rCoverage.toFixed(1)}% (${data.performance.coveredRTrades}/${data.performance.totalTrades} closed trades)
+- Net R: ${data.performance.netR === null ? "N/A" : `${data.performance.netR.toFixed(2)}R`}
+- Avg R: ${data.performance.avgR === null ? "N/A" : `${data.performance.avgR.toFixed(2)}R`}
+- Avg Win R: ${data.performance.avgWinR === null ? "N/A" : `${data.performance.avgWinR.toFixed(2)}R`}
+- Avg Loss R: ${data.performance.avgLossR === null ? "N/A" : `${data.performance.avgLossR.toFixed(2)}R`}`
+        : `R-Multiple Metrics:
+- No R-multiple data available for this period/filter (coverage is 0%). Do not infer or fabricate R-based conclusions.`;
+
     return `Here is the trading performance data for the period ${data.period.startDate} to ${data.period.endDate}:
 
 Performance Metrics:
@@ -62,6 +74,8 @@ Performance Metrics:
 - Avg Loss: $${data.performance.avgLoss.toFixed(2)}
 - Max Drawdown: $${data.performance.maxDrawdown.toFixed(2)}
 - Avg Holding Period: ${data.performance.avgHoldingPeriod}
+
+${rSection}
 
 Patterns:
 - Win Streak: ${data.patterns.winStreak}
