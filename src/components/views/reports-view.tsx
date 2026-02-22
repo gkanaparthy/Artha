@@ -140,12 +140,174 @@ export function ReportsView({
 }: ReportsViewProps) {
   const { filters, refreshKey } = useFilters();
   const [metrics, setMetrics] = useState<ExtendedMetrics | null>(
-    initialMetrics
-      ? { ...initialMetrics, mtdPnL: initialMetrics.netPnL * 0.4, ytdPnL: initialMetrics.netPnL }
-      : null
+    initialMetrics ? { ...initialMetrics } : null
   );
   const [loading, setLoading] = useState(!isDemo);
   const [viewType, setViewType] = useState<ViewType>("charts");
+
+  const buildDemoMetrics = useCallback((baseMetrics: Metrics): ExtendedMetrics => {
+    const roundTo2 = (value: number) => Math.round(value * 100) / 100;
+    const roundTo1 = (value: number) => Math.round(value * 10) / 10;
+
+    let filteredTrades = [...(baseMetrics.closedTrades || [])];
+
+    if (filters.startDate) {
+      const fromDate = new Date(filters.startDate + 'T00:00:00');
+      filteredTrades = filteredTrades.filter((trade) => new Date(trade.closedAt) >= fromDate);
+    }
+
+    if (filters.endDate) {
+      const toDate = new Date(filters.endDate + 'T23:59:59');
+      filteredTrades = filteredTrades.filter((trade) => new Date(trade.closedAt) <= toDate);
+    }
+
+    if (filters.symbol) {
+      const symbols = filters.symbol
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter((s) => s.length > 0);
+      if (symbols.length > 0) {
+        filteredTrades = filteredTrades.filter((trade) =>
+          symbols.some((symbol) => trade.symbol.toLowerCase().startsWith(symbol))
+        );
+      }
+    }
+
+    if (filters.accountId && filters.accountId.length > 0) {
+      filteredTrades = filteredTrades.filter((trade) => filters.accountId.includes(trade.accountId));
+    }
+
+    if (filters.assetType && filters.assetType !== 'all') {
+      filteredTrades = filteredTrades.filter((trade) => trade.type === filters.assetType);
+    }
+
+    if (filters.action && filters.action !== 'ALL') {
+      const side = filters.action === 'BUY' ? 'long' : 'short';
+      filteredTrades = filteredTrades.filter((trade) => trade.side === side);
+    }
+
+    if (filters.status && filters.status !== 'all') {
+      if (filters.status === 'open') {
+        filteredTrades = [];
+      } else if (filters.status === 'winners') {
+        filteredTrades = filteredTrades.filter((trade) => trade.pnl > 0);
+      } else if (filters.status === 'losers') {
+        filteredTrades = filteredTrades.filter((trade) => trade.pnl < 0);
+      }
+    }
+
+    if (filters.tagIds && filters.tagIds.length > 0) {
+      filteredTrades = filteredTrades.filter((trade) => {
+        const tagIds = (trade.tags || []).map((tag) => tag.id);
+        if (filters.tagFilterMode === 'all') {
+          return filters.tagIds.every((id) => tagIds.includes(id));
+        }
+        return filters.tagIds.some((id) => tagIds.includes(id));
+      });
+    }
+
+    const winningTrades = filteredTrades.filter((trade) => trade.pnl > 0);
+    const losingTrades = filteredTrades.filter((trade) => trade.pnl < 0);
+    const netPnL = filteredTrades.reduce((sum, trade) => sum + trade.pnl, 0);
+    const totalWins = winningTrades.reduce((sum, trade) => sum + trade.pnl, 0);
+    const totalLosses = Math.abs(losingTrades.reduce((sum, trade) => sum + trade.pnl, 0));
+    const totalClosedTrades = filteredTrades.length;
+    const winRate = totalClosedTrades > 0 ? (winningTrades.length / totalClosedTrades) * 100 : 0;
+    const avgWin = winningTrades.length > 0 ? totalWins / winningTrades.length : 0;
+    const avgLoss = losingTrades.length > 0 ? totalLosses / losingTrades.length : 0;
+    const avgTrade = totalClosedTrades > 0 ? netPnL / totalClosedTrades : 0;
+    const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0;
+    const largestWin = winningTrades.length > 0 ? Math.max(...winningTrades.map((trade) => trade.pnl)) : 0;
+    const largestLoss = losingTrades.length > 0 ? Math.min(...losingTrades.map((trade) => trade.pnl)) : 0;
+
+    const avgWinPct = winningTrades.length > 0
+      ? winningTrades.reduce((sum, trade) => {
+        const multiplier = trade.contractMultiplier ?? (trade.type === 'OPTION' ? 100 : 1);
+        const costBasis = trade.entryPrice * trade.quantity * multiplier;
+        return sum + (costBasis > 0 ? (trade.pnl / costBasis) * 100 : 0);
+      }, 0) / winningTrades.length
+      : 0;
+
+    const avgLossPct = losingTrades.length > 0
+      ? Math.abs(losingTrades.reduce((sum, trade) => {
+        const multiplier = trade.contractMultiplier ?? (trade.type === 'OPTION' ? 100 : 1);
+        const costBasis = trade.entryPrice * trade.quantity * multiplier;
+        return sum + (costBasis > 0 ? (trade.pnl / costBasis) * 100 : 0);
+      }, 0) / losingTrades.length)
+      : 0;
+
+    const sortedClosedTrades = [...filteredTrades].sort((a, b) =>
+      a.closedAt.localeCompare(b.closedAt)
+    );
+
+    let cumulative = 0;
+    const cumulativePnL = sortedClosedTrades.map((trade) => {
+      cumulative += trade.pnl;
+      return {
+        date: trade.closedAt.split('T')[0],
+        pnl: roundTo2(trade.pnl),
+        cumulative: roundTo2(cumulative),
+        symbol: trade.symbol,
+      };
+    });
+
+    const monthlyPerformance = new Map<string, number>();
+    for (const trade of sortedClosedTrades) {
+      const monthKey = trade.closedAt.slice(0, 7);
+      monthlyPerformance.set(monthKey, (monthlyPerformance.get(monthKey) || 0) + trade.pnl);
+    }
+
+    const monthlyData = Array.from(monthlyPerformance.entries())
+      .map(([month, pnl]) => ({ month, pnl: roundTo2(pnl) }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    const symbolPerformance = new Map<string, { pnl: number; trades: number; wins: number }>();
+    for (const trade of filteredTrades) {
+      const current = symbolPerformance.get(trade.symbol) || { pnl: 0, trades: 0, wins: 0 };
+      current.pnl += trade.pnl;
+      current.trades += 1;
+      if (trade.pnl > 0) current.wins += 1;
+      symbolPerformance.set(trade.symbol, current);
+    }
+
+    const symbolData = Array.from(symbolPerformance.entries())
+      .map(([symbol, data]) => ({
+        symbol,
+        pnl: roundTo2(data.pnl),
+        trades: data.trades,
+        winRate: data.trades > 0 ? Math.round((data.wins / data.trades) * 100) : 0,
+      }))
+      .sort((a, b) => b.pnl - a.pnl);
+
+    const mtdPnL = monthlyData.length > 0 ? monthlyData[monthlyData.length - 1].pnl : 0;
+    const ytdPnL = roundTo2(netPnL);
+
+    return {
+      ...baseMetrics,
+      netPnL: roundTo2(netPnL),
+      winRate: roundTo1(winRate),
+      totalTrades: totalClosedTrades,
+      avgWin: roundTo2(avgWin),
+      avgLoss: roundTo2(avgLoss),
+      avgWinPct: roundTo1(avgWinPct),
+      avgLossPct: roundTo1(avgLossPct),
+      profitFactor: profitFactor === Infinity ? null : roundTo2(profitFactor),
+      winningTrades: winningTrades.length,
+      losingTrades: losingTrades.length,
+      largestWin: roundTo2(largestWin),
+      largestLoss: roundTo2(largestLoss),
+      avgTrade: roundTo2(avgTrade),
+      openPositionsCount: filters.status === 'open'
+        ? (baseMetrics.openPositionsCount || 0)
+        : 0,
+      closedTrades: sortedClosedTrades,
+      cumulativePnL,
+      monthlyData,
+      symbolData,
+      mtdPnL,
+      ytdPnL,
+    };
+  }, [filters]);
 
   const fetchMetrics = useCallback(async () => {
     if (isDemo) return; // Don't fetch in demo mode
@@ -182,8 +344,13 @@ export function ReportsView({
   useEffect(() => {
     if (!isDemo) {
       fetchMetrics();
+      return;
     }
-  }, [fetchMetrics, isDemo, refreshKey]);
+    if (initialMetrics) {
+      setMetrics(buildDemoMetrics(initialMetrics));
+      setLoading(false);
+    }
+  }, [fetchMetrics, isDemo, refreshKey, initialMetrics, buildDemoMetrics]);
 
   if (loading) {
     return (
@@ -360,8 +527,8 @@ export function ReportsView({
 
   const monthlyData = metrics.monthlyData || [];
   const symbolData = metrics.symbolData || [];
-  const mtdPnL = metrics.mtdPnL ?? 0;
-  const ytdPnL = metrics.ytdPnL ?? 0;
+  const mtdPnL = metrics.mtdPnL ?? (monthlyData.length > 0 ? monthlyData[monthlyData.length - 1].pnl : 0);
+  const ytdPnL = metrics.ytdPnL ?? metrics.netPnL;
 
   return (
     <PageTransition>

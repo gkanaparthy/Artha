@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { useFilters } from "@/contexts/filter-context";
 import { GlobalFilterBar } from "@/components/global-filter-bar";
 import { exportToExcel, formatCurrencyForExport, formatDateForExport } from "@/lib/export";
-import type { Metrics, DisplayPosition } from "@/types/trading";
+import type { Metrics, DisplayPosition, ClosedPosition, OpenPosition } from "@/types/trading";
 import { AIInsightsCard } from "@/components/ai-insights-card";
 import { TagPerformance } from "@/components/tag-performance";
 
@@ -104,7 +104,7 @@ export function DashboardView({
   initialPositions,
   isDemo = false,
 }: DashboardViewProps) {
-  const { filters, refreshKey, syncing } = useFilters();
+  const { filters, refreshKey } = useFilters();
   const [metrics, setMetrics] = useState<Metrics>(
     initialMetrics || {
       netPnL: 0,
@@ -148,7 +148,12 @@ export function DashboardView({
       const data = await res.json();
       setMetrics(data);
 
-      const closedDisplayPositions: DisplayPosition[] = (data.closedTrades || []).map((p: any) => ({
+      const closedDisplayPositions: DisplayPosition[] = (data.closedTrades || []).map((p: ClosedPosition) => {
+        const rawPosition = p as unknown as { multiplier?: number };
+        const multiplier = p.contractMultiplier
+          ?? (typeof rawPosition.multiplier === 'number' ? rawPosition.multiplier : undefined);
+
+        return ({
         symbol: p.symbol,
         universalSymbolId: p.universalSymbolId,
         quantity: p.quantity,
@@ -161,15 +166,21 @@ export function DashboardView({
         accountId: p.accountId,
         status: "closed" as const,
         type: p.type,
-        contractMultiplier: p.contractMultiplier ?? p.multiplier,
+        contractMultiplier: multiplier,
         side: p.side,
         optionType: p.optionType,
         strikePrice: p.strikePrice,
         expiryDate: p.expiryDate,
         tags: p.tags,
-      }));
+      });
+      });
 
-      const openDisplayPositions: DisplayPosition[] = (data.openPositions || []).map((p: any) => ({
+      const openDisplayPositions: DisplayPosition[] = (data.openPositions || []).map((p: OpenPosition) => {
+        const rawPosition = p as unknown as { multiplier?: number };
+        const multiplier = p.contractMultiplier
+          ?? (typeof rawPosition.multiplier === 'number' ? rawPosition.multiplier : undefined);
+
+        return ({
         symbol: p.symbol,
         universalSymbolId: p.universalSymbolId,
         quantity: p.quantity,
@@ -183,13 +194,14 @@ export function DashboardView({
         status: "open" as const,
         tradeId: p.tradeId,
         type: p.type,
-        contractMultiplier: p.contractMultiplier ?? p.multiplier,
+        contractMultiplier: multiplier,
         side: p.side,
         optionType: p.optionType,
         strikePrice: p.strikePrice,
         expiryDate: p.expiryDate,
         tags: p.tags,
-      }));
+      });
+      });
 
       setAllPositions([...openDisplayPositions, ...closedDisplayPositions]);
     } catch (e) {
@@ -245,6 +257,8 @@ export function DashboardView({
     } else if (initialPositions) {
       // Handle client-side filtering for demo mode
       let filtered = [...initialPositions];
+      const roundTo2 = (value: number) => Math.round(value * 100) / 100;
+      const roundTo1 = (value: number) => Math.round(value * 10) / 10;
 
       // Filter by account
       if (filters.accountId && filters.accountId.length > 0) {
@@ -266,27 +280,102 @@ export function DashboardView({
         filtered = filtered.filter(p => p.type === filters.assetType);
       }
 
+      // Filter by side
+      if (filters.action && filters.action !== 'ALL') {
+        const side = filters.action === 'BUY' ? 'long' : 'short';
+        filtered = filtered.filter((p) => p.side === side);
+      }
+
+      // Filter by date range
+      if (filters.startDate) {
+        const fromDate = new Date(filters.startDate + 'T00:00:00');
+        filtered = filtered.filter((p) => {
+          const effectiveDate = new Date((p.status === 'closed' ? p.closedAt : p.openedAt) || p.openedAt);
+          return effectiveDate >= fromDate;
+        });
+      }
+
+      if (filters.endDate) {
+        const toDate = new Date(filters.endDate + 'T23:59:59');
+        filtered = filtered.filter((p) => {
+          const effectiveDate = new Date((p.status === 'closed' ? p.closedAt : p.openedAt) || p.openedAt);
+          return effectiveDate <= toDate;
+        });
+      }
+
+      // Filter by status
+      if (filters.status && filters.status !== 'all') {
+        if (filters.status === 'open') {
+          filtered = filtered.filter((p) => p.status === 'open');
+        } else if (filters.status === 'winners') {
+          filtered = filtered.filter((p) => p.status === 'closed' && (p.pnl ?? 0) > 0);
+        } else if (filters.status === 'losers') {
+          filtered = filtered.filter((p) => p.status === 'closed' && (p.pnl ?? 0) < 0);
+        }
+      }
+
+      // Filter by tags
+      if (filters.tagIds && filters.tagIds.length > 0) {
+        filtered = filtered.filter((p) => {
+          const tagIds = (p.tags || []).map((tag) => tag.id);
+          if (filters.tagFilterMode === 'all') {
+            return filters.tagIds.every((id) => tagIds.includes(id));
+          }
+          return filters.tagIds.some((id) => tagIds.includes(id));
+        });
+      }
+
       setAllPositions(filtered);
 
-      // Simple metric recalculation for demo
+      // Full metric recalculation for demo so cards stay consistent with filtered table rows.
       const closed = filtered.filter(p => p.status === "closed");
-      if (closed.length > 0 || filtered.length < initialPositions.length) {
-        const netPnL = closed.reduce((sum, p) => sum + (p.pnl || 0), 0);
-        const winningTrades = closed.filter(p => (p.pnl || 0) > 0).length;
-        const losingTrades = closed.filter(p => (p.pnl || 0) < 0).length;
-        const winRate = closed.length > 0 ? Math.round((winningTrades / closed.length) * 100) : 0;
+      const open = filtered.filter((p) => p.status === 'open');
+      const winningTrades = closed.filter((p) => (p.pnl || 0) > 0);
+      const losingTrades = closed.filter((p) => (p.pnl || 0) < 0);
+      const netPnL = closed.reduce((sum, p) => sum + (p.pnl || 0), 0);
+      const totalWins = winningTrades.reduce((sum, p) => sum + (p.pnl || 0), 0);
+      const totalLosses = Math.abs(losingTrades.reduce((sum, p) => sum + (p.pnl || 0), 0));
+      const avgWin = winningTrades.length > 0 ? totalWins / winningTrades.length : 0;
+      const avgLoss = losingTrades.length > 0 ? totalLosses / losingTrades.length : 0;
+      const avgTrade = closed.length > 0 ? netPnL / closed.length : 0;
+      const winRate = closed.length > 0 ? (winningTrades.length / closed.length) * 100 : 0;
+      const profitFactor = totalLosses > 0 ? totalWins / totalLosses : totalWins > 0 ? Infinity : 0;
+      const largestWin = winningTrades.length > 0 ? Math.max(...winningTrades.map((p) => p.pnl || 0)) : 0;
+      const largestLoss = losingTrades.length > 0 ? Math.min(...losingTrades.map((p) => p.pnl || 0)) : 0;
 
-        setMetrics(prev => ({
-          ...prev,
-          netPnL,
-          winningTrades,
-          losingTrades,
-          winRate,
-          totalTrades: closed.length
-        }));
-      } else if (initialMetrics) {
-        setMetrics(initialMetrics);
-      }
+      const avgWinPct = winningTrades.length > 0
+        ? winningTrades.reduce((sum, p) => {
+          const multiplier = p.contractMultiplier ?? (p.type === 'OPTION' ? 100 : 1);
+          const costBasis = p.entryPrice * Math.abs(p.quantity) * multiplier;
+          return sum + (costBasis > 0 ? ((p.pnl || 0) / costBasis) * 100 : 0);
+        }, 0) / winningTrades.length
+        : 0;
+
+      const avgLossPct = losingTrades.length > 0
+        ? Math.abs(losingTrades.reduce((sum, p) => {
+          const multiplier = p.contractMultiplier ?? (p.type === 'OPTION' ? 100 : 1);
+          const costBasis = p.entryPrice * Math.abs(p.quantity) * multiplier;
+          return sum + (costBasis > 0 ? ((p.pnl || 0) / costBasis) * 100 : 0);
+        }, 0) / losingTrades.length)
+        : 0;
+
+      setMetrics((prev) => ({
+        ...prev,
+        netPnL: roundTo2(netPnL),
+        winRate: roundTo1(winRate),
+        totalTrades: closed.length,
+        avgWin: roundTo2(avgWin),
+        avgLoss: roundTo2(avgLoss),
+        avgWinPct: roundTo1(avgWinPct),
+        avgLossPct: roundTo1(avgLossPct),
+        profitFactor: profitFactor === Infinity ? null : roundTo2(profitFactor),
+        winningTrades: winningTrades.length,
+        losingTrades: losingTrades.length,
+        largestWin: roundTo2(largestWin),
+        largestLoss: roundTo2(largestLoss),
+        avgTrade: roundTo2(avgTrade),
+        openPositionsCount: open.length,
+      }));
     }
   }, [fetchMetrics, fetchLivePositions, isDemo, refreshKey, filters, initialPositions, initialMetrics]);
 

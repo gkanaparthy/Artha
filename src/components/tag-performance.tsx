@@ -9,16 +9,11 @@ import {
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    Cell,
-    PieChart,
-    Pie
+    Cell
 } from "recharts";
 import {
-    TrendingUp,
-    TrendingDown,
     Target,
     AlertTriangle,
-    Smile,
     Tag as TagIcon,
     Loader2,
     Sparkles
@@ -28,7 +23,8 @@ import { Badge } from "@/components/ui/badge";
 import { useFilters } from "@/contexts/filter-context";
 import { TagCategory } from "@/types/tags";
 import { cn } from "@/lib/utils";
-import { DEMO_TAG_STATS } from "@/lib/demo-data";
+import { DEMO_POSITIONS } from "@/lib/demo-data";
+import type { DisplayPosition } from "@/types/trading";
 
 interface TagStats {
     id: string;
@@ -47,13 +43,120 @@ interface TagPerformanceProps {
     isDemo?: boolean;
 }
 
+function computeDemoTagStats(positions: DisplayPosition[], filters: ReturnType<typeof useFilters>["filters"]): TagStats[] {
+    const symbolFilters = filters.symbol
+        ? filters.symbol.split(",").map(s => s.trim().toLowerCase()).filter(Boolean)
+        : [];
+
+    const fromDate = filters.startDate ? new Date(filters.startDate + "T00:00:00") : null;
+    const toDate = filters.endDate ? new Date(filters.endDate + "T23:59:59") : null;
+
+    const filtered = positions.filter((position) => {
+        if (filters.accountId && filters.accountId.length > 0 && !filters.accountId.includes(position.accountId)) {
+            return false;
+        }
+
+        if (symbolFilters.length > 0 && !symbolFilters.some(symbol => position.symbol.toLowerCase().includes(symbol))) {
+            return false;
+        }
+
+        if (filters.assetType && filters.assetType !== "all" && position.type !== filters.assetType) {
+            return false;
+        }
+
+        if (filters.action && filters.action !== "ALL") {
+            const side = filters.action === "BUY" ? "long" : "short";
+            if (position.side !== side) return false;
+        }
+
+        const effectiveDate = new Date(
+            (position.status === "closed" ? position.closedAt : position.openedAt) || position.openedAt
+        );
+
+        if (fromDate && effectiveDate < fromDate) {
+            return false;
+        }
+        if (toDate && effectiveDate > toDate) {
+            return false;
+        }
+
+        if (filters.status && filters.status !== "all") {
+            if (filters.status === "open" && position.status !== "open") return false;
+            if (filters.status === "winners" && !(position.status === "closed" && (position.pnl ?? 0) > 0)) return false;
+            if (filters.status === "losers" && !(position.status === "closed" && (position.pnl ?? 0) < 0)) return false;
+        }
+
+        if (filters.tagIds && filters.tagIds.length > 0) {
+            const positionTagIds = (position.tags || []).map(tag => tag.id);
+            if (filters.tagFilterMode === "all") {
+                return filters.tagIds.every(id => positionTagIds.includes(id));
+            }
+            return filters.tagIds.some(id => positionTagIds.includes(id));
+        }
+
+        return true;
+    });
+
+    const statsMap = new Map<string, TagStats>();
+
+    for (const position of filtered) {
+        const tags = position.tags || [];
+        if (tags.length === 0) continue;
+
+        const pnl = position.status === "closed" ? (position.pnl ?? 0) : 0;
+        const isClosed = position.status === "closed";
+
+        for (const tag of tags) {
+            if (!statsMap.has(tag.id)) {
+                statsMap.set(tag.id, {
+                    id: tag.id,
+                    name: tag.name,
+                    color: tag.color,
+                    category: (tag.category as TagCategory),
+                    totalPnL: 0,
+                    tradeCount: 0,
+                    winCount: 0,
+                    lossCount: 0,
+                    avgPnL: 0,
+                    winRate: 0,
+                });
+            }
+
+            const stats = statsMap.get(tag.id)!;
+            stats.totalPnL += pnl;
+            stats.tradeCount += 1;
+            if (isClosed) {
+                if (pnl > 0) stats.winCount += 1;
+                if (pnl < 0) stats.lossCount += 1;
+            }
+        }
+    }
+
+    return Array.from(statsMap.values())
+        .map((stats) => {
+            const tradeCount = stats.tradeCount || 1;
+            return {
+                ...stats,
+                totalPnL: Math.round(stats.totalPnL * 100) / 100,
+                avgPnL: Math.round((stats.totalPnL / tradeCount) * 100) / 100,
+                winRate: Math.round((stats.winCount / tradeCount) * 1000) / 10,
+            };
+        })
+        .sort((a, b) => b.totalPnL - a.totalPnL);
+}
+
 export function TagPerformance({ isDemo = false }: TagPerformanceProps) {
     const { filters } = useFilters();
-    const [data, setData] = useState<TagStats[]>(isDemo ? DEMO_TAG_STATS as TagStats[] : []);
-    const [loading, setLoading] = useState(!isDemo);
+    const [data, setData] = useState<TagStats[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (isDemo) return;
+        if (isDemo) {
+            setLoading(true);
+            setData(computeDemoTagStats(DEMO_POSITIONS, filters));
+            setLoading(false);
+            return;
+        }
         const fetchAnalytics = async () => {
             try {
                 setLoading(true);
@@ -68,16 +171,19 @@ export function TagPerformance({ isDemo = false }: TagPerformanceProps) {
                 if (res.ok) {
                     const json = await res.json();
                     setData(json.analytics);
+                } else {
+                    setData([]);
                 }
             } catch (error) {
                 console.error("Failed to fetch tag analytics", error);
+                setData([]);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchAnalytics();
-    }, [filters.startDate, filters.endDate, filters.accountId]);
+    }, [isDemo, filters]);
 
     if (loading) {
         return (
@@ -111,7 +217,6 @@ export function TagPerformance({ isDemo = false }: TagPerformanceProps) {
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 
     const totalMistakeCost = categoryStats[TagCategory.MISTAKE].reduce((sum, s) => sum + s.totalPnL, 0);
-    const totalSetupPnL = categoryStats[TagCategory.SETUP].reduce((sum, s) => sum + s.totalPnL, 0);
     // currentTaggedPnL should be the sum of all tagged P&L (Bug #7)
     const currentTaggedPnL = data.reduce((sum, s) => sum + s.totalPnL, 0);
 
@@ -135,7 +240,7 @@ export function TagPerformance({ isDemo = false }: TagPerformanceProps) {
                             </div>
                             <div className="h-8 w-px bg-border hidden md:block" />
                             <div>
-                                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">"What If" Performance</p>
+                                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">What-If Performance</p>
                                 <p className="text-2xl font-bold text-green-500 flex items-center gap-2">
                                     {formatCurrency(currentTaggedPnL - totalMistakeCost)}
                                     <Badge variant="outline" className="text-[10px] border-green-500/30 text-green-600 bg-green-500/5">
@@ -144,7 +249,7 @@ export function TagPerformance({ isDemo = false }: TagPerformanceProps) {
                                 </p>
                             </div>
                             <div className="flex-1 text-sm text-muted-foreground md:text-right italic">
-                                "If you had avoided these mistakes, you'd be {formatCurrency(Math.abs(totalMistakeCost))} more profitable."
+                                If you had avoided these mistakes, you would be {formatCurrency(Math.abs(totalMistakeCost))} more profitable.
                             </div>
                         </div>
                     </CardContent>
@@ -175,7 +280,7 @@ export function TagPerformance({ isDemo = false }: TagPerformanceProps) {
                                         fontSize={12}
                                     />
                                     <Tooltip
-                                        formatter={(value: any) => [formatCurrency(value), "P&L"]}
+                                        formatter={(value: number | string | undefined) => [formatCurrency(Number(value ?? 0)), "P&L"]}
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                                     />
                                     <Bar dataKey="totalPnL" radius={[0, 4, 4, 0]}>
