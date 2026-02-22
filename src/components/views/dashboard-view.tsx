@@ -37,6 +37,7 @@ function MetricCard({
   valueColor = "",
   delay = 0,
   glowClass = "",
+  onClick,
 }: {
   title: string;
   value: string | number;
@@ -46,13 +47,25 @@ function MetricCard({
   valueColor?: string;
   delay?: number;
   glowClass?: string;
+  onClick?: () => void;
 }) {
   return (
     <AnimatedCard delay={delay} className="h-full">
-      <Card className={cn(
-        "h-full min-h-[130px] sm:min-h-[146px] card-hover overflow-hidden relative glass border-0",
-        glowClass && `hover:${glowClass}`
-      )}>
+      <Card
+        role={onClick ? "button" : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        onClick={onClick}
+        onKeyDown={(e) => {
+          if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            onClick();
+          }
+        }}
+        className={cn(
+          "h-full min-h-[130px] sm:min-h-[146px] card-hover overflow-hidden relative glass border-0",
+          glowClass && `hover:${glowClass}`,
+          onClick && "cursor-pointer active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        )}>
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500" />
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
           <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</CardTitle>
@@ -116,7 +129,7 @@ export function DashboardView({
   initialPositions,
   isDemo = false,
 }: DashboardViewProps) {
-  const { filters, refreshKey } = useFilters();
+  const { filters, refreshKey, setFilters } = useFilters();
   const [metrics, setMetrics] = useState<Metrics>(
     initialMetrics || {
       netPnL: 0,
@@ -148,6 +161,17 @@ export function DashboardView({
   const [loading, setLoading] = useState(!isDemo);
   const [tableUnrealizedPnL, setTableUnrealizedPnL] = useState<number | null | undefined>(undefined);
 
+  const scrollToTable = useCallback(() => {
+    document.getElementById('positions-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
+  const handleMetricClick = useCallback((type: 'open' | 'winners' | 'losers' | 'all') => {
+    if (filters.status !== type) {
+      setFilters({ ...filters, status: type });
+    }
+    scrollToTable();
+  }, [filters, setFilters, scrollToTable]);
+
   // Fetch metrics whenever ANY filter changes (only in non-demo mode)
   const fetchMetrics = useCallback(async () => {
     if (isDemo) return; // Don't fetch in demo mode
@@ -162,6 +186,14 @@ export function DashboardView({
         params.append("accountId", filters.accountId.join(","));
       if (filters.assetType && filters.assetType !== "all")
         params.append("assetType", filters.assetType);
+      if (filters.status && filters.status !== "all")
+        params.append("status", filters.status);
+      if (filters.action && filters.action !== "ALL")
+        params.append("action", filters.action);
+      if (filters.tagIds && filters.tagIds.length > 0)
+        params.append("tagIds", filters.tagIds.join(","));
+      if (filters.tagFilterMode)
+        params.append("tagFilterMode", filters.tagFilterMode);
 
       const res = await fetch(`/api/metrics?${params.toString()}`);
       const data = await res.json();
@@ -173,31 +205,31 @@ export function DashboardView({
           ?? (typeof rawPosition.multiplier === 'number' ? rawPosition.multiplier : undefined);
 
         return ({
-        symbol: p.symbol,
-        universalSymbolId: p.universalSymbolId,
-        quantity: p.quantity,
-        entryPrice: p.entryPrice,
-        exitPrice: p.exitPrice,
-        pnl: p.pnl,
-        openedAt: p.openedAt,
-        closedAt: p.closedAt,
-        broker: p.broker,
-        accountId: p.accountId,
-        status: "closed" as const,
-        type: p.type,
-        contractMultiplier: multiplier,
-        side: p.side,
-        optionType: p.optionType,
-        strikePrice: p.strikePrice,
-        expiryDate: p.expiryDate,
-        tags: p.tags,
-        positionKey: p.positionKey ?? null,
-        rMultiple: p.rMultiple ?? null,
-        initialRiskUsd: p.initialRiskUsd ?? null,
-        allocatedRiskUsd: p.allocatedRiskUsd ?? null,
-        riskSource: p.riskSource ?? null,
-        futuresMultiplierWarning: p.futuresMultiplierWarning ?? null,
-      });
+          symbol: p.symbol,
+          universalSymbolId: p.universalSymbolId,
+          quantity: p.quantity,
+          entryPrice: p.entryPrice,
+          exitPrice: p.exitPrice,
+          pnl: p.pnl,
+          openedAt: p.openedAt,
+          closedAt: p.closedAt,
+          broker: p.broker,
+          accountId: p.accountId,
+          status: "closed" as const,
+          type: p.type,
+          contractMultiplier: multiplier,
+          side: p.side,
+          optionType: p.optionType,
+          strikePrice: p.strikePrice,
+          expiryDate: p.expiryDate,
+          tags: p.tags,
+          positionKey: p.positionKey ?? null,
+          rMultiple: p.rMultiple ?? null,
+          initialRiskUsd: p.initialRiskUsd ?? null,
+          allocatedRiskUsd: p.allocatedRiskUsd ?? null,
+          riskSource: p.riskSource ?? null,
+          futuresMultiplierWarning: p.futuresMultiplierWarning ?? null,
+        });
       });
 
       const openDisplayPositions: DisplayPosition[] = (data.openPositions || []).map((p: OpenPosition) => {
@@ -206,27 +238,27 @@ export function DashboardView({
           ?? (typeof rawPosition.multiplier === 'number' ? rawPosition.multiplier : undefined);
 
         return ({
-        symbol: p.symbol,
-        universalSymbolId: p.universalSymbolId,
-        quantity: p.quantity,
-        entryPrice: p.entryPrice,
-        exitPrice: null,
-        pnl: null,
-        openedAt: p.openedAt,
-        closedAt: null,
-        broker: p.broker,
-        accountId: p.accountId,
-        status: "open" as const,
-        tradeId: p.tradeId,
-        type: p.type,
-        contractMultiplier: multiplier,
-        side: p.side,
-        optionType: p.optionType,
-        strikePrice: p.strikePrice,
-        expiryDate: p.expiryDate,
-        tags: p.tags,
-        positionKey: p.positionKey ?? null,
-      });
+          symbol: p.symbol,
+          universalSymbolId: p.universalSymbolId,
+          quantity: p.quantity,
+          entryPrice: p.entryPrice,
+          exitPrice: null,
+          pnl: null,
+          openedAt: p.openedAt,
+          closedAt: null,
+          broker: p.broker,
+          accountId: p.accountId,
+          status: "open" as const,
+          tradeId: p.tradeId,
+          type: p.type,
+          contractMultiplier: multiplier,
+          side: p.side,
+          optionType: p.optionType,
+          strikePrice: p.strikePrice,
+          expiryDate: p.expiryDate,
+          tags: p.tags,
+          positionKey: p.positionKey ?? null,
+        });
       });
 
       setAllPositions([...openDisplayPositions, ...closedDisplayPositions]);
@@ -235,7 +267,18 @@ export function DashboardView({
     } finally {
       setLoading(false);
     }
-  }, [filters.symbol, filters.startDate, filters.endDate, filters.accountId, filters.assetType, isDemo]);
+  }, [
+    filters.symbol,
+    filters.startDate,
+    filters.endDate,
+    filters.accountId,
+    filters.assetType,
+    filters.status,
+    filters.action,
+    filters.tagIds,
+    filters.tagFilterMode,
+    isDemo,
+  ]);
 
   // Fetch live positions with current market prices
   const fetchLivePositions = useCallback(async () => {
@@ -529,7 +572,7 @@ export function DashboardView({
         </div>
 
         {/* Metrics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
           <MetricCard
             title="Net P&L"
             value={formatCurrency(metrics.netPnL, true)}
@@ -539,16 +582,18 @@ export function DashboardView({
             valueColor={getPnLColor(metrics.netPnL)}
             delay={0}
             glowClass={metrics.netPnL >= 0 ? "glow-green" : "glow-red"}
+            onClick={() => handleMetricClick("all")}
           />
           <MetricCard
-            title="Net R"
-            value={formatR(metrics.netR, true)}
-            subtitle={metrics.rCoverage ? `${metrics.rCoverage}% risk coverage` : "Set risk per position to unlock"}
-            icon={Target}
-            iconColor={(metrics.netR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
-            valueColor={(metrics.netR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
-            delay={0.05}
-            glowClass={(metrics.netR ?? 0) >= 0 ? "glow-green" : "glow-red"}
+            title="Unrealized P&L"
+            value={hasLiveUnrealized ? formatCurrency(unrealizedPnL, true) : '—'}
+            subtitle={hasLiveUnrealized ? 'Open positions' : 'Live data unavailable'}
+            icon={Activity}
+            iconColor={hasLiveUnrealized ? getPnLColor(unrealizedPnL) : 'text-muted-foreground'}
+            valueColor={hasLiveUnrealized ? getPnLColor(unrealizedPnL) : 'text-muted-foreground'}
+            delay={0.1}
+            glowClass={hasLiveUnrealized ? (unrealizedPnL >= 0 ? 'glow-green' : 'glow-red') : ''}
+            onClick={() => handleMetricClick("open")}
           />
           <MetricCard
             title="Win Rate"
@@ -557,7 +602,8 @@ export function DashboardView({
             icon={Target}
             iconColor={getWinRateColor(metrics.winRate)}
             valueColor={getWinRateColor(metrics.winRate)}
-            delay={0.1}
+            delay={0.2}
+            onClick={() => handleMetricClick("winners")}
           />
           <MetricCard
             title="Largest Win"
@@ -566,7 +612,8 @@ export function DashboardView({
             icon={TrendingUp}
             iconColor="text-gradient-green"
             valueColor="text-gradient-green"
-            delay={0.2}
+            delay={0.3}
+            onClick={() => handleMetricClick("winners")}
           />
           <MetricCard
             title="Largest Loss"
@@ -575,22 +622,58 @@ export function DashboardView({
             icon={TrendingDown}
             iconColor="text-gradient-red"
             valueColor="text-gradient-red"
-            delay={0.3}
-          />
-        </div>
-
-
-        {/* Secondary Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
-          <MetricCard
-            title="Unrealized P&L"
-            value={hasLiveUnrealized ? formatCurrency(unrealizedPnL, true) : '—'}
-            subtitle={hasLiveUnrealized ? 'Open positions' : 'Live data unavailable'}
-            icon={Activity}
-            iconColor={hasLiveUnrealized ? getPnLColor(unrealizedPnL) : 'text-muted-foreground'}
-            valueColor={hasLiveUnrealized ? getPnLColor(unrealizedPnL) : 'text-muted-foreground'}
             delay={0.4}
-            glowClass={hasLiveUnrealized ? (unrealizedPnL >= 0 ? 'glow-green' : 'glow-red') : ''}
+            onClick={() => handleMetricClick("losers")}
+          />
+          <MetricCard
+            title="Total Trades"
+            value={metrics.totalTrades}
+            subtitle="Closed positions"
+            icon={BarChart3}
+            iconColor="text-primary"
+            delay={0.5}
+            onClick={() => handleMetricClick("all")}
+          />
+          <MetricCard
+            title="Avg Win"
+            value={formatCurrency(metrics.avgWin, true)}
+            subtitle={`${metrics.avgWinPct}% avg return`}
+            icon={TrendingUp}
+            iconColor="text-gradient-green"
+            valueColor="text-gradient-green"
+            delay={0.6}
+            onClick={() => handleMetricClick("winners")}
+          />
+          <MetricCard
+            title="Avg Loss"
+            value={formatCurrency(-metrics.avgLoss, true)}
+            subtitle={`-${metrics.avgLossPct}% avg return`}
+            icon={TrendingDown}
+            iconColor="text-gradient-red"
+            valueColor="text-gradient-red"
+            delay={0.7}
+            onClick={() => handleMetricClick("losers")}
+          />
+          <MetricCard
+            title="Avg Trade"
+            value={formatCurrency(metrics.avgTrade, true)}
+            subtitle="Expected per trade"
+            icon={Target}
+            iconColor={getPnLColor(metrics.avgTrade)}
+            valueColor={getPnLColor(metrics.avgTrade)}
+            delay={0.8}
+            onClick={() => handleMetricClick("all")}
+          />
+          <MetricCard
+            title="Net R"
+            value={formatR(metrics.netR, true)}
+            subtitle={metrics.rCoverage ? `${metrics.rCoverage}% risk coverage` : "Set risk per position to unlock"}
+            icon={Target}
+            iconColor={(metrics.netR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
+            valueColor={(metrics.netR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
+            delay={0.9}
+            glowClass={(metrics.netR ?? 0) >= 0 ? "glow-green" : "glow-red"}
+            onClick={() => handleMetricClick("all")}
           />
           <MetricCard
             title="Avg R"
@@ -603,42 +686,8 @@ export function DashboardView({
             icon={Target}
             iconColor={(metrics.avgR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
             valueColor={(metrics.avgR ?? 0) >= 0 ? "text-gradient-green" : "text-gradient-red"}
-            delay={0.45}
-          />
-          <MetricCard
-            title="Total Trades"
-            value={metrics.totalTrades}
-            subtitle="Closed positions"
-            icon={BarChart3}
-            iconColor="text-primary"
-            delay={0.5}
-          />
-          <MetricCard
-            title="Avg Win"
-            value={formatCurrency(metrics.avgWin, true)}
-            subtitle={`${metrics.avgWinPct}% avg return`}
-            icon={TrendingUp}
-            iconColor="text-gradient-green"
-            valueColor="text-gradient-green"
-            delay={0.6}
-          />
-          <MetricCard
-            title="Avg Loss"
-            value={formatCurrency(-metrics.avgLoss, true)}
-            subtitle={`-${metrics.avgLossPct}% avg return`}
-            icon={TrendingDown}
-            iconColor="text-gradient-red"
-            valueColor="text-gradient-red"
-            delay={0.7}
-          />
-          <MetricCard
-            title="Avg Trade"
-            value={formatCurrency(metrics.avgTrade, true)}
-            subtitle="Expected per trade"
-            icon={Target}
-            iconColor={getPnLColor(metrics.avgTrade)}
-            valueColor={getPnLColor(metrics.avgTrade)}
-            delay={0.8}
+            delay={1.0}
+            onClick={() => handleMetricClick("all")}
           />
         </div>
 
@@ -656,7 +705,7 @@ export function DashboardView({
 
         {/* Positions Table */}
         <AnimatedCard delay={0.7}>
-          <Card className="border-none shadow-md bg-card/50 backdrop-blur-sm">
+          <Card id="positions-table" className="border-none shadow-md bg-card/50 backdrop-blur-sm scroll-mt-24">
             <CardHeader className="p-4 sm:p-6">
               <CardTitle className="text-base sm:text-lg font-medium flex items-center gap-2">
                 <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
