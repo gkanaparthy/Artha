@@ -484,7 +484,7 @@ function FounderStorySection() {
                     </p>
                     <div className="grid sm:grid-cols-3 gap-4 text-center">
                         <StatsPill value="100+" label="brokers integrated" />
-                        <StatsPill value="Stocks + Options" label="asset classes covered" />
+                        <StatsPill value="Stocks, Options, Crypto & Forex" label="asset classes covered" />
                         <StatsPill value="FIFO + Net R" label="core analytics engine" />
                     </div>
                 </div>
