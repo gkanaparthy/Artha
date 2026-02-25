@@ -33,7 +33,7 @@ const steps = [
 
 export function HowItWorks() {
     return (
-        <section className="py-20 bg-white">
+        <section id="how-it-works" className="py-20 bg-white">
             <div className="container mx-auto px-4 max-w-6xl">
                 <div className="text-center mb-16">
                     <motion.div
@@ -42,10 +42,10 @@ export function HowItWorks() {
                         viewport={{ once: true }}
                     >
                         <h2 className={cn("text-3xl md:text-5xl font-bold text-[#2E4A3B] mb-4", playfair.className)}>
-                            How It Works
+                            Start in 5 minutes. See patterns in your first week.
                         </h2>
                         <p className="text-lg text-[#2E4A3B]/70 max-w-2xl mx-auto">
-                            From connected broker to actionable insights in minutes.
+                            One-time setup, quick tags, and clear weekly coaching tied to your own trades.
                         </p>
                     </motion.div>
                 </div>

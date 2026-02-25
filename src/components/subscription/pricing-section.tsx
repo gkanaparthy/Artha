@@ -137,12 +137,10 @@ export function PricingSection({
                         viewport={{ once: true }}
                     >
                         <h2 className={cn("text-4xl md:text-6xl font-bold text-[#2E4A3B] mb-6", playfair.className)}>
-                            The Last Tool for Your <br />
-                            <span className="italic text-[#E59889]">Trading Edge</span>
+                            Pricing that respects your time
                         </h2>
                         <p className="text-lg text-[#2E4A3B]/70 max-w-2xl mx-auto mb-10">
-                            Stop guessing. Start knowing. Lock in your plan during your free trial
-                            and you won&apos;t be charged until it ends.
+                            Connect your broker and see your first behavioral report in under 10 minutes.
                         </p>
 
                         {/* Billing Switcher */}
@@ -172,7 +170,7 @@ export function PricingSection({
                 <div className="grid md:grid-cols-3 gap-8 items-stretch pt-8">
                     {/* Monthly/Annual Plan */}
                     <PricingCard
-                        name="Artha Pro"
+                        name="Pro"
                         price={billingCycle === "MONTHLY" ? (isFounderActive ? "$12" : "$20") : (isFounderActive ? "$120" : "$200")}
                         subtitle={billingCycle === "MONTHLY" ? "/ month" : "/ year"}
                         description={isFounderActive
@@ -199,7 +197,7 @@ export function PricingSection({
 
                     {/* Lifetime Deal */}
                     <PricingCard
-                        name="Artha Lifetime"
+                        name="Lifetime"
                         price={isFounderActive ? "$99" : "$149"}
                         subtitle=" one-time"
                         description="Pay once, own forever. The ultimate commitment to your trading career. Limited spots available."
@@ -261,6 +259,10 @@ export function PricingSection({
                         </p>
                     </div>
                 )}
+
+                <p className="text-center text-sm text-[#2E4A3B]/60 mt-10">
+                    Every plan includes auto-sync, FIFO P&amp;L, and R-multiple tracking.
+                </p>
             </div>
         </section>
     );

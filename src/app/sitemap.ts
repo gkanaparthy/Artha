@@ -15,6 +15,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
         '/demo',
         '/login',
         '/learn',
+        '/trading-psychology-journal',
+        '/automated-trading-journal',
+        '/behavioral-alpha-trading',
+        '/revenge-trading-cost-calculator',
     ];
 
     const staticEntries = staticRoutes.map((route) => ({

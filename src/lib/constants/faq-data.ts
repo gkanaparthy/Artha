@@ -8,6 +8,10 @@ export const FAQ_DATA = [
         answer: "Connect your brokerage account securely through SnapTrade (trusted by millions). Your trades sync automatically - no manual entry, no CSV uploads, no spreadsheets. We pull your complete trade history and keep it updated daily."
     },
     {
+        question: "Do I have to enter trades manually?",
+        answer: "No. That's the whole point. Artha auto-syncs your trades from connected brokerages, so you don't spend time logging entries by hand."
+    },
+    {
         question: "Can Artha access my money or execute trades?",
         answer: "No. Artha has read-only access. Our integration is strictly for retrieving trade and position history. We have no ability to place trades, modify orders, or transfer funds in your account."
     },
@@ -38,6 +42,10 @@ export const FAQ_DATA = [
     {
         question: "Does Artha Pro include R-multiple analytics?",
         answer: "Yes. Artha Pro includes R-multiple analytics on supported trades, including Net R, Avg R, and risk coverage. Set your planned risk (1R) per position and Artha automatically calculates R outcomes from your synced trades."
+    },
+    {
+        question: "What are R-multiples and why do they matter?",
+        answer: "R-multiple measures return relative to your planned risk. If you risk $100 on a trade and make $200, that's +2R. It helps you judge decision quality and consistency better than P&L alone."
     },
     {
         question: "Do you support options trading?",

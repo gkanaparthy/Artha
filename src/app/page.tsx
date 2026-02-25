@@ -11,6 +11,7 @@ import {
     Target,
     ArrowRight,
     Zap,
+    Brain,
     LucideIcon,
     Menu,
     X,
@@ -86,21 +87,24 @@ export default function LandingPage() {
 
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex items-center gap-8">
-                        <Link href="#features" className="text-[#2E4A3B]/70 hover:text-[#2E4A3B] text-sm font-medium transition-colors">
-                            Features
+                        <Link href="#product" className="text-[#2E4A3B]/70 hover:text-[#2E4A3B] text-sm font-medium transition-colors">
+                            Product
+                        </Link>
+                        <Link href="#how-it-works" className="text-[#2E4A3B]/70 hover:text-[#2E4A3B] text-sm font-medium transition-colors">
+                            How It Works
                         </Link>
                         <Link href="#pricing" className="text-[#2E4A3B]/70 hover:text-[#2E4A3B] text-sm font-medium transition-colors">
                             Pricing
                         </Link>
-                        <Link href="/demo" className="text-[#E59889] font-medium text-sm hover:text-[#E59889]/80 transition-colors">
-                            Try Demo
+                        <Link href="/learn" className="text-[#2E4A3B]/70 hover:text-[#2E4A3B] text-sm font-medium transition-colors">
+                            Blog/Learn
                         </Link>
                         <Link href="/login" className="text-[#2E4A3B] font-medium text-sm hover:opacity-80 transition-opacity">
                             Log in
                         </Link>
                         <Link href="/login">
                             <Button className="bg-[#2E4A3B] hover:bg-[#2E4A3B]/90 text-white rounded-full px-6 h-9 text-sm">
-                                Get Started
+                                Connect Free
                             </Button>
                         </Link>
                     </nav>
@@ -131,11 +135,18 @@ export default function LandingPage() {
                         >
                             <nav className="container mx-auto px-4 py-4 flex flex-col gap-3 max-w-6xl">
                                 <Link
-                                    href="#features"
+                                    href="#product"
                                     onClick={() => setMobileMenuOpen(false)}
                                     className="text-[#2E4A3B]/70 hover:text-[#2E4A3B] text-sm font-medium transition-colors py-2"
                                 >
-                                    Features
+                                    Product
+                                </Link>
+                                <Link
+                                    href="#how-it-works"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="text-[#2E4A3B]/70 hover:text-[#2E4A3B] text-sm font-medium transition-colors py-2"
+                                >
+                                    How It Works
                                 </Link>
                                 <Link
                                     href="#pricing"
@@ -145,11 +156,11 @@ export default function LandingPage() {
                                     Pricing
                                 </Link>
                                 <Link
-                                    href="/demo"
+                                    href="/learn"
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="text-[#E59889] font-medium text-sm hover:text-[#E59889]/80 transition-colors py-2"
+                                    className="text-[#2E4A3B]/70 hover:text-[#2E4A3B] text-sm font-medium transition-colors py-2"
                                 >
-                                    Try Demo
+                                    Blog/Learn
                                 </Link>
                                 <Link
                                     href="/login"
@@ -160,7 +171,7 @@ export default function LandingPage() {
                                 </Link>
                                 <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="mt-2">
                                     <Button className="w-full bg-[#2E4A3B] hover:bg-[#2E4A3B]/90 text-white rounded-full h-10">
-                                        Get Started
+                                        Connect Free
                                     </Button>
                                 </Link>
                             </nav>
@@ -188,11 +199,11 @@ export default function LandingPage() {
                                     Founder pricing: 17 of 100 spots left
                                 </div>
                                 <h1 className={cn("text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.1] mb-4 sm:mb-6", playfair.className)}>
-                                    Stop Losing Money to the <br />
-                                    <span className="italic text-[#4ADE80]">Same Mistakes.</span>
+                                    Stop logging trades by hand. <br />
+                                    <span className="italic text-[#4ADE80]">Start understanding why you lose.</span>
                                 </h1>
                                 <p className="text-base sm:text-lg md:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed px-4 sm:px-0">
-                                    You already know <span className="text-white/80">what</span> you traded. Artha shows you <span className="text-white/80">why</span> you lost — then helps you stop, with Net R and Avg R clarity built into Pro.
+                                    Artha auto-syncs from 100+ brokers and shows the exact dollar cost of FOMO, revenge trades, and broken rules. No spreadsheets. No manual entry. Ever.
                                 </p>
 
                             </motion.div>
@@ -205,13 +216,13 @@ export default function LandingPage() {
                             >
                                 <Link href="/login" className="w-full sm:w-auto">
                                     <Button className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-full bg-[#4ADE80] hover:bg-[#4ADE80]/90 text-[#1A2F25] font-bold text-base sm:text-lg shadow-lg shadow-[#4ADE80]/20 hover:shadow-xl hover:shadow-[#4ADE80]/30 transition-all group">
-                                        Start Journaling Free
+                                        Connect Your Broker Free
                                         <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
                                     </Button>
                                 </Link>
                                 <Link href="/demo" className="w-full sm:w-auto">
                                     <Button variant="outline" className="w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-full border-white/20 text-white hover:bg-white/5 text-base sm:text-lg">
-                                        See How It Works
+                                        Watch 2-Min Demo
                                     </Button>
                                 </Link>
                             </motion.div>
@@ -222,7 +233,7 @@ export default function LandingPage() {
                                 transition={{ duration: 0.6, delay: 0.3 }}
                                 className="text-xs sm:text-sm text-white/40 font-medium"
                             >
-                                30-day free trial &middot; No credit card required
+                                100+ brokers &middot; AES-256 encrypted &middot; Read-only access &middot; Free 30-day trial
                             </motion.p>
 
                             {/* Dashboard Preview Mockup */}
@@ -287,24 +298,36 @@ export default function LandingPage() {
                     </div>
                 </section>
 
-                {/* Trust Strip */}
-                <section className="py-6 sm:py-8 bg-white border-b border-[#2E4A3B]/5">
+                {/* Problem Section */}
+                <section className="py-14 sm:py-16 bg-white border-b border-[#2E4A3B]/5">
+                    <div className="container mx-auto px-4 max-w-4xl text-center">
+                        <h2 className={cn("text-2xl sm:text-3xl md:text-4xl font-bold text-[#2E4A3B] mb-5", playfair.className)}>
+                            Your P&amp;L tells you what happened. It never tells you why.
+                        </h2>
+                        <p className="text-[#2E4A3B]/70 text-base sm:text-lg leading-relaxed">
+                            You already know your win rate and net P&amp;L. The real question is what keeps leaking money:
+                            the setup you overtrade, the Tuesday afternoon FOMO entry, the one trade where you ignored your stop.
+                            Artha connects behavior to dollars so you can fix the pattern, not just review the result.
+                        </p>
+                    </div>
+                </section>
+
+                {/* Differentiator Section */}
+                <section className="py-16 sm:py-20 bg-[#FAFBF6]">
                     <div className="container mx-auto px-4 max-w-6xl">
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 text-[#2E4A3B]/50">
-                            <div className="flex items-center gap-2">
-                                <TrendingUp className="h-4 w-4" />
-                                <span className="text-xs sm:text-sm font-medium">100+ brokers supported</span>
-                            </div>
-                            <div className="hidden sm:block w-px h-4 bg-[#2E4A3B]/10" />
-                            <div className="flex items-center gap-2">
-                                <Lock className="h-4 w-4" />
-                                <span className="text-xs sm:text-sm font-medium">AES-256 encrypted &middot; Read-only access</span>
-                            </div>
-                            <div className="hidden sm:block w-px h-4 bg-[#2E4A3B]/10" />
-                            <div className="flex items-center gap-2">
-                                <Shield className="h-4 w-4" />
-                                <span className="text-xs sm:text-sm font-medium">Zero manual entry</span>
-                            </div>
+                        <div className="text-center mb-10">
+                            <h2 className={cn("text-3xl md:text-5xl font-bold text-[#2E4A3B] mb-4", playfair.className)}>
+                                The journal that fills itself
+                            </h2>
+                            <p className="text-[#2E4A3B]/70 text-base sm:text-lg max-w-3xl mx-auto">
+                                Other journals ask you to log every trade by hand. Artha auto-syncs with your broker,
+                                calculates FIFO P&amp;L and R-multiples, and gets you to your first useful insight fast.
+                            </p>
+                        </div>
+                        <div className="grid sm:grid-cols-3 gap-4 sm:gap-6">
+                            <StatsPill value="100+" label="brokers supported" />
+                            <StatsPill value="0" label="manual entries required" />
+                            <StatsPill value="< 5 min" label="to first insight" />
                         </div>
                     </div>
                 </section>
@@ -315,42 +338,54 @@ export default function LandingPage() {
 
                 <PsychologyPreview />
 
+                <BeforeAfterSection />
+
                 {/* Features Section */}
-                <section id="features" className="py-16 sm:py-20 md:py-24 bg-white relative">
+                <section id="product" className="py-16 sm:py-20 md:py-24 bg-white relative">
                     <div className="container mx-auto px-4 max-w-6xl">
                         <div className="text-center mb-12 sm:mb-16">
                             <h2 className={cn("text-2xl sm:text-3xl md:text-4xl font-bold text-[#2E4A3B] mb-3 sm:mb-4", playfair.className)}>
-                                Everything you need to grow
+                                What changes when your data works for you
                             </h2>
                             <p className="text-[#2E4A3B]/70 text-base sm:text-lg max-w-2xl mx-auto px-4">
-                                Artha replaces your messy spreadsheets with automated syncing and powerful insights.
+                                Each signal ties to dollars lost, risk taken, or time saved.
                             </p>
                         </div>
 
-                        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
                             <FeatureCard
                                 icon={Target}
-                                title="Psychology Tracking"
-                                description="Tag every trade with setups, mistakes, and emotions. See exactly which patterns cost you money — and which make it."
+                                title="Behavioral Alpha"
+                                description="See the dollar cost of every mistake: FOMO entries, revenge trades, and rule breaks. Not a feeling. A number."
                                 accentColor="border-t-[#E59889]"
                             />
                             <FeatureCard
                                 icon={Zap}
-                                title="Zero Manual Entry"
-                                description="Connect your broker once. Every trade syncs automatically from 100+ brokerages including Interactive Brokers, Schwab, Zerodha, and Robinhood."
+                                title="Setup Analytics"
+                                description="See which setups make money and which bleed your account. Filter by setup, timeframe, symbol, and emotion."
                                 accentColor="border-t-[#4ADE80]"
                             />
                             <FeatureCard
                                 icon={BarChart3}
-                                title="Real P&L Clarity"
-                                description="FIFO-calculated profits, win rates, and R-multiples (Net R, Avg R, risk coverage). Filter by date, account, symbol, or tag to find what's working."
+                                title="R-Multiple Tracking"
+                                description="Net R, Avg R, and risk coverage by trade and setup. Know if your risk is actually getting paid."
                                 accentColor="border-t-[#2E4A3B]"
+                            />
+                            <FeatureCard
+                                icon={Brain}
+                                title="AI Coaching Insights"
+                                description="Weekly behavioral reports that call out your biggest leaks and what to fix next, using your actual trading data."
+                                accentColor="border-t-[#7BAE9F]"
                             />
                         </div>
                     </div>
                 </section>
 
                 <BrokerLogos />
+
+                <FounderStorySection />
+
+                <SocialProofSection />
 
                 <PricingSection />
 
@@ -359,6 +394,14 @@ export default function LandingPage() {
                 <BlogPreview />
 
                 <FinalCTA />
+
+                <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#2E4A3B]/10 bg-[#FAFBF6]/95 p-3 backdrop-blur md:hidden">
+                    <Link href="/login" className="block">
+                        <Button className="w-full h-11 rounded-full bg-[#2E4A3B] hover:bg-[#2E4A3B]/90 text-white font-semibold">
+                            Connect Your Broker Free
+                        </Button>
+                    </Link>
+                </div>
             </main>
 
             <footer className="bg-[#1A2F25] text-white py-8 sm:py-10 md:py-12">
@@ -401,9 +444,100 @@ function FeatureCard({ icon: Icon, title, description, accentColor }: { icon: Lu
                 {description}
             </p>
             <Link href="/demo" className="text-[#E59889] font-medium text-sm hover:underline inline-flex items-center gap-1 group">
-                See it in action
+                Connect free
                 <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
             </Link>
         </div>
     )
+}
+
+function StatsPill({ value, label }: { value: string; label: string }) {
+    return (
+        <div className="rounded-2xl border border-[#2E4A3B]/10 bg-white p-6 text-center shadow-sm">
+            <div className="text-2xl sm:text-3xl font-bold text-[#2E4A3B]">{value}</div>
+            <div className="mt-1 text-sm text-[#2E4A3B]/60">{label}</div>
+        </div>
+    );
+}
+
+function FounderStorySection() {
+    return (
+        <section className="py-16 sm:py-20 bg-white">
+            <div className="container mx-auto px-4 max-w-4xl">
+                <h2 className={cn("text-3xl md:text-5xl font-bold text-[#2E4A3B] mb-6 text-center", playfair.className)}>
+                    Built by a trader who got tired of guessing
+                </h2>
+                <div className="rounded-3xl border border-[#2E4A3B]/10 bg-[#FAFBF6] p-6 sm:p-8">
+                    <p className="text-[#2E4A3B]/75 leading-relaxed mb-4">
+                        I kept spreadsheets, tested other journals, and still repeated the same mistakes. I could see what I traded,
+                        but not why I kept leaking money.
+                    </p>
+                    <p className="text-[#2E4A3B]/75 leading-relaxed mb-6">
+                        I built Artha to track the trader, not just the trades. It links your behavior to real dollars so you can
+                        fix patterns, protect risk, and improve consistency.
+                    </p>
+                    <div className="grid sm:grid-cols-3 gap-4 text-center">
+                        <StatsPill value="100+" label="brokers integrated" />
+                        <StatsPill value="Stocks + Options" label="asset classes covered" />
+                        <StatsPill value="FIFO + Net R" label="core analytics engine" />
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+}
+
+function SocialProofSection() {
+    return (
+        <section className="py-16 sm:py-20 bg-[#FAFBF6]">
+            <div className="container mx-auto px-4 max-w-4xl">
+                <h2 className={cn("text-3xl md:text-5xl font-bold text-[#2E4A3B] mb-6 text-center", playfair.className)}>
+                    What traders are finding
+                </h2>
+                <div className="rounded-3xl border border-[#2E4A3B]/10 bg-white p-6 sm:p-8 text-center">
+                    <p className="text-[#2E4A3B]/70 text-lg mb-6">
+                        Join 23 early traders already using Artha.
+                    </p>
+                    <Link href="/login">
+                        <Button className="rounded-full bg-[#2E4A3B] hover:bg-[#2E4A3B]/90 text-white px-8">
+                            Connect Your Broker Free
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+        </section>
+    );
+}
+
+function BeforeAfterSection() {
+    return (
+        <section className="py-16 sm:py-20 bg-white">
+            <div className="container mx-auto px-4 max-w-5xl">
+                <h2 className={cn("text-3xl md:text-5xl font-bold text-[#2E4A3B] mb-6 text-center", playfair.className)}>
+                    Week 1 vs Week 8
+                </h2>
+                <p className="text-[#2E4A3B]/70 text-center max-w-2xl mx-auto mb-10">
+                    What changes when you stop guessing and start measuring behavior with dollars and R-multiples.
+                </p>
+                <div className="grid md:grid-cols-2 gap-6">
+                    <div className="rounded-3xl border border-[#2E4A3B]/10 bg-[#FAFBF6] p-6">
+                        <div className="text-sm font-semibold text-[#2E4A3B]/60 mb-3">Week 1</div>
+                        <ul className="space-y-2 text-[#2E4A3B]/75">
+                            <li>Manual journaling drops off after a few days</li>
+                            <li>Knows net P&amp;L, but not what is causing losses</li>
+                            <li>Risk is inconsistent across setups</li>
+                        </ul>
+                    </div>
+                    <div className="rounded-3xl border border-[#2E4A3B]/10 bg-[#E8EFE0]/45 p-6">
+                        <div className="text-sm font-semibold text-[#2E4A3B]/60 mb-3">Week 8</div>
+                        <ul className="space-y-2 text-[#2E4A3B]/80">
+                            <li>Auto-synced history with zero manual entry</li>
+                            <li>Behavioral leaks tracked in dollars</li>
+                            <li>Net R and Avg R highlight decision quality</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
 }
