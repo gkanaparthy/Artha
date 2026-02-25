@@ -32,7 +32,7 @@ const featuredPosts = [
 
 export function BlogPreview() {
     return (
-        <section className="py-24 bg-[#0A110D]">
+        <section className="py-24 bg-[#080A08]">
             <div className="container mx-auto px-4 max-w-6xl">
                 <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
                     <div className="max-w-2xl">

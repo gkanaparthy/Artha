@@ -68,7 +68,7 @@ export function HowItWorks() {
                                 <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center", step.color)}>
                                     <step.icon className="h-7 w-7" />
                                 </div>
-                                <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-[#4ADE80] text-[#0A110D] text-xs font-bold flex items-center justify-center">
+                                <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-[#4ADE80] text-[#080A08] text-xs font-bold flex items-center justify-center">
                                     {step.number}
                                 </div>
                             </div>

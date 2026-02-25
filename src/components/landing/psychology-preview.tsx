@@ -10,7 +10,7 @@ const playfair = Playfair_Display({ subsets: ["latin"] });
 
 export function PsychologyPreview() {
     return (
-        <section className="py-20 bg-[#0A110D] overflow-hidden">
+        <section className="py-20 bg-[#080A08] overflow-hidden">
             <div className="container mx-auto px-4 max-w-6xl">
                 <div className="text-center mb-16">
                     <h2 className={cn("text-3xl md:text-5xl font-bold text-white mb-6", playfair.className)}>
@@ -88,7 +88,7 @@ export function PsychologyPreview() {
                                     <span className="font-semibold text-white">Breakout (🎯)</span>
                                     <span className="text-green-600">+$12,359.50</span>
                                 </div>
-                                <div className="h-3 w-full bg-[#0A110D] rounded-full overflow-hidden">
+                                <div className="h-3 w-full bg-[#080A08] rounded-full overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
                                         whileInView={{ width: "100%" }}
@@ -104,7 +104,7 @@ export function PsychologyPreview() {
                                     <span className="font-semibold text-white">Support Bounce (🛡️)</span>
                                     <span className="text-green-600">+$4,226.35</span>
                                 </div>
-                                <div className="h-3 w-full bg-[#0A110D] rounded-full overflow-hidden">
+                                <div className="h-3 w-full bg-[#080A08] rounded-full overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
                                         whileInView={{ width: "45%" }}
@@ -120,7 +120,7 @@ export function PsychologyPreview() {
                                     <span className="font-semibold text-white">ABCD Pattern</span>
                                     <span className="text-green-600">+$1,850.00</span>
                                 </div>
-                                <div className="h-3 w-full bg-[#0A110D] rounded-full overflow-hidden">
+                                <div className="h-3 w-full bg-[#080A08] rounded-full overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
                                         whileInView={{ width: "20%" }}
@@ -180,7 +180,7 @@ export function PsychologyPreview() {
                             </div>
                         </div>
 
-                        <div className="mt-8 p-4 rounded-2xl bg-[#0A110D] text-xs text-white/60 text-center">
+                        <div className="mt-8 p-4 rounded-2xl bg-[#080A08] text-xs text-white/60 text-center">
                             "You are significantly more profitable when trading with a 'Focused' mindset."
                         </div>
                     </motion.div>

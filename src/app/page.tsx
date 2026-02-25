@@ -37,7 +37,7 @@ export default function LandingPage() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     return (
-        <div className={cn("min-h-screen bg-[#0A110D] flex flex-col", inter.className)}>
+        <div className={cn("min-h-screen bg-[#080A08] flex flex-col", inter.className)}>
             {/* JSON-LD for GEO/SEO */}
             <script
                 type="application/ld+json"
@@ -74,7 +74,7 @@ export default function LandingPage() {
                 }}
             />
             {/* Navbar */}
-            <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-[#0A110D]/80 backdrop-blur-md">
+            <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-[#080A08]/80 backdrop-blur-md">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-6xl">
                     <div className="flex items-center gap-2 sm:gap-3">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 relative flex items-center justify-center">
@@ -103,7 +103,7 @@ export default function LandingPage() {
                             Log in
                         </Link>
                         <Link href="/login">
-                            <Button className="bg-white hover:bg-white/90 text-[#0A110D] rounded-full px-6 h-9 text-sm">
+                            <Button className="bg-white hover:bg-white/90 text-[#080A08] rounded-full px-6 h-9 text-sm">
                                 Connect Free
                             </Button>
                         </Link>
@@ -131,7 +131,7 @@ export default function LandingPage() {
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className="md:hidden border-t border-white/5 bg-[#0A110D]/95 backdrop-blur-md"
+                            className="md:hidden border-t border-white/5 bg-[#080A08]/95 backdrop-blur-md"
                         >
                             <nav className="container mx-auto px-4 py-4 flex flex-col gap-3 max-w-6xl">
                                 <Link
@@ -170,7 +170,7 @@ export default function LandingPage() {
                                     Log in
                                 </Link>
                                 <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="mt-2">
-                                    <Button className="w-full bg-white hover:bg-white/90 text-[#0A110D] rounded-full h-10">
+                                    <Button className="w-full bg-white hover:bg-white/90 text-[#080A08] rounded-full h-10">
                                         Connect Free
                                     </Button>
                                 </Link>
@@ -182,7 +182,7 @@ export default function LandingPage() {
 
             <main className="flex-1 pb-20 md:pb-0">
                 {/* Hero Section — Dark Gradient */}
-                <section className="relative overflow-hidden pt-16 sm:pt-20 md:pt-28 pb-16 sm:pb-24 md:pb-32 bg-gradient-to-b from-[#1A2F25] via-[#1A2F25] to-[#2E4A3B]">
+                <section className="relative overflow-hidden pt-16 sm:pt-20 md:pt-28 pb-16 sm:pb-24 md:pb-32 bg-[#1A2F25]">
                     {/* Subtle radial glows */}
                     <div className="absolute top-0 right-0 w-[50vw] h-[50vw] bg-[#4ADE80]/5 rounded-full blur-[120px] -translate-y-1/3 translate-x-1/4 pointer-events-none" />
                     <div className="absolute bottom-0 left-0 w-[40vw] h-[40vw] bg-[#E59889]/5 rounded-full blur-[100px] translate-y-1/4 -translate-x-1/4 pointer-events-none" />
@@ -298,7 +298,7 @@ export default function LandingPage() {
                     </div>
                 </section>
 
-                <section className="bg-[#0A110D] border-t border-white/10 border-b border-white/10">
+                <section className="bg-[#080A08] border-t border-white/10 border-b border-white/10">
                     <div className="container mx-auto px-4 max-w-6xl py-3 text-center text-xs sm:text-sm text-white/80">
                         100+ brokers &middot; AES-256 encrypted &middot; Read-only access &middot; Free trial
                     </div>
@@ -319,7 +319,7 @@ export default function LandingPage() {
                 </section>
 
                 {/* Differentiator Section */}
-                <section className="py-16 sm:py-20 bg-[#0A110D]">
+                <section className="py-16 sm:py-20 bg-[#080A08]">
                     <div className="container mx-auto px-4 max-w-6xl">
                         <div className="text-center mb-10">
                             <h2 className={cn("text-3xl md:text-5xl font-bold text-white mb-4", playfair.className)}>
@@ -401,16 +401,16 @@ export default function LandingPage() {
 
                 <FinalCTA />
 
-                <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[#0A110D]/95 p-3 backdrop-blur md:hidden">
+                <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[#080A08]/95 p-3 backdrop-blur md:hidden">
                     <Link href="/login" className="block">
-                        <Button className="w-full h-11 rounded-full bg-white hover:bg-white/90 text-[#0A110D] font-semibold">
+                        <Button className="w-full h-11 rounded-full bg-white hover:bg-white/90 text-[#080A08] font-semibold">
                             Connect Your Broker Free
                         </Button>
                     </Link>
                 </div>
             </main>
 
-            <footer className="bg-[#0A110D] text-white py-8 sm:py-10 md:py-12">
+            <footer className="bg-[#080A08] text-white py-8 sm:py-10 md:py-12">
                 <div className="container mx-auto px-4 max-w-6xl flex flex-col md:flex-row justify-between items-center gap-6 sm:gap-8">
                     <div className="flex items-center gap-2 sm:gap-3">
                         <div className="w-7 h-7 sm:w-8 sm:h-8 relative flex items-center justify-center">
@@ -438,7 +438,7 @@ export default function LandingPage() {
 function FeatureCard({ icon: Icon, title, description, accentColor }: { icon: LucideIcon, title: string, description: string, accentColor: string }) {
     return (
         <div className={cn(
-            "p-6 sm:p-8 rounded-xl sm:rounded-2xl bg-[#0A110D] border border-white/5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300",
+            "p-6 sm:p-8 rounded-xl sm:rounded-2xl bg-[#080A08] border border-white/5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300",
             "border-t-[3px]",
             accentColor
         )}>
@@ -473,7 +473,7 @@ function FounderStorySection() {
                 <h2 className={cn("text-3xl md:text-5xl font-bold text-white mb-6 text-center", playfair.className)}>
                     Built by a trader who got tired of guessing
                 </h2>
-                <div className="rounded-3xl border border-white/10 bg-[#0A110D] p-6 sm:p-8">
+                <div className="rounded-3xl border border-white/10 bg-[#080A08] p-6 sm:p-8">
                     <p className="text-white/75 leading-relaxed mb-4">
                         I kept spreadsheets, tested other journals, and still repeated the same mistakes. I could see what I traded,
                         but not why I kept leaking money.
@@ -495,7 +495,7 @@ function FounderStorySection() {
 
 function SocialProofSection() {
     return (
-        <section className="py-16 sm:py-20 bg-[#0A110D]">
+        <section className="py-16 sm:py-20 bg-[#080A08]">
             <div className="container mx-auto px-4 max-w-4xl">
                 <h2 className={cn("text-3xl md:text-5xl font-bold text-white mb-6 text-center", playfair.className)}>
                     What traders are finding
@@ -505,7 +505,7 @@ function SocialProofSection() {
                         Serious traders are already using Artha to track their behavioral edge. Join them.
                     </p>
                     <Link href="/login">
-                        <Button className="rounded-full bg-white hover:bg-white/90 text-[#0A110D] px-8">
+                        <Button className="rounded-full bg-white hover:bg-white/90 text-[#080A08] px-8">
                             Connect Your Broker Free
                         </Button>
                     </Link>
@@ -526,7 +526,7 @@ function BeforeAfterSection() {
                     What changes when you stop guessing and start measuring behavior with dollars and R-multiples.
                 </p>
                 <div className="grid md:grid-cols-2 gap-6">
-                    <div className="rounded-3xl border border-white/10 bg-[#0A110D] p-6">
+                    <div className="rounded-3xl border border-white/10 bg-[#080A08] p-6">
                         <div className="text-sm font-semibold text-white/60 mb-3">Week 1</div>
                         <ul className="space-y-2 text-white/75">
                             <li>Manual journaling drops off after a few days</li>

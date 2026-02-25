@@ -18,7 +18,7 @@ const features = [
 
 export function ComparisonTable() {
     return (
-        <section className="py-20 bg-[#0A110D]">
+        <section className="py-20 bg-[#080A08]">
             <div className="container mx-auto px-4 max-w-4xl">
                 <div className="text-center mb-16">
                     <h2 className={cn("text-3xl md:text-5xl font-bold text-white mb-6", playfair.className)}>
@@ -32,7 +32,7 @@ export function ComparisonTable() {
                 <div className="overflow-x-auto rounded-3xl border border-white/10 shadow-lg bg-[#11211A]">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-[#0A110D]">
+                            <tr className="bg-[#080A08]">
                                 <th className="p-6 text-sm font-bold text-white/50 uppercase tracking-wider">Features</th>
                                 <th className="p-6 text-sm font-bold text-white/50 uppercase tracking-wider text-center">Spreadsheets</th>
                                 <th className="p-6 text-sm font-bold text-white/50 uppercase tracking-wider text-center">Other Journals</th>
@@ -46,7 +46,7 @@ export function ComparisonTable() {
                         </thead>
                         <tbody className="divide-y divide-[#2E4A3B]/5">
                             {features.map((feature, idx) => (
-                                <tr key={idx} className="hover:bg-[#0A110D]/80 transition-colors">
+                                <tr key={idx} className="hover:bg-[#080A08]/80 transition-colors">
                                     <td className="p-6 font-medium text-white">{feature.name}</td>
                                     <td className="p-6 text-center">
                                         {typeof feature.spreadsheet === "boolean" ? (

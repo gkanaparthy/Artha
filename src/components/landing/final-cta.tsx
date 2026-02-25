@@ -11,7 +11,7 @@ const playfair = Playfair_Display({ subsets: ["latin"] });
 
 export function FinalCTA() {
     return (
-        <section className="relative py-24 md:py-32 bg-[#0A110D] overflow-hidden">
+        <section className="relative py-24 md:py-32 bg-[#080A08] overflow-hidden">
             {/* Subtle radial glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#4ADE80]/5 rounded-full blur-[120px] pointer-events-none" />
 
