@@ -11,8 +11,8 @@ const features = [
     { name: "Manual entry needed", spreadsheet: "All of it", other: "Most of it", artha: "None" },
     { name: "R-multiple analytics", spreadsheet: "DIY", other: "Rare", artha: "Built in" },
     { name: "FIFO P&L", spreadsheet: "Manual", other: "Varies", artha: "Automatic" },
-    { name: "Behavioral cost in $", spreadsheet: false, other: false, artha: "Yes" },
-    { name: "AI insights", spreadsheet: false, other: false, artha: "Yes" },
+    { name: "Behavioral cost in $", spreadsheet: "No", other: "No", artha: "Yes" },
+    { name: "AI insights", spreadsheet: "No", other: "No", artha: "Yes" },
     { name: "Price", spreadsheet: "Free", other: "$20-50/mo", artha: "$12/mo or $99 lifetime" },
 ];
 

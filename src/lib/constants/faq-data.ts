@@ -1,15 +1,23 @@
 export const FAQ_DATA = [
     {
-        question: "Is Artha safe to use?",
-        answer: "Yes. Artha is built with security as a priority. We use bank-level encryption (AES-256-GCM) and never store your brokerage credentials. Your connection is read-only, meaning we cannot execute trades or move funds. We use SnapTrade, a regulated provider trusted by major financial institutions, to handle the heavy lifting."
+        question: "Do I have to enter trades manually?",
+        answer: "No. That's the whole point. Artha auto-syncs your trades from connected brokerages, so you don't spend time logging entries by hand."
+    },
+    {
+        question: "How is Artha different from other trading journals?",
+        answer: "Most journals just track P&L. Artha tracks your psychology and risk-adjusted outcomes. Tag every trade with setups, mistakes, and emotions, then review Behavioral Alpha plus Pro R-multiple analytics (Net R, Avg R, and risk coverage) to see what actually works."
+    },
+    {
+        question: "What are R-multiples?",
+        answer: "R-multiple measures return relative to your planned risk. If you risk $100 on a trade and make $200, that's +2R. It helps you judge decision quality and consistency better than P&L alone."
+    },
+    {
+        question: "Is my data secure?",
+        answer: "Yes. Artha is built with security as a priority. We use bank-level encryption (AES-256-GCM) and never store your brokerage credentials. Your connection is read-only, meaning we cannot execute trades or move funds. We use SnapTrade, a regulated provider trusted by major financial institutions."
     },
     {
         question: "How does auto-sync work?",
         answer: "Connect your brokerage account securely through SnapTrade (trusted by millions). Your trades sync automatically - no manual entry, no CSV uploads, no spreadsheets. We pull your complete trade history and keep it updated daily."
-    },
-    {
-        question: "Do I have to enter trades manually?",
-        answer: "No. That's the whole point. Artha auto-syncs your trades from connected brokerages, so you don't spend time logging entries by hand."
     },
     {
         question: "Can Artha access my money or execute trades?",
@@ -36,16 +44,8 @@ export const FAQ_DATA = [
         answer: "Yes! Every new user gets a full 30-day free trial of Artha Pro. You can cancel anytime before the trial ends to strictly avoid being charged. After that, choose between monthly ($12/mo founder pricing) or annual plans, or grab lifetime access for a one-time payment."
     },
     {
-        question: "How is this different from other trading journals?",
-        answer: "Most journals just track P&L. Artha tracks your psychology and risk-adjusted outcomes. Tag every trade with setups (Breakout, Support Bounce), mistakes (FOMO, Revenge Trade), and emotions (Fear, Greed, Focused), then review Behavioral Alpha plus Pro R-multiple analytics (Net R, Avg R, and risk coverage) to see what actually works."
-    },
-    {
         question: "Does Artha Pro include R-multiple analytics?",
         answer: "Yes. Artha Pro includes R-multiple analytics on supported trades, including Net R, Avg R, and risk coverage. Set your planned risk (1R) per position and Artha automatically calculates R outcomes from your synced trades."
-    },
-    {
-        question: "What are R-multiples and why do they matter?",
-        answer: "R-multiple measures return relative to your planned risk. If you risk $100 on a trade and make $200, that's +2R. It helps you judge decision quality and consistency better than P&L alone."
     },
     {
         question: "Do you support options trading?",

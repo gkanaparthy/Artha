@@ -180,7 +180,7 @@ export default function LandingPage() {
                 </AnimatePresence>
             </header>
 
-            <main className="flex-1">
+            <main className="flex-1 pb-20 md:pb-0">
                 {/* Hero Section — Dark Gradient */}
                 <section className="relative overflow-hidden pt-16 sm:pt-20 md:pt-28 pb-16 sm:pb-24 md:pb-32 bg-gradient-to-b from-[#1A2F25] via-[#1A2F25] to-[#2E4A3B]">
                     {/* Subtle radial glows */}
@@ -295,6 +295,12 @@ export default function LandingPage() {
                                 </motion.div>
                             </motion.div>
                         </div>
+                    </div>
+                </section>
+
+                <section className="bg-[#1A2F25] border-t border-white/10 border-b border-[#2E4A3B]/10">
+                    <div className="container mx-auto px-4 max-w-6xl py-3 text-center text-xs sm:text-sm text-white/80">
+                        100+ brokers &middot; AES-256 encrypted &middot; Read-only access &middot; Free trial
                     </div>
                 </section>
 
@@ -443,7 +449,7 @@ function FeatureCard({ icon: Icon, title, description, accentColor }: { icon: Lu
             <p className="text-sm sm:text-base text-[#2E4A3B]/70 leading-relaxed mb-4">
                 {description}
             </p>
-            <Link href="/demo" className="text-[#E59889] font-medium text-sm hover:underline inline-flex items-center gap-1 group">
+            <Link href="/login" className="text-[#E59889] font-medium text-sm hover:underline inline-flex items-center gap-1 group">
                 Connect free
                 <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
             </Link>
@@ -496,7 +502,7 @@ function SocialProofSection() {
                 </h2>
                 <div className="rounded-3xl border border-[#2E4A3B]/10 bg-white p-6 sm:p-8 text-center">
                     <p className="text-[#2E4A3B]/70 text-lg mb-6">
-                        Join 23 early traders already using Artha.
+                        23 traders already tracking their behavioral edge. Join them.
                     </p>
                     <Link href="/login">
                         <Button className="rounded-full bg-[#2E4A3B] hover:bg-[#2E4A3B]/90 text-white px-8">

@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: {
-    default: "Artha - Automated Trading Journal & R-Multiple Analytics",
+    default: "Artha: See What Your Trading Behavior Actually Costs You",
     template: "%s | Artha",
   },
   description: "Automated trading journal for serious traders. Sync trades instantly, track psychology, and measure performance with FIFO P&L plus R-multiple analytics in Artha Pro.",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://arthatrades.com",
     siteName: "Artha",
-    title: "Artha - Automated Trading Journal & R-Multiple Analytics",
+    title: "Artha: See What Your Trading Behavior Actually Costs You",
     description: "Automated trading journal for serious traders. Track psychology, FIFO P&L, and R-multiple analytics in Artha Pro.",
     images: [
       {
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Artha - Automated Trading Journal & R-Multiple Analytics",
+    title: "Artha: See What Your Trading Behavior Actually Costs You",
     description: "Automated trading journal for serious traders. Track psychology, FIFO P&L, and R-multiple analytics in Artha Pro.",
     images: ["https://arthatrades.com/og-image.png"],
     creator: "@arthatrades",
