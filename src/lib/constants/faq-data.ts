@@ -37,7 +37,7 @@ export const FAQ_DATA = [
     },
     {
         question: "What brokers do you support?",
-        answer: "100+ brokerages including Robinhood, Fidelity, Interactive Brokers, Zerodha (India), Schwab, Webull, Trading 212, Coinbase, Binance, and more. Coverage includes US, Canada, India, Europe, and Australia."
+        answer: "100+ brokerages including Robinhood, Fidelity, Interactive Brokers, Zerodha (India), Schwab, Webull, and Trading 212. We also fully support Crypto (Coinbase, Binance, Kraken) and Forex (OANDA, Forex.com)."
     },
     {
         question: "Is there a free trial?",
