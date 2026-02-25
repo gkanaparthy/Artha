@@ -20,9 +20,9 @@ const brokers = [
 
 export function BrokerLogos() {
     return (
-        <section className="py-20 bg-[#FAFBF6]">
+        <section className="py-20 bg-[#0A110D]">
             <div className="container mx-auto px-4 max-w-6xl text-center">
-                <h2 className={cn("text-2xl md:text-3xl font-bold text-[#2E4A3B] mb-12", playfair.className)}>
+                <h2 className={cn("text-2xl md:text-3xl font-bold text-white mb-12", playfair.className)}>
                     Works with your broker
                 </h2>
 
@@ -31,7 +31,7 @@ export function BrokerLogos() {
                         <motion.div
                             key={idx}
                             whileHover={{ scale: 1.05 }}
-                            className="bg-white p-6 rounded-2xl border border-[#2E4A3B]/5 shadow-sm flex items-center justify-center transition-all cursor-default group h-24"
+                            className="bg-[#11211A] p-6 rounded-2xl border border-white/5 shadow-sm flex items-center justify-center transition-all cursor-default group h-24"
                         >
                             {broker.logo ? (
                                 <div className="relative w-full h-full flex items-center justify-center grayscale group-hover:grayscale-0 transition-all opacity-60 group-hover:opacity-100">
@@ -45,10 +45,10 @@ export function BrokerLogos() {
                                             (e.target as any).nextSibling.style.display = 'block';
                                         }}
                                     />
-                                    <span className="font-bold text-[#2E4A3B] text-lg hidden">{broker.name}</span>
+                                    <span className="font-bold text-white text-lg hidden">{broker.name}</span>
                                 </div>
                             ) : (
-                                <span className="font-bold text-[#2E4A3B] text-lg opacity-40 group-hover:opacity-100 transition-opacity duration-300">
+                                <span className="font-bold text-white text-lg opacity-40 group-hover:opacity-100 transition-opacity duration-300">
                                     {broker.name}
                                 </span>
                             )}
@@ -57,10 +57,10 @@ export function BrokerLogos() {
                 </div>
 
                 <div className="flex flex-wrap items-center justify-center gap-4">
-                    <p className="text-[#2E4A3B]/50 text-sm font-medium">
+                    <p className="text-white/50 text-sm font-medium">
                         100+ brokerages supported including Interactive Brokers, Zerodha, and more
                     </p>
-                    <div className="px-3 py-1 rounded-full bg-[#E8EFE0] text-[#2E4A3B] text-xs font-bold border border-[#2E4A3B]/5">
+                    <div className="px-3 py-1 rounded-full bg-white/5 text-white text-xs font-bold border border-white/5">
                         +90 MORE
                     </div>
                 </div>

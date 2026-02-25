@@ -14,13 +14,13 @@ const playfair = Playfair_Display({ subsets: ["latin"] });
 
 export function FAQSection() {
     return (
-        <section className="py-20 bg-white">
+        <section className="py-20 bg-[#11211A]">
             <div className="container mx-auto px-4 max-w-3xl">
                 <div className="text-center mb-16">
-                    <h2 className={cn("text-3xl md:text-5xl font-bold text-[#2E4A3B] mb-6", playfair.className)}>
+                    <h2 className={cn("text-3xl md:text-5xl font-bold text-white mb-6", playfair.className)}>
                         Frequently Asked Questions
                     </h2>
-                    <p className="text-lg text-[#2E4A3B]/70 mx-auto">
+                    <p className="text-lg text-white/70 mx-auto">
                         Everything you need to know about Artha.
                     </p>
                 </div>
@@ -30,12 +30,12 @@ export function FAQSection() {
                         <AccordionItem
                             key={idx}
                             value={`item-${idx}`}
-                            className="border border-[#2E4A3B]/10 rounded-2xl px-6 bg-[#FAFBF6]/50"
+                            className="border border-white/10 rounded-2xl px-6 bg-[#0A110D]/50"
                         >
-                            <AccordionTrigger className="text-left font-bold text-[#2E4A3B] hover:no-underline py-6">
+                            <AccordionTrigger className="text-left font-bold text-white hover:no-underline py-6">
                                 {faq.question}
                             </AccordionTrigger>
-                            <AccordionContent className="text-[#2E4A3B]/70 pb-6 leading-relaxed">
+                            <AccordionContent className="text-white/70 pb-6 leading-relaxed">
                                 {faq.answer}
                             </AccordionContent>
                         </AccordionItem>

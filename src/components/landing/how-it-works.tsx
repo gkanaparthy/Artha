@@ -13,7 +13,7 @@ const steps = [
         icon: Link2,
         title: "Connect",
         description: "Link your broker in 30 seconds. 100+ brokerages supported including Robinhood, Interactive Brokers, Schwab, and Zerodha.",
-        color: "bg-[#E8EFE0] text-[#2E4A3B]",
+        color: "bg-white/5 text-white",
     },
     {
         number: "02",
@@ -33,7 +33,7 @@ const steps = [
 
 export function HowItWorks() {
     return (
-        <section id="how-it-works" className="py-20 bg-white">
+        <section id="how-it-works" className="py-20 bg-[#11211A]">
             <div className="container mx-auto px-4 max-w-6xl">
                 <div className="text-center mb-16">
                     <motion.div
@@ -41,10 +41,10 @@ export function HowItWorks() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                     >
-                        <h2 className={cn("text-3xl md:text-5xl font-bold text-[#2E4A3B] mb-4", playfair.className)}>
+                        <h2 className={cn("text-3xl md:text-5xl font-bold text-white mb-4", playfair.className)}>
                             Start in 5 minutes. See patterns in your first week.
                         </h2>
-                        <p className="text-lg text-[#2E4A3B]/70 max-w-2xl mx-auto">
+                        <p className="text-lg text-white/70 max-w-2xl mx-auto">
                             One-time setup, quick tags, and clear weekly coaching tied to your own trades.
                         </p>
                     </motion.div>
@@ -68,13 +68,13 @@ export function HowItWorks() {
                                 <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center", step.color)}>
                                     <step.icon className="h-7 w-7" />
                                 </div>
-                                <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-[#2E4A3B] text-white text-xs font-bold flex items-center justify-center">
+                                <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-[#4ADE80] text-[#0A110D] text-xs font-bold flex items-center justify-center">
                                     {step.number}
                                 </div>
                             </div>
 
-                            <h3 className="text-xl font-bold text-[#2E4A3B] mb-3">{step.title}</h3>
-                            <p className="text-[#2E4A3B]/70 text-sm leading-relaxed max-w-xs">
+                            <h3 className="text-xl font-bold text-white mb-3">{step.title}</h3>
+                            <p className="text-white/70 text-sm leading-relaxed max-w-xs">
                                 {step.description}
                             </p>
                         </motion.div>

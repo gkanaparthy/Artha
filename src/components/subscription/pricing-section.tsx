@@ -125,10 +125,10 @@ export function PricingSection({
     };
 
     return (
-        <section id="pricing" className={cn("py-24 bg-[#FAFBF6] overflow-hidden", className)}>
+        <section id="pricing" className={cn("py-24 bg-[#0A110D] overflow-hidden", className)}>
             <div className="container mx-auto px-4 max-w-6xl relative">
                 {/* Background Decoration */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-[#E8EFE0]/20 rounded-full blur-[120px] pointer-events-none -z-10" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-white/5 rounded-full blur-[120px] pointer-events-none -z-10" />
 
                 <div className="text-center mb-16">
                     <motion.div
@@ -136,30 +136,30 @@ export function PricingSection({
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                     >
-                        <h2 className={cn("text-4xl md:text-6xl font-bold text-[#2E4A3B] mb-6", playfair.className)}>
+                        <h2 className={cn("text-4xl md:text-6xl font-bold text-white mb-6", playfair.className)}>
                             Pricing that respects your time
                         </h2>
-                        <p className="text-lg text-[#2E4A3B]/70 max-w-2xl mx-auto mb-10">
+                        <p className="text-lg text-white/70 max-w-2xl mx-auto mb-10">
                             Connect your broker and see your first behavioral report in under 10 minutes.
                         </p>
 
                         {/* Billing Switcher */}
                         <div className="flex items-center justify-center gap-4 mb-8">
-                            <span className={cn("text-sm font-medium transition-colors", billingCycle === "MONTHLY" ? "text-[#2E4A3B]" : "text-[#2E4A3B]/40")}>
+                            <span className={cn("text-sm font-medium transition-colors", billingCycle === "MONTHLY" ? "text-white" : "text-white/40")}>
                                 Monthly
                             </span>
                             <button
                                 onClick={() => setBillingCycle(billingCycle === "MONTHLY" ? "ANNUAL" : "MONTHLY")}
-                                className="relative w-14 h-7 bg-[#2E4A3B]/10 rounded-full p-1 transition-colors hover:bg-[#2E4A3B]/20"
+                                className="relative w-14 h-7 bg-white/10 rounded-full p-1 transition-colors hover:bg-white/20"
                             >
                                 <motion.div
                                     animate={{ x: billingCycle === "MONTHLY" ? 0 : 28 }}
-                                    className="w-5 h-5 bg-[#2E4A3B] rounded-full shadow-md"
+                                    className="w-5 h-5 bg-white rounded-full shadow-md"
                                 />
                             </button>
-                            <span className={cn("text-sm font-medium transition-colors flex items-center gap-2", billingCycle === "ANNUAL" ? "text-[#2E4A3B]" : "text-[#2E4A3B]/40")}>
+                            <span className={cn("text-sm font-medium transition-colors flex items-center gap-2", billingCycle === "ANNUAL" ? "text-white" : "text-white/40")}>
                                 Annual
-                                <span className="px-2 py-0.5 bg-[#E8EFE0] text-[#2E4A3B] text-[10px] font-bold rounded-full uppercase tracking-wider">
+                                <span className="px-2 py-0.5 bg-white/5 text-white text-[10px] font-bold rounded-full uppercase tracking-wider">
                                     Save 17%
                                 </span>
                             </span>
@@ -218,20 +218,20 @@ export function PricingSection({
                     />
 
                     {/* Early Adopter (Visual Only) */}
-                    <div className="flex flex-col p-8 rounded-3xl bg-[#FAFBF6] border border-[#2E4A3B]/10 opacity-80">
-                        <h3 className="text-xl font-bold text-[#2E4A3B] mb-2 text-center uppercase tracking-tighter opacity-50">Early Adopter</h3>
+                    <div className="flex flex-col p-8 rounded-3xl bg-[#0A110D] border border-white/10 opacity-80">
+                        <h3 className="text-xl font-bold text-white mb-2 text-center uppercase tracking-tighter opacity-50">Early Adopter</h3>
                         <div className="flex-1 flex flex-col items-center justify-center text-center py-8">
-                            <div className="w-16 h-16 rounded-full bg-[#E8EFE0] flex items-center justify-center mb-6">
+                            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-6">
                                 <span className="text-2xl">🎁</span>
                             </div>
-                            <h4 className="font-bold text-[#2E4A3B] mb-2">Grandfather Clause</h4>
-                            <p className="text-sm text-[#2E4A3B]/60 max-w-[200px]">
+                            <h4 className="font-bold text-white mb-2">Grandfather Clause</h4>
+                            <p className="text-sm text-white/60 max-w-[200px]">
                                 Already in our database? You're grandfathered into Pro free forever.
                                 <span className="block mt-2 font-semibold">Thank you for being here early.</span>
                             </p>
                         </div>
-                        <div className="mt-auto border-t border-[#2E4A3B]/10 pt-6">
-                            <p className="text-[10px] text-center text-[#2E4A3B]/40 uppercase font-bold tracking-[0.2em]">
+                        <div className="mt-auto border-t border-white/10 pt-6">
+                            <p className="text-[10px] text-center text-white/40 uppercase font-bold tracking-[0.2em]">
                                 Already {grandfatheredDisplayCount} users grandfathered
                             </p>
                         </div>
@@ -242,25 +242,25 @@ export function PricingSection({
                 {isFounderActive && (
                     <div className="mt-16 max-w-md mx-auto">
                         <div className="flex justify-between items-end mb-2">
-                            <div className="text-sm font-bold text-[#2E4A3B]">Founder Spots Remaining</div>
+                            <div className="text-sm font-bold text-white">Founder Spots Remaining</div>
                             <div className="text-sm font-bold text-[#E59889]">{spotsRemaining} / 100</div>
                         </div>
-                        <div className="h-3 w-full bg-[#2E4A3B]/5 rounded-full overflow-hidden">
+                        <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden">
                             <motion.div
                                 initial={{ width: 0 }}
                                 whileInView={{ width: `${spotsRemaining}%` }}
                                 viewport={{ once: true }}
                                 transition={{ duration: 1, ease: "easeOut" }}
-                                className="h-full bg-[#2E4A3B] rounded-full"
+                                className="h-full bg-white rounded-full"
                             />
                         </div>
-                        <p className="text-center text-xs text-[#2E4A3B]/50 mt-4 italic">
+                        <p className="text-center text-xs text-white/50 mt-4 italic">
                             Founder pricing ends once the first 100 users subscribe.
                         </p>
                     </div>
                 )}
 
-                <p className="text-center text-sm text-[#2E4A3B]/60 mt-10">
+                <p className="text-center text-sm text-white/60 mt-10">
                     Every plan includes auto-sync, FIFO P&amp;L, and R-multiple tracking.
                 </p>
             </div>

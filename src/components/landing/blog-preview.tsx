@@ -32,14 +32,14 @@ const featuredPosts = [
 
 export function BlogPreview() {
     return (
-        <section className="py-24 bg-[#FAFBF6]">
+        <section className="py-24 bg-[#0A110D]">
             <div className="container mx-auto px-4 max-w-6xl">
                 <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
                     <div className="max-w-2xl">
-                        <h2 className={cn("text-3xl md:text-4xl font-bold text-[#2E4A3B] mb-4", playfair.className)}>
+                        <h2 className={cn("text-3xl md:text-4xl font-bold text-white mb-4", playfair.className)}>
                             Sharpen Your Edge with <span className="italic text-[#E59889]">Artha Insights</span>
                         </h2>
-                        <p className="text-[#2E4A3B]/70 text-lg">
+                        <p className="text-white/70 text-lg">
                             Explore our latest guides on trading psychology, data analysis, and professional consistency.
                         </p>
                     </div>
@@ -52,7 +52,7 @@ export function BlogPreview() {
                 <div className="grid md:grid-cols-3 gap-8">
                     {featuredPosts.map((post, idx) => (
                         <Link key={idx} href={`/learn/${post.slug}`} className="group">
-                            <div className="bg-white rounded-2xl overflow-hidden border border-[#2E4A3B]/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full">
+                            <div className="bg-[#11211A] rounded-2xl overflow-hidden border border-white/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full">
                                 <div className="aspect-[16/9] relative m-2 rounded-xl overflow-hidden">
                                     <Image
                                         src={post.image}
@@ -62,17 +62,17 @@ export function BlogPreview() {
                                     />
                                 </div>
                                 <div className="p-6 pt-4 flex flex-col flex-1">
-                                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#2E4A3B]/40 mb-3">
-                                        <span className="px-2 py-0.5 rounded-full bg-[#E8EFE0] text-[#2E4A3B]">{post.category}</span>
+                                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/40 mb-3">
+                                        <span className="px-2 py-0.5 rounded-full bg-[#11211A]/5 text-white">{post.category}</span>
                                         <span className="flex items-center gap-1">
                                             <Clock className="h-3 w-3" />
                                             5 MIN READ
                                         </span>
                                     </div>
-                                    <h3 className={cn("text-xl font-bold text-[#2E4A3B] mb-3 group-hover:text-[#E59889] transition-colors", playfair.className)}>
+                                    <h3 className={cn("text-xl font-bold text-white mb-3 group-hover:text-[#E59889] transition-colors", playfair.className)}>
                                         {post.title}
                                     </h3>
-                                    <p className="text-sm text-[#2E4A3B]/70 leading-relaxed mb-6 flex-1">
+                                    <p className="text-sm text-white/70 leading-relaxed mb-6 flex-1">
                                         {post.description}
                                     </p>
                                     <div className="flex items-center gap-1 text-[#E59889] font-bold text-xs">
