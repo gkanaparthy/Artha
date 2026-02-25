@@ -502,7 +502,7 @@ function SocialProofSection() {
                 </h2>
                 <div className="rounded-3xl border border-[#2E4A3B]/10 bg-white p-6 sm:p-8 text-center">
                     <p className="text-[#2E4A3B]/70 text-lg mb-6">
-                        23 traders already tracking their behavioral edge. Join them.
+                        Serious traders are already using Artha to track their behavioral edge. Join them.
                     </p>
                     <Link href="/login">
                         <Button className="rounded-full bg-[#2E4A3B] hover:bg-[#2E4A3B]/90 text-white px-8">
