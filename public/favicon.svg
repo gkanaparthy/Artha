@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Bold "A" lettermark favicon for Artha -->
+  <!-- Rounded square background -->
+  <rect width="32" height="32" rx="6" fill="#0f1f2e"/>
+  <!-- Bold A shape -->
+  <path d="M16 5 L6 27 L10.5 27 L12.5 22 L19.5 22 L21.5 27 L26 27 Z M14 18.5 L16 11.5 L18 18.5 Z" fill="#2dd4bf"/>
+</svg>
