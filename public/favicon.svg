@@ -1,7 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <!-- Bold "A" lettermark favicon for Artha -->
-  <!-- Rounded square background -->
+  <!-- Simplified Artha leaf favicon: solid fill, no veins, distinctive squared corner -->
   <rect width="32" height="32" rx="6" fill="#0f1f2e"/>
-  <!-- Bold A shape -->
-  <path d="M16 5 L6 27 L10.5 27 L12.5 22 L19.5 22 L21.5 27 L26 27 Z M14 18.5 L16 11.5 L18 18.5 Z" fill="#2dd4bf"/>
+  <!-- Leaf shape: rounded on bottom-left, squared on top-right, solid fill -->
+  <path d="M16 4 Q28 4 28 16 Q28 28 16 28 Q4 28 4 16 Q4 4 16 4 Z" fill="none"/>
+  <!-- Simplified bold leaf with squared top-right corner -->
+  <path d="M8 24 Q8 8 16 6 Q24 6 24 8 L24 16 Q24 24 16 24 Z" fill="#2dd4bf"/>
+  <!-- Single center vein for leaf recognition -->
+  <line x1="16" y1="8" x2="12" y2="22" stroke="#0f1f2e" stroke-width="2" stroke-linecap="round"/>
 </svg>
