@@ -103,10 +103,19 @@ function MetricCard({
     delay?: number;
     glowClass?: string;
 }) {
+    const valueStr = String(value);
+    const valueSizeClass = valueStr.length <= 6
+        ? "text-xl sm:text-2xl"
+        : valueStr.length <= 9
+            ? "text-lg sm:text-xl"
+            : valueStr.length <= 12
+                ? "text-base sm:text-lg"
+                : "text-sm sm:text-base";
+
     return (
         <AnimatedCard delay={delay} className="h-full">
             <Card className={cn(
-                "h-full min-h-[130px] sm:min-h-[146px] card-hover overflow-hidden relative glass border-0",
+                "h-full min-h-[130px] sm:min-h-[146px] card-hover relative glass border-0",
                 glowClass && `hover:${glowClass}`
             )}>
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500" />
@@ -118,7 +127,7 @@ function MetricCard({
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6 pt-0">
                     <motion.div
-                        className={cn("text-xl sm:text-2xl font-bold stat-number", valueColor)}
+                        className={cn("font-bold stat-number max-w-full whitespace-normal break-all leading-tight", valueSizeClass, valueColor)}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: delay + 0.2 }}

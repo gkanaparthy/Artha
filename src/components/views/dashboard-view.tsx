@@ -56,7 +56,9 @@ function MetricCard({
     ? "text-xl sm:text-2xl"
     : valueStr.length <= 9
       ? "text-lg sm:text-xl"
-      : "text-base sm:text-lg";
+      : valueStr.length <= 12
+        ? "text-base sm:text-lg"
+        : "text-sm sm:text-base";
 
   return (
     <AnimatedCard delay={delay} className="h-full">
@@ -86,7 +88,7 @@ function MetricCard({
         </CardHeader>
         <CardContent className="p-3 sm:p-4 pt-0 flex flex-col justify-center">
           <motion.div
-            className={cn("font-bold tracking-tight stat-number", valueSizeClass, valueColor)}
+            className={cn("font-bold tracking-tight stat-number max-w-full whitespace-normal break-all leading-tight", valueSizeClass, valueColor)}
             title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
