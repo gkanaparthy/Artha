@@ -309,12 +309,17 @@ export function calculateMetricsFromTrades(trades: TradeInput[], filters?: Filte
             }
         }
 
-        // Auto-close expired
+        // Auto-close expired options
+        // IMPORTANT: We add a grace period before auto-closing to give SnapTrade
+        // time to sync the actual closing trades (sells, exercises, assignments).
+        // Without this, recently expired options get auto-closed at $0, creating
+        // false 100% losses when the real sell trade simply hasn't synced yet.
         const now = new Date();
         const symbol = keyDetails.get(key)?.symbol || '';
         const expDate = getOptionExpiration(symbol);
+        const EXPIRY_GRACE_PERIOD_MS = 4 * 24 * 60 * 60 * 1000; // 4 days
 
-        if (expDate && expDate < now) {
+        if (expDate && expDate < now && (now.getTime() - expDate.getTime()) > EXPIRY_GRACE_PERIOD_MS) {
             for (const lot of longLots) {
                 if (lot.quantity > 0.000001) {
                     const pnl = (0 - lot.price) * lot.quantity * lot.multiplier;
