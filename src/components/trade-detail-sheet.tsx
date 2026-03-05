@@ -26,6 +26,7 @@ import {
 import { format } from "date-fns";
 import { useState } from "react";
 import { TagAssignment } from "./tag-assignment";
+import { InlinePositionRiskInput } from "./inline-position-risk-input";
 
 import { generatePositionKey } from "@/lib/utils/position-key";
 
@@ -44,20 +45,25 @@ interface Trade {
   tags: { id: string; name: string; color: string }[];
   accountId: string;
   positionKey?: string | null;
+  initialRiskUsd?: number | null;
 }
 
 interface TradeDetailSheetProps {
   trade: Trade | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isDemo?: boolean;
   onTagAdd?: (tradeId: string, tagName: string) => void;
   onTagRemove?: (tradeId: string, tagId: string) => void;
+  onRiskSaved?: (positionKey: string, initialRiskUsd: number | null) => void;
 }
 
 export function TradeDetailSheet({
   trade,
   open,
   onOpenChange,
+  isDemo = false,
+  onRiskSaved,
 }: TradeDetailSheetProps) {
   if (!trade) return null;
 
@@ -164,6 +170,27 @@ export function TradeDetailSheet({
 
               <p className="text-[10px] text-muted-foreground italic">
                 Tags are applied to this position based on symbol and date.
+              </p>
+            </div>
+
+            <Separator />
+
+            {/* Risk */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Risk (1R)
+              </h3>
+
+              <InlinePositionRiskInput
+                positionKey={positionKey}
+                initialRiskUsd={trade.initialRiskUsd ?? null}
+                isDemo={isDemo}
+                onRiskSaved={onRiskSaved}
+              />
+
+              <p className="text-[10px] text-muted-foreground italic">
+                Set your planned dollar risk once per position.
               </p>
             </div>
 

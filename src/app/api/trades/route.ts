@@ -58,6 +58,17 @@ export async function GET(req: Request) {
             }
         });
 
+        const positionRisks = await prisma.positionRisk.findMany({
+            where: {
+                positionKey: { in: positionKeys as string[] },
+                userId: session.user.id,
+            },
+            select: {
+                positionKey: true,
+                initialRiskUsd: true,
+            },
+        });
+
         // Map tags to trades efficiently (Bug #26)
         const tagsByPositionKey = new Map<string, any[]>();
         positionTags.forEach(pt => {
@@ -66,10 +77,16 @@ export async function GET(req: Request) {
             tagsByPositionKey.set(pt.positionKey, list);
         });
 
+        const riskByPositionKey = new Map<string, number>();
+        positionRisks.forEach((risk) => {
+            riskByPositionKey.set(risk.positionKey, risk.initialRiskUsd);
+        });
+
         const tradesWithTags = trades.map(trade => {
             return {
                 ...trade,
-                tags: trade.positionKey ? (tagsByPositionKey.get(trade.positionKey) || []) : []
+                tags: trade.positionKey ? (tagsByPositionKey.get(trade.positionKey) || []) : [],
+                initialRiskUsd: trade.positionKey ? (riskByPositionKey.get(trade.positionKey) ?? null) : null,
             };
         });
 

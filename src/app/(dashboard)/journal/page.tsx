@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { TradeDetailSheet } from "@/components/trade-detail-sheet";
 import { TagPicker } from "@/components/tag-picker";
 import { StrategyGroupCard } from "@/components/strategy-group-card";
+import { InlinePositionRiskInput } from "@/components/inline-position-risk-input";
 import { motion } from "framer-motion";
 import { PageTransition, AnimatedCard } from "@/components/motion";
 import { cn } from "@/lib/utils";
@@ -219,6 +220,21 @@ export default function JournalPage() {
       alert("Error ungrouping strategy");
     }
   };
+
+  const handleRiskSaved = useCallback((positionKey: string, initialRiskUsd: number | null) => {
+    setTrades((prev) =>
+      prev.map((trade) =>
+        trade.positionKey === positionKey
+          ? { ...trade, initialRiskUsd }
+          : trade
+      )
+    );
+
+    setSelectedTrade((prev) => {
+      if (!prev || prev.positionKey !== positionKey) return prev;
+      return { ...prev, initialRiskUsd };
+    });
+  }, []);
 
   // Apply filters
   const filteredTrades = useMemo(() => {
@@ -537,6 +553,14 @@ export default function JournalPage() {
                               <p className="text-xs text-muted-foreground mb-1">Total Value</p>
                               <p className="text-base font-semibold font-mono">${(trade.quantity * trade.price).toFixed(2)}</p>
                             </div>
+                            <div className="col-span-2" onClick={(e) => e.stopPropagation()}>
+                              <p className="text-xs text-muted-foreground mb-1">Risk (1R)</p>
+                              <InlinePositionRiskInput
+                                positionKey={trade.positionKey}
+                                initialRiskUsd={trade.initialRiskUsd ?? null}
+                                onRiskSaved={handleRiskSaved}
+                              />
+                            </div>
                           </div>
 
                           {/* Delete Action */}
@@ -579,6 +603,7 @@ export default function JournalPage() {
                             <div className="flex items-center gap-2">Action {getSortIcon("action")}</div>
                           </TableHead>
                           <TableHead>Tags</TableHead>
+                          <TableHead>Risk (1R)</TableHead>
                           <TableHead className="text-right cursor-pointer hover:bg-muted/80 transition-colors" onClick={() => handleSort("quantity")}>
                             <div className="flex items-center justify-end gap-2">Quantity {getSortIcon("quantity")}</div>
                           </TableHead>
@@ -594,7 +619,7 @@ export default function JournalPage() {
                       <TableBody>
                         {loading ? (
                           <TableRow>
-                            <TableCell colSpan={7} className="h-24 text-center">
+                            <TableCell colSpan={10} className="h-24 text-center">
                               <div className="flex justify-center items-center">
                                 <Loader2 className="animate-spin h-6 w-6 text-primary" />
                               </div>
@@ -602,7 +627,7 @@ export default function JournalPage() {
                           </TableRow>
                         ) : sortedTrades.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                            <TableCell colSpan={10} className="h-24 text-center text-muted-foreground">
                               No trades found matching your criteria.
                             </TableCell>
                           </TableRow>
@@ -663,6 +688,13 @@ export default function JournalPage() {
                                     )}
                                   </div>
                                 </TableCell>
+                                <TableCell onClick={(e) => e.stopPropagation()}>
+                                  <InlinePositionRiskInput
+                                    positionKey={trade.positionKey}
+                                    initialRiskUsd={trade.initialRiskUsd ?? null}
+                                    onRiskSaved={handleRiskSaved}
+                                  />
+                                </TableCell>
                                 <TableCell className="text-right font-mono tabular-nums">
                                   {trade.quantity}
                                 </TableCell>
@@ -699,6 +731,7 @@ export default function JournalPage() {
           trade={selectedTrade}
           open={sheetOpen}
           onOpenChange={setSheetOpen}
+          onRiskSaved={handleRiskSaved}
         />
 
         {/* Bulk Action Toolbar */}

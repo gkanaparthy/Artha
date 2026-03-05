@@ -550,6 +550,7 @@ export function JournalView({ initialTrades, isDemo = false }: JournalViewProps)
           trade={selectedTrade}
           open={sheetOpen}
           onOpenChange={setSheetOpen}
+          isDemo={isDemo}
         />
       </div>
     </PageTransition>

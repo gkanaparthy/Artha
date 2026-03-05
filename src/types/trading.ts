@@ -93,6 +93,7 @@ export interface Trade {
     brokerName: string | null;
   };
   tags: { id: string; name: string; color: string; category: string; icon: string | null }[];
+  initialRiskUsd?: number | null;
 }
 
 export interface Metrics {
