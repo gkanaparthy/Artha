@@ -40,7 +40,7 @@ export async function GET() {
         // Decrypt account numbers before sending to frontend
         const decryptedAccounts = user.brokerAccounts.map(account => ({
             ...account,
-            accountNumber: account.accountNumber ? safeDecrypt(account.accountNumber) : null,
+            accountNumber: account.accountNumber ? safeDecrypt(account.accountNumber) || account.accountNumber : null,
         }));
 
         return NextResponse.json({

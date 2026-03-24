@@ -137,7 +137,7 @@ async function checkConnectionHealth() {
             snapTradeUserId: { not: null },
             snapTradeUserSecret: { not: null }
         },
-        include: { brokerAccounts: true }
+        include: { brokerAccounts: { where: { source: 'SNAPTRADE' } } }
     });
 
     let broken = 0;
@@ -158,10 +158,13 @@ async function checkConnectionHealth() {
 
             const authList = authorizations.data || [];
 
-            // Check each local account
             for (const localAccount of user.brokerAccounts) {
                 const matchingAuth = authList.find(a => a.id === localAccount.authorizationId);
-                const isDisabled = !matchingAuth || matchingAuth.disabled === true;
+                const isUserDisconnected = localAccount.disabledReason === 'User disconnected - will not sync';
+                const snapTradeDisabled = !matchingAuth || matchingAuth.disabled === true;
+
+                // If user explicitly disconnected, keep it disconnected regardless of SnapTrade's health.
+                const isDisabled = isUserDisconnected ? true : snapTradeDisabled;
                 const wasDisabled = localAccount.disabled;
 
                 // If newly broken, send alert
@@ -246,7 +249,7 @@ async function syncAllUsers() {
         try {
             // Skip users with an active initial sync in progress
             const inProgressCount = await prisma.brokerAccount.count({
-                where: { userId: user.id, syncStatus: { in: ['PENDING', 'IN_PROGRESS'] } },
+                where: { userId: user.id, source: 'SNAPTRADE', syncStatus: { in: ['PENDING', 'IN_PROGRESS'] } },
             });
             if (inProgressCount > 0) {
                 console.log(`[Sync] Skipping user ${user.email} - has PENDING/IN_PROGRESS accounts`);
@@ -259,7 +262,7 @@ async function syncAllUsers() {
 
             // Update sync status on all active accounts
             await prisma.brokerAccount.updateMany({
-                where: { userId: user.id, disabled: false },
+                where: { userId: user.id, disabled: false, source: 'SNAPTRADE' },
                 data: {
                     syncCompletedAt: new Date(),
                     syncStatus: 'COMPLETED',

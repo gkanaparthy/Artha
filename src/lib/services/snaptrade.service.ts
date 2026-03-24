@@ -32,6 +32,18 @@ const FUTURES_MULTIPLIERS: Record<string, number> = {
     'ETH': 50, 'MET': 1.0,  // Ethereum
 };
 
+function readStoredAccountNumber(accountNumber?: string | null): string | null {
+    if (!accountNumber) return null;
+    return safeDecrypt(accountNumber) || accountNumber;
+}
+
+function normalizeAccountNumber(accountNumber?: string | null): string | null {
+    const resolved = readStoredAccountNumber(accountNumber);
+    if (!resolved) return null;
+    const normalized = resolved.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    return normalized || null;
+}
+
 export class SnapTradeService {
     /**
      * Registers a new user with SnapTrade (if not already registered)
@@ -153,8 +165,20 @@ export class SnapTradeService {
         for (const acc of accounts.data || []) {
             const authId = (acc as any).brokerage_authorization;
             const matchingAuth = (authorizations.data || []).find(a => a.id === authId);
-            const isDisabled = matchingAuth?.disabled === true;
+            const snapTradeDisabled = matchingAuth?.disabled === true;
             const encryptedAccountNumber = acc.number ? encrypt(acc.number) : null;
+
+            const existingAccount = user.brokerAccounts.find(a => a.snapTradeAccountId === acc.id);
+            const isUserDisconnected = existingAccount?.disabledReason === 'User disconnected - will not sync';
+
+            // If user explicitly disconnected, keep it disconnected regardless of SnapTrade's health.
+            const isDisabled = isUserDisconnected ? true : snapTradeDisabled;
+            const finalDisabledReason = isUserDisconnected
+                ? 'User disconnected - will not sync'
+                : (snapTradeDisabled ? 'Connection broken - requires re-authentication' : null);
+            const finalDisabledAt = isDisabled
+                ? (existingAccount?.disabledAt || new Date())
+                : null;
 
             const upsertedAccount = await prisma.brokerAccount.upsert({
                 where: { snapTradeAccountId: acc.id },
@@ -162,8 +186,8 @@ export class SnapTradeService {
                     brokerName: acc.institution_name,
                     accountNumber: encryptedAccountNumber,
                     disabled: isDisabled,
-                    disabledAt: isDisabled ? (user.brokerAccounts.find(a => a.snapTradeAccountId === acc.id)?.disabledAt || new Date()) : null,
-                    disabledReason: isDisabled ? 'Connection broken - requires re-authentication' : null,
+                    disabledAt: finalDisabledAt,
+                    disabledReason: finalDisabledReason,
                     lastCheckedAt: new Date(),
                     authorizationId: matchingAuth?.id || undefined,
                 },
@@ -173,8 +197,8 @@ export class SnapTradeService {
                     brokerName: acc.institution_name,
                     accountNumber: encryptedAccountNumber,
                     disabled: isDisabled,
-                    disabledAt: isDisabled ? new Date() : null,
-                    disabledReason: isDisabled ? 'Connection broken - requires re-authentication' : null,
+                    disabledAt: finalDisabledAt,
+                    disabledReason: finalDisabledReason,
                     lastCheckedAt: new Date(),
                     authorizationId: matchingAuth?.id || null,
                 },
@@ -252,6 +276,7 @@ export class SnapTradeService {
             where: {
                 userId: localUserId,
                 disabled: false,
+                source: 'SNAPTRADE',
             },
         });
 
@@ -317,13 +342,39 @@ export class SnapTradeService {
         });
         const accountMap = new Map(userAccounts.map(a => [a.snapTradeAccountId, a]));
         const localAccountMap = new Map(userAccounts.map(a => [a.id, a]));
+        const importedAccounts = userAccounts.filter(
+            (account) => account.source === 'CSV' || account.source === 'MANUAL'
+        );
+        const relatedImportedAccountIdsBySnapAccountId = new Map<string, string[]>();
+
+        for (const snapAccount of activeAccounts) {
+            const normalizedAccountNumber = normalizeAccountNumber(snapAccount.accountNumber);
+            if (!normalizedAccountNumber) continue;
+
+            const relatedImportAccountIds = importedAccounts
+                .filter(
+                    (account) =>
+                        normalizeAccountNumber(account.accountNumber) ===
+                        normalizedAccountNumber
+                )
+                .map((account) => account.id);
+
+            if (relatedImportAccountIds.length > 0) {
+                relatedImportedAccountIdsBySnapAccountId.set(
+                    snapAccount.id,
+                    relatedImportAccountIds
+                );
+            }
+        }
 
         // Pre-fetch existing trade IDs for the user to avoid individual checks and unique constraint errors
         const existingTrades = await prisma.trade.findMany({
             where: {
-                accountId: { in: userAccounts.map(a => a.id) }
+                accountId: { in: userAccounts.map(a => a.id) },
+                account: { source: 'SNAPTRADE' },
             },
             select: {
+                accountId: true,
                 snapTradeTradeId: true,
                 id: true,
                 symbol: true,
@@ -462,10 +513,51 @@ export class SnapTradeService {
                 }
             }
 
+            let isImportedUpgrade = false;
+
+            if (!existing) {
+                const relatedImportedAccountIds =
+                    relatedImportedAccountIdsBySnapAccountId.get(account.id) || [];
+
+                if (relatedImportedAccountIds.length > 0) {
+                    const timeDiffThreshold = 24 * 60 * 60 * 1000;
+                    const importedMatch = await prisma.trade.findFirst({
+                        where: {
+                            accountId: { in: relatedImportedAccountIds },
+                            symbol: tradeSymbol,
+                            action: action.trim(),
+                            quantity: quantity,
+                            price: price,
+                            type: type,
+                            snapTradeTradeId: null,
+                            snapTradeOrderId: null,
+                            timestamp: {
+                                gte: new Date(tradeTimestamp.getTime() - timeDiffThreshold),
+                                lte: new Date(tradeTimestamp.getTime() + timeDiffThreshold),
+                            },
+                            ...(expiryDate
+                                ? { expiryDate }
+                                : { expiryDate: null }),
+                        },
+                        orderBy: { timestamp: 'asc' },
+                    });
+
+                    if (importedMatch) {
+                        console.log(
+                            `[SnapTrade Sync] Reconciling imported trade ${importedMatch.id} into SnapTrade activity ${trade.id}`
+                        );
+                        existing = importedMatch as any;
+                        isImportedUpgrade = true;
+                    }
+                }
+            }
+
             if (existing) {
                 // Check if anything HAS ACTUALLY CHANGED before blind updating
                 const hasChanged =
                     isProvisionalUpgrade || // Always update if we are upgrading from provisional
+                    isImportedUpgrade ||
+                    existing.accountId !== account.id ||
                     existing.symbol !== tradeSymbol ||
                     existing.timestamp.getTime() !== tradeTimestamp.getTime() ||
                     existing.quantity !== quantity ||
@@ -483,6 +575,7 @@ export class SnapTradeService {
                     await prisma.trade.update({
                         where: { id: existing.id },
                         data: {
+                            accountId: account.id,
                             timestamp: tradeTimestamp,
                             symbol: tradeSymbol,
                             universalSymbolId: isOption ? optionSymbol.id : trade.symbol?.id,
@@ -504,8 +597,15 @@ export class SnapTradeService {
                     });
 
                     // Update our map so next iteration doesn't find it as missing if duplicate data
-                    existingTradeMap.set(trade.id, { ...existing, ...trade });
+                    existingTradeMap.set(trade.id, {
+                        ...existing,
+                        ...trade,
+                        accountId: account.id,
+                    });
 
+                    if (existing.accountId && existing.accountId !== account.id) {
+                        affectedGroups.add(`${existing.accountId}:${tradeSymbol}`);
+                    }
                     affectedGroups.add(`${account.id}:${tradeSymbol}`);
                     count++;
                 } else {
@@ -641,7 +741,7 @@ export class SnapTradeService {
             userSecret: snapTradeUserSecret,
         });
 
-         
+
         const allPositions: any[] = [];
 
         for (const acc of accounts.data || []) {
@@ -747,7 +847,7 @@ export class SnapTradeService {
     }> {
         const user = await prisma.user.findUnique({
             where: { id: localUserId },
-            include: { brokerAccounts: { where: { disabled: false } } } // Only active accounts
+            include: { brokerAccounts: { where: { disabled: false, source: 'SNAPTRADE' } } } // Only active SnapTrade accounts
         });
 
         if (!user || !user.snapTradeUserId || !user.snapTradeUserSecret) {

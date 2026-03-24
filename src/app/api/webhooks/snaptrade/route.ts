@@ -105,11 +105,11 @@ export async function POST(request: NextRequest) {
     let targetAccounts;
     if (snapTradeAccountId) {
         targetAccounts = await prisma.brokerAccount.findMany({
-            where: { userId: user.id, snapTradeAccountId },
+            where: { userId: user.id, snapTradeAccountId, source: 'SNAPTRADE' },
         });
     } else {
         targetAccounts = await prisma.brokerAccount.findMany({
-            where: { userId: user.id, disabled: false },
+            where: { userId: user.id, disabled: false, source: 'SNAPTRADE' },
         });
     }
 

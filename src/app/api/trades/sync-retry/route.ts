@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
             where: {
                 userId,
                 disabled: false,
+                source: 'SNAPTRADE',
                 syncStatus: { in: ['PENDING', 'FAILED'] },
                 syncRetryCount: { lt: MAX_RETRIES },
             },
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
 
         // Concurrency guard: skip if any account is already syncing
         const inProgressCount = await prisma.brokerAccount.count({
-            where: { userId, syncStatus: 'IN_PROGRESS' },
+            where: { userId, source: 'SNAPTRADE', syncStatus: 'IN_PROGRESS' },
         });
         if (inProgressCount > 0) {
             return NextResponse.json({ status: 'skipped', message: 'Sync already in progress' });

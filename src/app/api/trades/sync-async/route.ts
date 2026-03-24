@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
         // Set accounts to IN_PROGRESS
         await prisma.brokerAccount.updateMany({
-            where: { userId: session.user.id, disabled: false },
+            where: { userId: session.user.id, disabled: false, source: 'SNAPTRADE' },
             data: { syncStatus: 'IN_PROGRESS' },
         });
 
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
             console.log('[Fast Sync] Timeout for user', session.user.id);
             // Keep as PENDING for webhook/retry
             await prisma.brokerAccount.updateMany({
-                where: { userId: session.user.id, syncStatus: 'IN_PROGRESS' },
+                where: { userId: session.user.id, syncStatus: 'IN_PROGRESS', source: 'SNAPTRADE' },
                 data: { syncStatus: 'PENDING' },
             });
             return NextResponse.json({
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 
         // Update sync status
         await prisma.brokerAccount.updateMany({
-            where: { userId: session.user.id, disabled: false },
+            where: { userId: session.user.id, disabled: false, source: 'SNAPTRADE' },
             data: {
                 syncStatus: result.error ? 'FAILED' : 'COMPLETED',
                 syncCompletedAt: new Date(),
@@ -131,4 +131,3 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: message }, { status: 500 });
     }
 }
-

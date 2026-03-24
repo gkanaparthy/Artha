@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
         // Concurrency guard: check if any account is already syncing
         const inProgressCount = await prisma.brokerAccount.count({
-            where: { userId, syncStatus: 'IN_PROGRESS' },
+            where: { userId, source: 'SNAPTRADE', syncStatus: 'IN_PROGRESS' },
         });
         if (inProgressCount > 0) {
             return NextResponse.json({ status: 'skipped', message: 'Sync already in progress' });
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
         // Get active accounts before starting
         const activeAccounts = await prisma.brokerAccount.findMany({
-            where: { userId, disabled: false },
+            where: { userId, disabled: false, source: 'SNAPTRADE' },
             select: { id: true, brokerName: true, snapTradeAccountId: true }
         });
 
