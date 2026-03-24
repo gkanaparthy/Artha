@@ -57,15 +57,26 @@ const FilterContext = createContext<FilterContextType | undefined>(undefined);
 function loadFiltersFromStorage(): FilterState {
     if (typeof window === 'undefined') return defaultFilters;
 
+    const today = new Date().toISOString().split('T')[0];
+
     try {
         const saved = localStorage.getItem("dashboard_filters_v4");
         if (saved) {
             const parsed = JSON.parse(saved);
             if (parsed && typeof parsed === 'object') {
+                // If the saved endDate is in the past, snap it forward to today.
+                // This fixes "YTD" and other today-anchored presets becoming stale
+                // across sessions (e.g. user picks YTD on Mar 20, comes back Mar 23
+                // and still sees Mar 20 as the end date).
+                let endDate = typeof parsed.endDate === 'string' ? parsed.endDate : '';
+                if (endDate && endDate < today) {
+                    endDate = today;
+                }
+
                 return {
                     symbol: typeof parsed.symbol === 'string' ? parsed.symbol : '',
                     startDate: typeof parsed.startDate === 'string' ? parsed.startDate : '',
-                    endDate: typeof parsed.endDate === 'string' ? parsed.endDate : '',
+                    endDate,
                     status: ['all', 'open', 'winners', 'losers'].includes(parsed.status) ? parsed.status : 'all',
                     action: ['ALL', 'BUY', 'SELL'].includes(parsed.action) ? parsed.action : 'ALL',
                     accountId: Array.isArray(parsed.accountId)
