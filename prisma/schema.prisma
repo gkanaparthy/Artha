@@ -117,6 +117,7 @@ model BrokerAccount {
   userId             String
   brokerName         String?
   snapTradeAccountId String       @unique
+  source             String       @default("SNAPTRADE") // "SNAPTRADE" | "CSV" | "MANUAL"
   accountNumber      String?
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
@@ -159,6 +160,8 @@ model Trade {
   expiryDate         DateTime?
   optionAction       String?
   contractMultiplier Int             @default(1)
+  externalTradeId    String?
+  externalTradeSource String?
   snapTradeTradeId   String?         @unique
   snapTradeOrderId   String?         @unique
   createdAt          DateTime        @default(now())
@@ -173,6 +176,7 @@ model Trade {
   @@index([positionKey])
   @@index([accountId, positionKey])
   @@index([universalSymbolId])
+  @@unique([accountId, externalTradeSource, externalTradeId])
   @@map("trades")
 }
 

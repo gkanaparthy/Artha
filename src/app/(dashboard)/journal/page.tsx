@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { CSVImportDialog } from "@/components/csv-import-dialog";
+import { ManualTradeForm } from "@/components/manual-trade-form";
 import {
   Table,
   TableBody,
@@ -13,7 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Sparkles, Trash2, BookOpen, Layers, List, AlertCircle } from "lucide-react";
+import { Loader2, Sparkles, Trash2, BookOpen, Layers, List, AlertCircle, Upload, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { TradeDetailSheet } from "@/components/trade-detail-sheet";
@@ -396,6 +398,18 @@ export default function JournalPage() {
                 <span className="hidden sm:inline">Strategies</span>
               </Button>
             </div>
+            <CSVImportDialog onImportComplete={fetchTrades}>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Upload className="h-4 w-4" />
+                <span className="hidden sm:inline">Import CSV</span>
+              </Button>
+            </CSVImportDialog>
+            <ManualTradeForm onTradeAdded={fetchTrades}>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Add Trade</span>
+              </Button>
+            </ManualTradeForm>
             <Button
               onClick={() => viewMode === "trades" ? fetchTrades() : fetchStrategies()}
               variant="outline"

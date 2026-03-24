@@ -34,8 +34,9 @@ export function validateTrade(trade: TradeData): { valid: boolean; reason?: stri
         };
     }
 
-    // Rule 3: Reject trades with zero or negative price (except for expired options)
-    if (trade.price <= 0 && !trade.action.includes('EXPIRATION')) {
+    // Rule 3: Reject trades with zero or negative price (except for lifecycle events)
+    const zeropriceActions = ['EXPIRATION', 'ASSIGNMENT', 'EXERCISE', 'SPLIT', 'DIVIDEND'];
+    if (trade.price <= 0 && !zeropriceActions.some(a => trade.action.includes(a))) {
         return {
             valid: false,
             reason: `Trade has invalid price: $${trade.price}`
