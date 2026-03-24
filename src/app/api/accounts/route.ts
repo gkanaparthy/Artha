@@ -29,7 +29,7 @@ export async function GET() {
         // Decrypt account numbers before sending to frontend
         const decryptedAccounts = accounts.map(account => ({
             ...account,
-            accountNumber: account.accountNumber ? safeDecrypt(account.accountNumber) : null,
+            accountNumber: account.accountNumber ? safeDecrypt(account.accountNumber) || account.accountNumber : null,
         }));
 
         return NextResponse.json({ accounts: decryptedAccounts });
@@ -81,15 +81,20 @@ export async function DELETE(req: NextRequest) {
             ]);
         } else {
             // Soft delete: Mark as disabled with user-initiated reason
-            // This preserves trade history and prevents future syncs
-            await prisma.brokerAccount.update({
-                where: { id: accountId },
-                data: {
-                    disabled: true,
-                    disabledAt: new Date(),
-                    disabledReason: 'User disconnected - will not sync',
-                }
-            });
+            // This prevents future syncs. We ALSO delete all trades since the user willingly disconnected.
+            await prisma.$transaction([
+                prisma.trade.deleteMany({
+                    where: { accountId: accountId }
+                }),
+                prisma.brokerAccount.update({
+                    where: { id: accountId },
+                    data: {
+                        disabled: true,
+                        disabledAt: new Date(),
+                        disabledReason: 'User disconnected - will not sync',
+                    }
+                })
+            ]);
         }
 
         return NextResponse.json({ success: true });

@@ -240,7 +240,7 @@ export default function SettingsPage() {
   };
 
   const handleDisconnect = async (accountId: string) => {
-    if (!confirm("Are you sure you want to disconnect this broker? Your trade history will be preserved, but this account will stop syncing new trades.")) {
+    if (!confirm("Are you sure you want to disconnect this broker? Your trade history will be DELETED permanently, and this account will stop syncing.")) {
       return;
     }
 
@@ -254,7 +254,7 @@ export default function SettingsPage() {
       }
 
       toast.success('Broker disconnected', {
-        description: 'This account will no longer sync trades. You can reconnect it anytime.'
+        description: 'Account and associated trades have been deleted.'
       });
 
       // Refresh data
