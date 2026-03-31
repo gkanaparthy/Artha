@@ -182,6 +182,34 @@ export default function SettingsPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      if (event.data?.type === 'SNAPTRADE_RECONNECT_SUCCESS') {
+        setReconnecting(null);
+        window.location.href = event.data.target || '/settings?broker_reconnected=true';
+        return;
+      }
+
+      if (event.data?.type === 'SNAPTRADE_RECONNECT_ERROR') {
+        setReconnecting(null);
+        toast.error('Failed to reconnect broker', {
+          description: event.data.error || 'Please try again or contact support.'
+        });
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   const handleConnectBroker = async () => {
     try {
       setConnecting(true);

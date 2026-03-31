@@ -84,14 +84,19 @@ export async function POST(request: NextRequest) {
     console.log(`[Reconnect] Generating reconnect URL for account ${accountId} (${account.brokerName})`);
     console.log(`[Reconnect] Authorization ID: ${account.authorizationId}`);
 
-    const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.AUTH_URL}/api/auth/snaptrade/callback`;
+    const callbackUrl = new URL(
+      '/api/auth/snaptrade/callback',
+      process.env.NEXT_PUBLIC_APP_URL || process.env.AUTH_URL
+    );
+    callbackUrl.searchParams.set('mode', 'reconnect');
+    callbackUrl.searchParams.set('popup', 'true');
 
     const result = await snapTrade.authentication.loginSnapTradeUser({
       userId: user.snapTradeUserId,
       userSecret: decryptedSecret,
       reconnect: account.authorizationId, // THIS IS THE KEY PARAMETER FOR RECONNECT
       immediateRedirect: true,
-      customRedirect: callbackUrl
+      customRedirect: callbackUrl.toString()
     });
 
     console.log(`[Reconnect] Successfully generated reconnect URL for ${account.brokerName}`);

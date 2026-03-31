@@ -19,20 +19,50 @@ export function CallbackClient() {
       try {
         // Get status from URL params
         const connectionStatus = searchParams.get("status");
+        const mode = searchParams.get("mode");
+        const target = searchParams.get("target");
         const errorMessage = searchParams.get("error");
+        const isReconnect = mode === "reconnect";
 
         if (connectionStatus === "ERROR" || errorMessage) {
           setStatus("error");
           setMessage(errorMessage || "Connection failed");
+
+          if (window.opener) {
+            window.opener.postMessage(
+              {
+                type: isReconnect ? "SNAPTRADE_RECONNECT_ERROR" : "SNAPTRADE_CONNECTION_ERROR",
+                error: errorMessage || "Connection failed",
+                target,
+              },
+              window.location.origin
+            );
+            setTimeout(() => window.close(), 1500);
+          }
           return;
         }
 
-        // If Popup: Signal success immediately and close fast (Main window does the sync)
+        // If Popup: notify the opener and close fast.
         if (window.opener) {
           setStatus("success");
-          setMessage("Broker connected! Finishing up...");
-          window.opener.postMessage({ type: "SNAPTRADE_CONNECTION_SUCCESS" }, "*");
+          setMessage(isReconnect ? "Broker reconnected! Updating settings..." : "Broker connected! Finishing up...");
+          window.opener.postMessage(
+            {
+              type: isReconnect ? "SNAPTRADE_RECONNECT_SUCCESS" : "SNAPTRADE_CONNECTION_SUCCESS",
+              target,
+            },
+            window.location.origin
+          );
           setTimeout(() => window.close(), 1500); // Fast close
+          return;
+        }
+
+        if (isReconnect) {
+          setStatus("success");
+          setMessage("Broker reconnected! Redirecting to settings...");
+          setTimeout(() => {
+            window.location.href = target || "/settings?broker_reconnected=true";
+          }, 1500);
           return;
         }
 
