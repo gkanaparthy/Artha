@@ -143,15 +143,15 @@ export default function SettingsPage() {
         });
         window.history.replaceState({}, '', '/settings');
         fetchUserData();
-      } else if (params.get('broker_reconnected') === 'true') {
-        toast.success('Connection restored!', {
-          description: 'Your broker is reconnected and trades are syncing again.'
-        });
-        window.history.replaceState({}, '', '/settings');
-        fetchUserData();
       } else if (params.get('broker_reconnected_sync_pending') === 'true') {
         toast.warning('Connection restored', {
           description: 'Reconnection successful but sync is pending. Use "Sync All" to update your trades.'
+        });
+        window.history.replaceState({}, '', '/settings');
+        fetchUserData();
+      } else if (params.get('broker_reconnected') === 'true') {
+        toast.success('Connection restored!', {
+          description: 'Your broker is reconnected and trades are syncing again.'
         });
         window.history.replaceState({}, '', '/settings');
         fetchUserData();
@@ -286,6 +286,7 @@ export default function SettingsPage() {
           id: `reconnect-${accountId}`,
           description: data.details || 'Please try again or contact support.'
         });
+        setReconnecting(null);
         return;
       }
 
@@ -324,20 +325,36 @@ export default function SettingsPage() {
       // Focus the popup
       popup.focus();
 
-      // Monitor popup close and refresh page
+      // Monitor popup close and refresh page.
+      // NOTE: We use popup.closed because postMessage is not reliable across
+      // different origins (SnapTrade portal → arthatrades.com). The try/catch
+      // swallows the cross-origin SecurityError that browsers throw when
+      // accessing popup.location, but popup.closed itself is always readable
+      // regardless of the popup's current origin.
       const checkClosed = setInterval(() => {
         try {
           if (popup.closed) {
             clearInterval(checkClosed);
             setReconnecting(null);
-            // Refresh the page to check for updated broker status
+            // Reload to pick up any updated account status from the callback
             window.location.reload();
           }
+          // If popup isn't closed, just keep polling — no action needed
         } catch {
-          // Cross-origin error - popup is on different domain
-          clearInterval(checkClosed);
+          // Cross-origin SecurityError on popup.location access (not popup.closed).
+          // We can still read popup.closed safely, so check it directly here.
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            setReconnecting(null);
+            window.location.reload();
+          }
+          // If not closed yet, keep the interval running
         }
       }, 500);
+
+      // Do NOT set setReconnecting(null) here — the popup is still open.
+      // The interval above handles cleanup when the popup actually closes.
+      return;
 
     } catch (error) {
       console.error('[Reconnect] Error:', error);
@@ -346,7 +363,6 @@ export default function SettingsPage() {
         id: `reconnect-${accountId}`,
         description: message
       });
-    } finally {
       setReconnecting(null);
     }
   };
