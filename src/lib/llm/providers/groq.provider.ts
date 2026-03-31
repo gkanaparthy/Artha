@@ -65,7 +65,7 @@ export class GroqProvider implements LLMProvider {
         return !!this.apiKey;
     }
 
-    async generateInsights(data: InsightDataSummary, persona: AiPersona = "PROFESSIONAL"): Promise<string> {
+    async generateInsights(data: InsightDataSummary, persona: AiPersona = "CANDOR"): Promise<string> {
         if (!this.apiKey) {
             throw new Error("Groq API key not configured");
         }

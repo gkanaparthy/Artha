@@ -79,7 +79,7 @@ export class GeminiProvider implements LLMProvider {
         return !!this.client;
     }
 
-    async generateInsights(data: InsightDataSummary, persona: AiPersona = "PROFESSIONAL"): Promise<string> {
+    async generateInsights(data: InsightDataSummary, persona: AiPersona = "CANDOR"): Promise<string> {
         this.init();
         if (!this.client) {
             console.warn("[GeminiProvider] API key missing, skipping.");

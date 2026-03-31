@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
             where: { id: session.user.id },
             select: { aiPersona: true }
         });
-        const persona = user?.aiPersona || "PROFESSIONAL";
+        const persona = user?.aiPersona || "CANDOR";
 
         const { getCachedInsight, setCachedInsight, generateFilterHash } = await import("@/lib/cache/insights-cache");
 

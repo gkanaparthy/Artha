@@ -142,7 +142,7 @@ export class LLMManager {
         }
     }
 
-    async generateInsights(data: InsightDataSummary, persona: AiPersona = "PROFESSIONAL"): Promise<{ insights: string; provider: string }> {
+    async generateInsights(data: InsightDataSummary, persona: AiPersona = "CANDOR"): Promise<{ insights: string; provider: string }> {
         const errors: string[] = [];
 
         for (const provider of this.getOrderedProviders()) {

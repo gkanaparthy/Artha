@@ -47,7 +47,7 @@ export function AIInsightsCard({ startDate, endDate, accountId, isDemo = false }
     const [loading, setLoading] = useState(false);
     const [insights, setInsights] = useState<{ content: string; provider: string; timestamp: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [persona, setPersona] = useState<'PROFESSIONAL' | 'CANDOR'>('PROFESSIONAL');
+    const [persona, setPersona] = useState<'PROFESSIONAL' | 'CANDOR'>('CANDOR');
     const [showPaywall, setShowPaywall] = useState(false);
 
     // Fetch user persona once
@@ -58,7 +58,7 @@ export function AIInsightsCard({ startDate, endDate, accountId, isDemo = false }
                 .then(data => {
                     if (data.aiPersona) setPersona(data.aiPersona);
                 })
-                .catch(() => { }); // Ignore errors, default to PROFESSIONAL
+                .catch(() => { }); // Ignore errors, default to CANDOR
         }
     });
 

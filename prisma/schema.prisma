@@ -23,7 +23,7 @@ model User {
   positionTags        PositionTag[]
   positionRisks       PositionRisk[]
   sessions            Session[]
-  aiPersona           AiPersona       @default(PROFESSIONAL)
+  aiPersona           AiPersona       @default(CANDOR)
   tagDefinitions      TagDefinition[]
   tradeGroups         TradeGroup[]
 
