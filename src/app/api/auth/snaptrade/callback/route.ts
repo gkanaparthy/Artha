@@ -92,6 +92,10 @@ export async function GET(req: NextRequest) {
                     where: {
                         userId: session.user.id,
                         authorizationId: resolvedAuthorizationId,
+                        disabled: true,
+                        NOT: {
+                            disabledReason: 'User disconnected - will not sync',
+                        },
                     },
                     data: {
                         disabled: false,

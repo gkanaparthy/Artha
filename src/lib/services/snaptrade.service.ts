@@ -197,16 +197,27 @@ export class SnapTradeService {
             const encryptedAccountNumber = acc.number ? encrypt(acc.number) : null;
 
             const existingAccount = user.brokerAccounts.find(a => a.snapTradeAccountId === acc.id);
-            const rotatedReconnectAccount = existingAccount
-                ? null
-                : user.brokerAccounts.find(
+            const rotatedReconnectCandidates = existingAccount
+                ? []
+                : user.brokerAccounts.filter(
                     (account) =>
                         account.source === 'SNAPTRADE' &&
                         account.authorizationId === authId &&
+                        !matchedLocalAccountIds.has(account.id) &&
                         accountNumbersMatch(account.accountNumber, acc.number)
                 );
+            const rotatedReconnectAccount = rotatedReconnectCandidates.length === 1
+                ? rotatedReconnectCandidates[0]
+                : null;
             const localAccount = existingAccount || rotatedReconnectAccount;
             const isUserDisconnected = localAccount?.disabledReason === 'User disconnected - will not sync';
+            const resolvedAuthorizationId = matchingAuth?.id || authId || localAccount?.authorizationId || null;
+
+            if (!existingAccount && rotatedReconnectCandidates.length > 1) {
+                console.warn(
+                    `[SnapTrade Sync] Ambiguous reconnect match for remote account ${acc.id} under authorization ${authId}; refusing to rebind automatically`
+                );
+            }
 
             // If user explicitly disconnected, keep it disconnected regardless of SnapTrade's health.
             const isDisabled = isUserDisconnected ? true : snapTradeDisabled;
@@ -236,21 +247,21 @@ export class SnapTradeService {
                         disabledAt: finalDisabledAt,
                         disabledReason: finalDisabledReason,
                         lastCheckedAt: new Date(),
-                        authorizationId: matchingAuth?.id || null,
+                        authorizationId: resolvedAuthorizationId,
                     },
                 });
             } else {
                 syncedAccount = await prisma.brokerAccount.create({
                     data: {
-                    userId: localUserId,
-                    snapTradeAccountId: acc.id,
-                    brokerName: acc.institution_name,
-                    accountNumber: encryptedAccountNumber,
-                    disabled: isDisabled,
-                    disabledAt: finalDisabledAt,
-                    disabledReason: finalDisabledReason,
-                    lastCheckedAt: new Date(),
-                        authorizationId: matchingAuth?.id || null,
+                        userId: localUserId,
+                        snapTradeAccountId: acc.id,
+                        brokerName: acc.institution_name,
+                        accountNumber: encryptedAccountNumber,
+                        disabled: isDisabled,
+                        disabledAt: finalDisabledAt,
+                        disabledReason: finalDisabledReason,
+                        lastCheckedAt: new Date(),
+                        authorizationId: resolvedAuthorizationId,
                     },
                 });
             }
