@@ -20,10 +20,22 @@ export async function GET(req: NextRequest) {
         }
 
         const success = searchParams.get('success');
+        const status = searchParams.get('status');
         const brokerageAuthorizationId = searchParams.get('brokerageAuthorizationId');
+        const fallbackAuthorizationId = searchParams.get('authorizationId');
         const error = searchParams.get('error');
+        const resolvedAuthorizationId = brokerageAuthorizationId || fallbackAuthorizationId;
+        const normalizedStatus = status?.toUpperCase() || null;
+        const isSuccess = success === 'true' || normalizedStatus?.startsWith('SUCCESS') === true;
 
-        console.log('[SnapTrade Callback] Result:', { success, brokerageAuthorizationId, error });
+        console.log('[SnapTrade Callback] Result:', {
+            success,
+            status,
+            brokerageAuthorizationId,
+            fallbackAuthorizationId,
+            error,
+            requestedMode,
+        });
 
         const buildPopupRedirect = (status: 'SUCCESS' | 'ERROR', params: Record<string, string>) => {
             const popupUrl = new URL('/auth/callback', req.url);
@@ -55,25 +67,32 @@ export async function GET(req: NextRequest) {
             );
         }
 
-        if (success === 'true' && brokerageAuthorizationId) {
+        if (isSuccess) {
             console.log('[SnapTrade Callback] Broker connected successfully');
 
             // Check for reconnect FIRST (before syncAccounts, which may race)
-            const existingAccount = await prisma.brokerAccount.findFirst({
-                where: {
-                    userId: session.user.id,
-                    authorizationId: brokerageAuthorizationId
-                }
-            });
-            const isReconnect = !!existingAccount;
+            const existingAccount = resolvedAuthorizationId
+                ? await prisma.brokerAccount.findFirst({
+                    where: {
+                        userId: session.user.id,
+                        authorizationId: resolvedAuthorizationId
+                    }
+                })
+                : null;
+            const isReconnect = requestedMode === 'reconnect' || !!existingAccount;
 
             // If this is a reconnect, force-update the account to enabled immediately.
             // syncAccounts may race with SnapTrade's backend still processing the
             // re-auth, so we do this explicitly to avoid the "still disconnected" bug.
-            if (isReconnect && existingAccount.disabled) {
-                console.log(`[SnapTrade Callback] Reconnect detected — re-enabling account ${existingAccount.id} (${existingAccount.brokerName})`);
-                await prisma.brokerAccount.update({
-                    where: { id: existingAccount.id },
+            if (isReconnect && resolvedAuthorizationId) {
+                console.log(
+                    `[SnapTrade Callback] Reconnect detected — re-enabling accounts for authorization ${resolvedAuthorizationId}`
+                );
+                await prisma.brokerAccount.updateMany({
+                    where: {
+                        userId: session.user.id,
+                        authorizationId: resolvedAuthorizationId,
+                    },
                     data: {
                         disabled: false,
                         disabledAt: null,
@@ -125,7 +144,7 @@ export async function GET(req: NextRequest) {
         if (isPopupFlow) {
             return buildPopupRedirect('ERROR', {
                 mode: requestedMode || 'connect',
-                error: 'Connection was not completed.',
+                error: 'Connection was not successful.',
                 target: '/settings',
             });
         }

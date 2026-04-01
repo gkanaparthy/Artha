@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
     );
     callbackUrl.searchParams.set('mode', 'reconnect');
     callbackUrl.searchParams.set('popup', 'true');
+    callbackUrl.searchParams.set('authorizationId', account.authorizationId);
 
     const result = await snapTrade.authentication.loginSnapTradeUser({
       userId: user.snapTradeUserId,
